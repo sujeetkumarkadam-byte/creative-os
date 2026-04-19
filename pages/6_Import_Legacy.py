@@ -10,7 +10,7 @@ ASSETS = [
 
     # ══ SUCHITA ══════════════════════════════════════════════════════════════
     {
-        "Asset ID": "RCF-V-001", "Variant #": "A", "Status": "Draft",
+        "Asset ID": "RCF-V-001", "Variant #": "A", "Status": "Published",
         "Published Date": "2025-04-02", "Product": "RCF", "Bucket": "Performance",
         "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C1 — Hormonal / Painful Inflamed",
@@ -40,7 +40,7 @@ ASSETS = [
         "Hook Rate (L7)": 0.1739, "Hold Rate (L7)": 0.4972, "CAC (L7)": "",
     },
     {
-        "Asset ID": "RCF-V-002", "Variant #": "A", "Status": "Draft",
+        "Asset ID": "RCF-V-002", "Variant #": "A", "Status": "Published",
         "Published Date": "2025-04-02", "Product": "RCF", "Bucket": "Performance",
         "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C1 — Hormonal / Painful Inflamed",
@@ -70,7 +70,7 @@ ASSETS = [
         "Hook Rate (L7)": 0.1086, "Hold Rate (L7)": 0.3270, "CAC (L7)": 725.33,
     },
     {
-        "Asset ID": "RCF-V-003", "Variant #": "A", "Status": "Draft",
+        "Asset ID": "RCF-V-003", "Variant #": "A", "Status": "Published",
         "Published Date": "2025-04-02", "Product": "RCF", "Bucket": "Performance",
         "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C2 — Long-term Burnt Out",
@@ -100,7 +100,7 @@ ASSETS = [
         "Hook Rate (L7)": 0.0668, "Hold Rate (L7)": 0.2571, "CAC (L7)": "",
     },
     {
-        "Asset ID": "RCF-V-004", "Variant #": "A", "Status": "Draft",
+        "Asset ID": "RCF-V-004", "Variant #": "A", "Status": "Published",
         "Published Date": "2025-04-02", "Product": "RCF", "Bucket": "Performance",
         "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C1 — Hormonal / Painful Inflamed",
@@ -130,9 +130,9 @@ ASSETS = [
         "Hook Rate (L7)": 0.0703, "Hold Rate (L7)": 0.2929, "CAC (L7)": 1654.26,
     },
     {
-        "Asset ID": "RCF-V-005", "Variant #": "A", "Status": "Draft",
+        "Asset ID": "RCF-V-005", "Variant #": "A", "Status": "Published",
         "Published Date": "2025-04-10", "Product": "RCF", "Bucket": "Performance",
-        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C1 — Hormonal / Painful Inflamed",
         "Belief": "B5 — One Right Step Beats Five",
         "Marketing Angle": "MA-R5 — One Step, Right Problem",
@@ -160,9 +160,9 @@ ASSETS = [
         "Hook Rate (L7)": 0.1855, "Hold Rate (L7)": 0.2586, "CAC (L7)": 217.23,
     },
     {
-        "Asset ID": "RCF-V-006", "Variant #": "A", "Status": "Draft",
+        "Asset ID": "RCF-V-006", "Variant #": "A", "Status": "Published",
         "Published Date": "2025-04-10", "Product": "RCF", "Bucket": "Performance",
-        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C2 — Long-term Burnt Out",
         "Belief": "B4 — Early Proof, Not Just Hope",
         "Marketing Angle": "MA-R7 — 4-Day Clinical Proof",
@@ -194,7 +194,7 @@ ASSETS = [
     {
         "Asset ID": "RCF-V-007", "Variant #": "A", "Status": "Published",
         "Published Date": "2025-03-21", "Product": "RCF", "Bucket": "Performance",
-        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C1 — Hormonal / Painful Inflamed",
         "Belief": "B1 — Wrong Tool, Not Wrong You",
         "Marketing Angle": "MA-R2 — Calm Before Clear",
@@ -254,7 +254,7 @@ ASSETS = [
     {
         "Asset ID": "RCF-V-009", "Variant #": "A", "Status": "Published",
         "Published Date": "2025-03-29", "Product": "RCF", "Bucket": "Performance",
-        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C1 — Hormonal / Painful Inflamed",
         "Belief": "B1 — Wrong Tool, Not Wrong You",
         "Marketing Angle": "MA-R2 — Calm Before Clear",
@@ -284,7 +284,7 @@ ASSETS = [
     {
         "Asset ID": "RCF-V-010", "Variant #": "A", "Status": "Published",
         "Published Date": "2025-03-29", "Product": "RCF", "Bucket": "Performance",
-        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C2 — Long-term Burnt Out",
         "Belief": "B5 — One Right Step Beats Five",
         "Marketing Angle": "MA-R5 — One Step, Right Problem",
@@ -314,7 +314,7 @@ ASSETS = [
     {
         "Asset ID": "RCF-V-011", "Variant #": "A", "Status": "Published",
         "Published Date": "2025-03-29", "Product": "RCF", "Bucket": "Performance",
-        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C1 — Hormonal / Painful Inflamed",
         "Belief": "B1 — Wrong Tool, Not Wrong You",
         "Marketing Angle": "MA-R1 — Wrong Tool (SA vs BPO mechanism)",
@@ -404,7 +404,7 @@ ASSETS = [
     {
         "Asset ID": "RCF-V-014", "Variant #": "A", "Status": "Published",
         "Published Date": "2025-04-08", "Product": "RCF", "Bucket": "Performance",
-        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C1 — Hormonal / Painful Inflamed",
         "Belief": "B1 — Wrong Tool, Not Wrong You",
         "Marketing Angle": "MA-R2 — Calm Before Clear",
@@ -434,13 +434,13 @@ ASSETS = [
 
     # ══ AYUSHI ═══════════════════════════════════════════════════════════════
     {
-        "Asset ID": "RCF-V-015", "Variant #": "A", "Status": "Published",
-        "Published Date": "2025-03-28", "Product": "RCF", "Bucket": "Performance",
+        "Asset ID": "LPP-V-001", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-28", "Product": "Liquid Pimple Patch", "Bucket": "Performance",
         "Channel": "In-house", "Creative Type": "Consumer Testimonial",
-        "Cohort": "C3 — Event-Driven / Panic",
+        "Cohort": "LC2 — Pre-Event / Panic Breakout",
         "Belief": "B3 — Effective ≠ Harsh",
-        "Marketing Angle": "MA-R3 — Won't Backfire",
-        "Situational Driver": "SD1 — Pre-Event Panic",
+        "Marketing Angle": "MA-L2 — Emergency Pre-Event Fix",
+        "Situational Driver": "LD1 — Pre-Event / Important Day",
         "Hook Type": "H3 — Pain Statement",
         "Emotional Arc": "E4 — Fear → Safety",
         "Funnel Stage": "TOFU",
@@ -450,7 +450,7 @@ ASSETS = [
         "Creator / Consumer Name": "Ayushi",
         "Meta Ad ID": "AD 416",
         "Drive Link": "https://f.io/VAIbBedk",
-        "Notes": "Hook: Just a night before my wedding, a random facial gave 5 pimples | Pre-marriage acne panic | Original product was LPP",
+        "Notes": "Hook: Just a night before my wedding, a random facial gave 5 pimples | Pre-marriage panic — LPP product",
         "ROAS": 0.222, "Amount Spent": 9881.24, "Revenue": 2198, "Avg Cost Per Reach": 0.499,
         "CTR": 0.004572, "CPC": 79.69, "ATC Rate": 0.133, "CVR": 0.0177, "AOV": 1099,
         "Hook Rate": 0.1890, "Hold Rate": 0.3790, "CAC": 4940.62,
@@ -464,13 +464,13 @@ ASSETS = [
         "Hook Rate (L7)": "", "Hold Rate (L7)": "", "CAC (L7)": "",
     },
     {
-        "Asset ID": "RCF-V-016", "Variant #": "A", "Status": "Published",
-        "Published Date": "2025-03-29", "Product": "RCF", "Bucket": "Performance",
+        "Asset ID": "LPP-V-002", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-29", "Product": "Liquid Pimple Patch", "Bucket": "Performance",
         "Channel": "In-house", "Creative Type": "Consumer Testimonial",
-        "Cohort": "C3 — Event-Driven / Panic",
+        "Cohort": "LC2 — Pre-Event / Panic Breakout",
         "Belief": "B3 — Effective ≠ Harsh",
-        "Marketing Angle": "MA-R3 — Won't Backfire",
-        "Situational Driver": "SD1 — Pre-Event Panic",
+        "Marketing Angle": "MA-L2 — Emergency Pre-Event Fix",
+        "Situational Driver": "LD1 — Pre-Event / Important Day",
         "Hook Type": "H3 — Pain Statement",
         "Emotional Arc": "E4 — Fear → Safety",
         "Funnel Stage": "TOFU",
@@ -648,7 +648,7 @@ ASSETS = [
         "Hook Rate (L7)": 0.2983, "Hold Rate (L7)": 0.2518, "CAC (L7)": 605.63,
     },
     {
-        "Asset ID": "RCF-V-022", "Variant #": "A", "Status": "Draft",
+        "Asset ID": "RCF-V-022", "Variant #": "A", "Status": "Published",
         "Published Date": "", "Product": "RCF", "Bucket": "Performance",
         "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C1 — Hormonal / Painful Inflamed",
@@ -762,7 +762,7 @@ ASSETS = [
         "Hook Rate (L7)": 0.1301, "Hold Rate (L7)": 0.2661, "CAC (L7)": 311.63,
     },
     {
-        "Asset ID": "RCF-V-026", "Variant #": "A", "Status": "Draft",
+        "Asset ID": "RCF-V-026", "Variant #": "A", "Status": "Published",
         "Published Date": "2025-04-13", "Product": "RCF", "Bucket": "Performance",
         "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C1 — Hormonal / Painful Inflamed",
@@ -780,7 +780,7 @@ ASSETS = [
         "Notes": "Hook: I get acne every day but the acne get tamed first day itself | Want a makeup free skin | With Editor",
     },
     {
-        "Asset ID": "RCF-V-027", "Variant #": "A", "Status": "Draft",
+        "Asset ID": "RCF-V-027", "Variant #": "A", "Status": "Published",
         "Published Date": "", "Product": "RCF", "Bucket": "Performance",
         "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C1 — Hormonal / Painful Inflamed",
@@ -800,7 +800,7 @@ ASSETS = [
 
     # ══ LAKSHMI VENUGOPAL ════════════════════════════════════════════════════
     {
-        "Asset ID": "RCF-V-028", "Variant #": "A", "Status": "Draft",
+        "Asset ID": "RCF-V-028", "Variant #": "A", "Status": "Published",
         "Published Date": "", "Product": "RCF", "Bucket": "Performance",
         "Channel": "In-house", "Creative Type": "Consumer Testimonial",
         "Cohort": "C1 — Hormonal / Painful Inflamed",

@@ -24,12 +24,12 @@ st.sidebar.header("Date range")
 start = st.sidebar.date_input("From", value=last_monday)
 end   = st.sidebar.date_input("To",   value=last_sunday)
 
-assets_df["Created Date"] = pd.to_datetime(assets_df["Created Date"], errors="coerce")
+assets_df["Published Date"] = pd.to_datetime(assets_df["Published Date"], errors="coerce")
 start_ts = pd.Timestamp(start)
 end_ts   = pd.Timestamp(end)
 mask = (
-    (assets_df["Created Date"] >= start_ts) &
-    (assets_df["Created Date"] <= end_ts)
+    (assets_df["Published Date"] >= start_ts) &
+    (assets_df["Published Date"] <= end_ts)
 )
 df = assets_df[mask].copy()
 
@@ -134,9 +134,9 @@ with row3_r:
 st.markdown("---")
 st.subheader("Assets this period")
 display_cols = [
-    "Asset ID", "Product", "Creative Type", "Cohort",
-    "Marketing Angle", "Belief", "Funnel Stage", "Status", "Created Date",
+    "Asset ID", "Creator / Consumer Name", "Product", "Creative Type", "Cohort",
+    "Marketing Angle", "Belief", "Funnel Stage", "Status", "Published Date",
 ]
 available = [c for c in display_cols if c in df.columns]
-st.dataframe(df[available].sort_values("Created Date", ascending=False),
+st.dataframe(df[available].sort_values("Published Date", ascending=False),
              use_container_width=True, hide_index=True)

@@ -126,6 +126,8 @@ _PRODUCT_CODE = {
     "RCF": "RCF",
     "Clear Protect Gel Sunscreen": "CPGS",
     "Barrier Repair Gel Moisturiser": "BRGM",
+    "Liquid Pimple Patch": "LPP",
+    "Spot Fade Serum": "SFS",
 }
 
 _VIDEO_TYPES = {

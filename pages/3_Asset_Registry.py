@@ -42,10 +42,10 @@ st.markdown("---")
 
 # ── MAIN TABLE ────────────────────────────────────────────────────────────────
 summary_cols = [
-    "Asset ID", "Status", "Product", "Creative Type", "Bucket", "Channel",
-    "Cohort", "Marketing Angle", "Belief", "Hook Type", "Funnel Stage",
-    "Influence Mode", "Creator Archetype", "Visual Style", "CTA Style",
-    "Created Date", "Published Date",
+    "Asset ID", "Creator / Consumer Name", "Status", "Product", "Creative Type",
+    "Bucket", "Channel", "Cohort", "Marketing Angle", "Belief", "Hook Type",
+    "Funnel Stage", "Influence Mode", "Creator Archetype", "Visual Style", "CTA Style",
+    "Published Date",
     "ROAS", "Amount Spent", "CTR", "Hook Rate", "Hold Rate", "CAC",
     "ROAS (L30)", "ROAS (L7)",
     "Meta Ad ID", "Drive Link",
@@ -53,7 +53,7 @@ summary_cols = [
 available = [c for c in summary_cols if c in df.columns]
 
 st.dataframe(
-    df[available].sort_values("Created Date", ascending=False),
+    df[available].sort_values("Published Date", ascending=False),
     use_container_width=True,
     hide_index=True,
 )

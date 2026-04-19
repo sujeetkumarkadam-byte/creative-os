@@ -2,6 +2,8 @@ PRODUCTS = [
     "RCF",
     "Clear Protect Gel Sunscreen",
     "Barrier Repair Gel Moisturiser",
+    "Liquid Pimple Patch",
+    "Spot Fade Serum",
 ]
 
 BUCKETS = ["Performance", "Organic"]
@@ -95,6 +97,47 @@ DRIVERS_RCF = [
     "SD6 — Life Transition",
     "SD7 — Post-Active Sensitivity",
     "SD8 — Mirror Spiral",
+]
+
+COHORTS_LPP = [
+    "LC1 — Makeup Wearer / Active Breakout",
+    "LC2 — Pre-Event / Panic Breakout",
+    "LC3 — PIH Protector / Post-Acne Mark",
+    "LC4 — Daily Spot Manager",
+]
+
+COHORTS_SFS = [
+    "SC2 — PIH Protector",
+    "C1 — Hormonal / Painful Inflamed",
+    "C2 — Long-term Burnt Out",
+    "C4 — Barrier-Compromised / Sensitive",
+]
+
+ANGLES_LPP = [
+    "MA-L1 — Hide It While You Heal It",
+    "MA-L2 — Emergency Pre-Event Fix",
+    "MA-L3 — No Popping, No Scarring",
+    "MA-L4 — Works Under Makeup",
+    "MA-L5 — 300+ Applications Per Tube",
+]
+
+ANGLES_SFS = [
+    "MA-SF1 — Fade Marks Not Confidence",
+    "MA-SF2 — Post-Acne Recovery",
+    "MA-SF3 — PIH After Treatment",
+]
+
+DRIVERS_LPP = [
+    "None",
+    "LD1 — Pre-Event / Important Day",
+    "LD2 — Active Breakout While Working",
+    "LD3 — Post-Treatment Sensitivity",
+]
+
+DRIVERS_SFS = [
+    "None",
+    "SF1 — Post-Active Treatment Marks",
+    "SF2 — Persistent PIH",
 ]
 
 DRIVERS_SUNSCREEN = [
@@ -216,6 +259,10 @@ def get_cohorts(product: str) -> list:
         return COHORTS_RCF
     if product == "Clear Protect Gel Sunscreen":
         return COHORTS_SUNSCREEN
+    if product == "Liquid Pimple Patch":
+        return COHORTS_LPP
+    if product == "Spot Fade Serum":
+        return COHORTS_SFS
     return COHORTS_BRGM
 
 
@@ -224,10 +271,18 @@ def get_angles(product: str) -> list:
         return ANGLES_RCF
     if product == "Clear Protect Gel Sunscreen":
         return ANGLES_SUNSCREEN
+    if product == "Liquid Pimple Patch":
+        return ANGLES_LPP
+    if product == "Spot Fade Serum":
+        return ANGLES_SFS
     return ANGLES_BRGM
 
 
 def get_drivers(product: str) -> list:
     if product == "Clear Protect Gel Sunscreen":
         return DRIVERS_SUNSCREEN
+    if product == "Liquid Pimple Patch":
+        return DRIVERS_LPP
+    if product == "Spot Fade Serum":
+        return DRIVERS_SFS
     return DRIVERS_RCF

@@ -25,9 +25,11 @@ start = st.sidebar.date_input("From", value=last_monday)
 end   = st.sidebar.date_input("To",   value=last_sunday)
 
 assets_df["Created Date"] = pd.to_datetime(assets_df["Created Date"], errors="coerce")
+start_ts = pd.Timestamp(start)
+end_ts   = pd.Timestamp(end)
 mask = (
-    (assets_df["Created Date"].dt.date >= start) &
-    (assets_df["Created Date"].dt.date <= end)
+    (assets_df["Created Date"] >= start_ts) &
+    (assets_df["Created Date"] <= end_ts)
 )
 df = assets_df[mask].copy()
 

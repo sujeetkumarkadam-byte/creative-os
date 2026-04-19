@@ -74,13 +74,13 @@ if "legacy_raw" not in st.session_state:
 
 raw = st.session_state["legacy_raw"]
 
-# Find header row (the one containing "Client Details")
+# Headers are in row 2 (index 1) — row 1 is merged category labels
+# Search all rows just in case; fall back to index 1
 header_row_idx = next(
-    (i for i, row in enumerate(raw) if "Client Details" in row), None
+    (i for i, row in enumerate(raw)
+     if any("client details" in c.lower() for c in row)),
+    1  # fallback: assume row index 1
 )
-if header_row_idx is None:
-    st.error("Could not find header row. Check the sheet structure.")
-    st.stop()
 
 headers = raw[header_row_idx]
 data_rows = [r for r in raw[header_row_idx + 1:] if any(c.strip() for c in r)]

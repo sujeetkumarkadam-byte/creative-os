@@ -1,267 +1,852 @@
 import streamlit as st
-import pandas as pd
-from utils.sheets import _client, load_assets, save_asset, next_asset_id, ASSET_HEADERS
-from utils.taxonomy import ANGLES_RCF, HOOK_TYPES, COHORTS_RCF, BELIEFS, FUNNEL_STAGES
-
-LEGACY_SHEET_ID = "1TJEVk4-mu4_y7F1OE3hyCGm9gcalJOPvL7_YbGFiftw"
-
-# ── Best-guess mappings from old free-text → new taxonomy ─────────────────────
-ANGLE_MAP = {
-    "hormonal acne relief":           "MA-R1 — Wrong Tool (SA vs BPO mechanism)",
-    "hormonal acne relief ":          "MA-R1 — Wrong Tool (SA vs BPO mechanism)",
-    "it's just an acne":              "MA-R2 — Calm Before Clear",
-    "rapid results":                  "MA-R4 — Early Signal Matters",
-    "2 min routine":                  "MA-R5 — One Step, Right Problem",
-    "2 min (easy) routine":           "MA-R5 — One Step, Right Problem",
-    "brand care ":                    "MA-R5 — One Step, Right Problem",
-    "brand care":                     "MA-R5 — One Step, Right Problem",
-    "invisible acne":                 "MA-R6 — Barrier-First Design",
-    "i did not feel like leaving the house": "MA-R2 — Calm Before Clear",
-    "one call , one face wash":       "MA-R5 — One Step, Right Problem",
-    "i've tried everything, nothing worked, this did": "MA-R4 — Early Signal Matters",
-    "i've tried everything, nothing worked, this did (just a hook change)": "MA-R4 — Early Signal Matters",
-    "i've tried everything, nothing worked, this did (hook and story change)": "MA-R4 — Early Signal Matters",
-    "i used to think, why do only i get acne? ": "MA-R2 — Calm Before Clear",
-    "i tried all the derma treatments, nothing worked": "MA-R4 — Early Signal Matters",
-    "hormonal acne since 10th standard": "MA-R1 — Wrong Tool (SA vs BPO mechanism)",
-    "i did all the skin treatments, but, nothing worked. with rcf, i saw results in 8 days": "MA-R4 — Early Signal Matters",
-    "got acne night before my engagement": "MA-R2 — Calm Before Clear",
-}
-
-HOOK_MAP = {
-    "negative": "H3 — Pain Statement",
-    "positive": "H6 — Social Proof",
-}
-
-STATUS_MAP = {
-    "published":   "Published",
-    "with editor": "Draft",
-    "":            "Draft",
-}
-
-PERF_COLS = [
-    "ROAS", "Amount Spent", "Revenue", "Avg Cost Per Reach",
-    "CTR", "CPC", "ATC Rate", "CVR", "AOV", "Hook Rate", "Hold Rate", "CAC",
-    "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "Avg Cost Per Reach (L30)",
-    "CTR (L30)", "CPC (L30)", "ATC Rate (L30)", "CVR (L30)", "AOV (L30)",
-    "Hook Rate (L30)", "Hold Rate (L30)", "CAC (L30)",
-    "ROAS (L7)", "Amount Spent (L7)", "Revenue (L7)", "Avg Cost Per Reach (L7)",
-    "CTR (L7)", "CPC (L7)", "ATC Rate (L7)", "CVR (L7)", "AOV (L7)",
-    "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
-]
+from utils.sheets import _ws, ASSET_HEADERS
 
 st.set_page_config(page_title="Import Legacy Data — Creative OS", layout="wide")
 st.title("Import Legacy Consumer Testimonials")
-st.caption("One-time migration of your existing tracker into the new system.")
+st.caption("Pre-mapped to new taxonomy. Click import once — then delete this page.")
 
-# ── STEP 1: load legacy sheet ──────────────────────────────────────────────────
-st.info(
-    "**Before importing:** Make sure you've shared the legacy Google Sheet with "
-    "`creative-os-bot@streamlit-app-tss.iam.gserviceaccount.com` (Editor access)."
-)
+# ── ALL LEGACY ASSETS — FULLY MAPPED ─────────────────────────────────────────
+ASSETS = [
 
-if st.button("🔄 Load legacy sheet"):
-    try:
-        ws = _client().open_by_key(LEGACY_SHEET_ID).sheet1
-        raw = ws.get_all_values()
-        st.session_state["legacy_raw"] = raw
-        st.success(f"Loaded {len(raw)} rows.")
-    except Exception as e:
-        st.error(f"Could not load: {e}")
+    # ══ SUCHITA ══════════════════════════════════════════════════════════════
+    {
+        "Asset ID": "RCF-V-001", "Variant #": "A", "Status": "Draft",
+        "Published Date": "2025-04-02", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B2 — Years of Nothing Working",
+        "Marketing Angle": "MA-R2 — Calm Before Clear",
+        "Situational Driver": "SD2 — Hormonal Cycle Flare",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E6 — Resignation → Hope",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M3 — Belief Installation / Reframe",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Suchita",
+        "Meta Ad ID": "AD 437",
+        "Drive Link": "https://drive.google.com/drive/folders/16xP6uoTvQ6Q_fz714jQKjwH6cMQTtWDM",
+        "Notes": "Hook: I had made peace with the fact that from the age of 41 I will have acne | Situation: Miracle during the struggle",
+        "ROAS": 0, "Amount Spent": 296, "Revenue": "", "Avg Cost Per Reach": 0.266,
+        "CTR": 0.0045, "CPC": 49.33, "ATC Rate": 0, "CVR": 0, "AOV": "",
+        "Hook Rate": 0.1523, "Hold Rate": 0.4802, "CAC": "",
+        "ROAS (L30)": 0, "Amount Spent (L30)": 295.99, "Revenue (L30)": "",
+        "Avg Cost Per Reach (L30)": 0.27, "CTR (L30)": 0.0045, "CPC (L30)": 49.33,
+        "ATC Rate (L30)": 0, "CVR (L30)": 0, "AOV (L30)": "",
+        "Hook Rate (L30)": 0.1523, "Hold Rate (L30)": 0.4802, "CAC (L30)": "",
+        "ROAS (L7)": 0, "Amount Spent (L7)": 228.13, "Revenue (L7)": "",
+        "Avg Cost Per Reach (L7)": 0.27, "CTR (L7)": 0.0059, "CPC (L7)": 38.02,
+        "ATC Rate (L7)": 0, "CVR (L7)": 0, "AOV (L7)": "",
+        "Hook Rate (L7)": 0.1739, "Hold Rate (L7)": 0.4972, "CAC (L7)": "",
+    },
+    {
+        "Asset ID": "RCF-V-002", "Variant #": "A", "Status": "Draft",
+        "Published Date": "2025-04-02", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B2 — Years of Nothing Working",
+        "Marketing Angle": "MA-R2 — Calm Before Clear",
+        "Situational Driver": "SD8 — Mirror Spiral",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E5 — Shame → Confidence",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M3 — Belief Installation / Reframe",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Suchita",
+        "Meta Ad ID": "AD 442",
+        "Drive Link": "https://drive.google.com/drive/folders/1E4CflEoJoBVMLf7R0tUB0kn6WFyg-f6a",
+        "Notes": "Hook: Yeh kya hogaya. I did not want to leave the house | Situation: Build confidence (Positive)",
+        "ROAS": 1.797, "Amount Spent": 6935.25, "Revenue": 12465, "Avg Cost Per Reach": 0.348,
+        "CTR": 0.00477, "CPC": 50.26, "ATC Rate": 0.231, "CVR": 0.094, "AOV": 1133.18,
+        "Hook Rate": 0.1183, "Hold Rate": 0.3416, "CAC": 630.48,
+        "ROAS (L30)": 1.797, "Amount Spent (L30)": 6935.03, "Revenue (L30)": 12465,
+        "Avg Cost Per Reach (L30)": 0.348, "CTR (L30)": 0.00477, "CPC (L30)": 50.25,
+        "ATC Rate (L30)": 0.231, "CVR (L30)": 0.094, "AOV (L30)": 1133.18,
+        "Hook Rate (L30)": 0.1183, "Hold Rate (L30)": 0.3416, "CAC (L30)": 630.46,
+        "ROAS (L7)": 1.514, "Amount Spent (L7)": 5802.63, "Revenue (L7)": 8784,
+        "Avg Cost Per Reach (L7)": 0.325, "CTR (L7)": 0.00414, "CPC (L7)": 55.79,
+        "ATC Rate (L7)": 0.242, "CVR (L7)": 0.088, "AOV (L7)": 1098,
+        "Hook Rate (L7)": 0.1086, "Hold Rate (L7)": 0.3270, "CAC (L7)": 725.33,
+    },
+    {
+        "Asset ID": "RCF-V-003", "Variant #": "A", "Status": "Draft",
+        "Published Date": "2025-04-02", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C2 — Long-term Burnt Out",
+        "Belief": "B2 — Years of Nothing Working",
+        "Marketing Angle": "MA-R4 — Early Signal Matters",
+        "Situational Driver": "None",
+        "Hook Type": "H6 — Social Proof",
+        "Emotional Arc": "E1 — Pain → Relief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M5 — Proof Delivery",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Suchita",
+        "Meta Ad ID": "AD 441",
+        "Drive Link": "https://drive.google.com/drive/folders/1i8FyrirDfwpe1DCDC2xxMC84XFpUhbBm",
+        "Notes": "Hook: Something that would not go for 5 years your product managed to do in 1 month | Product was Acne Clear and Protect Kit | Situation: Minimal routine",
+        "ROAS": 0, "Amount Spent": 912.12, "Revenue": "", "Avg Cost Per Reach": 0.156,
+        "CTR": 0.00249, "CPC": 43.43, "ATC Rate": 0, "CVR": 0, "AOV": "",
+        "Hook Rate": 0.0878, "Hold Rate": 0.3536, "CAC": "",
+        "ROAS (L30)": 0, "Amount Spent (L30)": 912.12, "Revenue (L30)": "",
+        "Avg Cost Per Reach (L30)": 0.156, "CTR (L30)": 0.00249, "CPC (L30)": 43.43,
+        "ATC Rate (L30)": 0, "CVR (L30)": 0, "AOV (L30)": "",
+        "Hook Rate (L30)": 0.0878, "Hold Rate (L30)": 0.3536, "CAC (L30)": "",
+        "ROAS (L7)": 0, "Amount Spent (L7)": 306.03, "Revenue (L7)": "",
+        "Avg Cost Per Reach (L7)": 0.082, "CTR (L7)": 0.00188, "CPC (L7)": 34.00,
+        "ATC Rate (L7)": 0, "CVR (L7)": 0, "AOV (L7)": "",
+        "Hook Rate (L7)": 0.0668, "Hold Rate (L7)": 0.2571, "CAC (L7)": "",
+    },
+    {
+        "Asset ID": "RCF-V-004", "Variant #": "A", "Status": "Draft",
+        "Published Date": "2025-04-02", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B4 — Early Proof, Not Just Hope",
+        "Marketing Angle": "MA-R4 — Early Signal Matters",
+        "Situational Driver": "None",
+        "Hook Type": "H6 — Social Proof",
+        "Emotional Arc": "E1 — Pain → Relief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M5 — Proof Delivery",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Suchita",
+        "Meta Ad ID": "AD 445",
+        "Drive Link": "https://drive.google.com/drive/folders/1iyQE4YA3DicOmMeUtuiw1TSSi9jpNHlk",
+        "Notes": "Hook: March–April 2025 I bought the face wash. It has been a year and it is nothing less than magic | Situation: I did not feel like leaving the house",
+        "ROAS": 0.494, "Amount Spent": 3237.25, "Revenue": 1599, "Avg Cost Per Reach": 0.193,
+        "CTR": 0.00275, "CPC": 40.98, "ATC Rate": 0.163, "CVR": 0.0204, "AOV": 1599,
+        "Hook Rate": 0.0744, "Hold Rate": 0.2987, "CAC": 3237.25,
+        "ROAS (L30)": 0.494, "Amount Spent (L30)": 3237.25, "Revenue (L30)": 1599,
+        "Avg Cost Per Reach (L30)": 0.193, "CTR (L30)": 0.00275, "CPC (L30)": 40.98,
+        "ATC Rate (L30)": 0.163, "CVR (L30)": 0.0204, "AOV (L30)": 1599,
+        "Hook Rate (L30)": 0.0744, "Hold Rate (L30)": 0.2987, "CAC (L30)": 3237.25,
+        "ROAS (L7)": 0.967, "Amount Spent (L7)": 1654.26, "Revenue (L7)": 1599,
+        "Avg Cost Per Reach (L7)": 0.128, "CTR (L7)": 0.00269, "CPC (L7)": 32.44,
+        "ATC Rate (L7)": 0.25, "CVR (L7)": 0.031, "AOV (L7)": 1599,
+        "Hook Rate (L7)": 0.0703, "Hold Rate (L7)": 0.2929, "CAC (L7)": 1654.26,
+    },
+    {
+        "Asset ID": "RCF-V-005", "Variant #": "A", "Status": "Draft",
+        "Published Date": "2025-04-10", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B5 — One Right Step Beats Five",
+        "Marketing Angle": "MA-R5 — One Step, Right Problem",
+        "Situational Driver": "None",
+        "Hook Type": "H6 — Social Proof",
+        "Emotional Arc": "E3 — Skepticism → Belief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M8 — Social Proof Loop",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Suchita",
+        "Meta Ad ID": "AD 465",
+        "Drive Link": "https://drive.google.com/drive/folders/147F6FrzgiKnmK8xHyl9A3vzswpcnSnf_",
+        "Notes": "Hook: I ordered a face wash and I got a phone call from them | Situation: One Call One Face Wash",
+        "ROAS": 2.753, "Amount Spent": 217.23, "Revenue": 598, "Avg Cost Per Reach": 0.268,
+        "CTR": 0.0064, "CPC": 36.21, "ATC Rate": 1.0, "CVR": 0.333, "AOV": 598,
+        "Hook Rate": 0.1855, "Hold Rate": 0.2586, "CAC": 217.23,
+        "ROAS (L30)": 2.753, "Amount Spent (L30)": 217.23, "Revenue (L30)": 598,
+        "Avg Cost Per Reach (L30)": 0.268, "CTR (L30)": 0.0064, "CPC (L30)": 36.21,
+        "ATC Rate (L30)": 1.0, "CVR (L30)": 0.333, "AOV (L30)": 598,
+        "Hook Rate (L30)": 0.1855, "Hold Rate (L30)": 0.2586, "CAC (L30)": 217.23,
+        "ROAS (L7)": 2.753, "Amount Spent (L7)": 217.23, "Revenue (L7)": 598,
+        "Avg Cost Per Reach (L7)": 0.268, "CTR (L7)": 0.0064, "CPC (L7)": 36.21,
+        "ATC Rate (L7)": 1.0, "CVR (L7)": 0.333, "AOV (L7)": 598,
+        "Hook Rate (L7)": 0.1855, "Hold Rate (L7)": 0.2586, "CAC (L7)": 217.23,
+    },
+    {
+        "Asset ID": "RCF-V-006", "Variant #": "A", "Status": "Draft",
+        "Published Date": "2025-04-10", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C2 — Long-term Burnt Out",
+        "Belief": "B4 — Early Proof, Not Just Hope",
+        "Marketing Angle": "MA-R7 — 4-Day Clinical Proof",
+        "Situational Driver": "None",
+        "Hook Type": "H6 — Social Proof",
+        "Emotional Arc": "E1 — Pain → Relief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M5 — Proof Delivery",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Suchita",
+        "Meta Ad ID": "AD 466",
+        "Drive Link": "https://drive.google.com/drive/folders/1zdmzVopth9e81DSNEW27CfyUkEPR32yH",
+        "Notes": "Hook: I had a 5 yo problem, it took 4 weeks and finally it's okay | Situation: One Call One Face Wash",
+        "ROAS": 0.911, "Amount Spent": 4439.77, "Revenue": 4044, "Avg Cost Per Reach": 0.251,
+        "CTR": 0.00407, "CPC": 51.63, "ATC Rate": 0.113, "CVR": 0.0968, "AOV": 674,
+        "Hook Rate": 0.0890, "Hold Rate": 0.2051, "CAC": 739.96,
+        "ROAS (L30)": 0.911, "Amount Spent (L30)": 4439.77, "Revenue (L30)": 4044,
+        "Avg Cost Per Reach (L30)": 0.251, "CTR (L30)": 0.00407, "CPC (L30)": 51.63,
+        "ATC Rate (L30)": 0.113, "CVR (L30)": 0.0968, "AOV (L30)": 674,
+        "Hook Rate (L30)": 0.0890, "Hold Rate (L30)": 0.2051, "CAC (L30)": 739.96,
+        "ROAS (L7)": 0.911, "Amount Spent (L7)": 4439.77, "Revenue (L7)": 4044,
+        "Avg Cost Per Reach (L7)": 0.251, "CTR (L7)": 0.00407, "CPC (L7)": 51.63,
+        "ATC Rate (L7)": 0.113, "CVR (L7)": 0.0968, "AOV (L7)": 674,
+        "Hook Rate (L7)": 0.0890, "Hold Rate (L7)": 0.2051, "CAC (L7)": 739.96,
+    },
 
-if "legacy_raw" not in st.session_state:
-    st.stop()
+    # ══ PRIYANKA YADAV ═══════════════════════════════════════════════════════
+    {
+        "Asset ID": "RCF-V-007", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-21", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B1 — Wrong Tool, Not Wrong You",
+        "Marketing Angle": "MA-R2 — Calm Before Clear",
+        "Situational Driver": "None",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E1 — Pain → Relief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M2 — Reassurance / Anti-Panic",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyanka Yadav",
+        "Meta Ad ID": "AD 400",
+        "Drive Link": "https://drive.google.com/file/d/1_yvxzMJBarIaCrFbwwIDZanbB8eBfHl9/view",
+        "Notes": "Hook: I could not sleep on my side (pointing to cheeks) | Script 3 Porcellia",
+        "ROAS": 0.662, "Amount Spent": 26987.27, "Revenue": 17856.1, "Avg Cost Per Reach": 0.335,
+        "CTR": 0.003975, "CPC": 47.35, "ATC Rate": 0.148, "CVR": 0.0363, "AOV": 1190.41,
+        "Hook Rate": 0.1630, "Hold Rate": 0.1813, "CAC": 1799.15,
+        "ROAS (L30)": 0.662, "Amount Spent (L30)": 26987.27, "Revenue (L30)": 17856.1,
+        "Avg Cost Per Reach (L30)": 0.335, "CTR (L30)": 0.003975, "CPC (L30)": 47.35,
+        "ATC Rate (L30)": 0.148, "CVR (L30)": 0.0363, "AOV (L30)": 1190.41,
+        "Hook Rate (L30)": 0.1630, "Hold Rate (L30)": 0.1813, "CAC (L30)": 1799.15,
+        "ROAS (L7)": 2.834, "Amount Spent (L7)": 1109.57, "Revenue (L7)": 3145,
+        "Avg Cost Per Reach (L7)": 0.153, "CTR (L7)": 0.0041, "CPC (L7)": 29.99,
+        "ATC Rate (L7)": 0.333, "CVR (L7)": 0.0833, "AOV (L7)": 1572.5,
+        "Hook Rate (L7)": 0.1409, "Hold Rate (L7)": 0.1792, "CAC (L7)": 554.79,
+    },
+    {
+        "Asset ID": "RCF-V-008", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-24", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B1 — Wrong Tool, Not Wrong You",
+        "Marketing Angle": "MA-R2 — Calm Before Clear",
+        "Situational Driver": "SD8 — Mirror Spiral",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E5 — Shame → Confidence",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M3 — Belief Installation / Reframe",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyanka Yadav",
+        "Meta Ad ID": "AD 409",
+        "Drive Link": "https://drive.google.com/file/d/16wtMQKPuWm7NNQ73IM3xE5TYIN4xWBXz/view",
+        "Notes": "Hook: Whenever somebody looks at me, I feel they're not looking into my eyes but my acne | Script 2 editlobby confidence",
+        "ROAS": 1.079, "Amount Spent": 38023.39, "Revenue": 41032, "Avg Cost Per Reach": 0.536,
+        "CTR": 0.005309, "CPC": 32.14, "ATC Rate": 0.191, "CVR": 0.0404, "AOV": 1206.82,
+        "Hook Rate": 0.0056, "Hold Rate": 0.2161, "CAC": 1118.34,
+        "ROAS (L30)": 1.079, "Amount Spent (L30)": 38023.36, "Revenue (L30)": 41032,
+        "Avg Cost Per Reach (L30)": 0.536, "CTR (L30)": 0.005309, "CPC (L30)": 32.14,
+        "ATC Rate (L30)": 0.191, "CVR (L30)": 0.0404, "AOV (L30)": 1206.82,
+        "Hook Rate (L30)": 0.0056, "Hold Rate (L30)": 0.2161, "CAC (L30)": 1118.33,
+        "ROAS (L7)": 1.247, "Amount Spent (L7)": 22415.51, "Revenue (L7)": 27948,
+        "Avg Cost Per Reach (L7)": 0.418, "CTR (L7)": 0.005382, "CPC (L7)": 27.34,
+        "ATC Rate (L7)": 0.201, "CVR (L7)": 0.0428, "AOV (L7)": 1164.5,
+        "Hook Rate (L7)": 0.0011, "Hold Rate (L7)": 0.2160, "CAC (L7)": 933.98,
+    },
+    {
+        "Asset ID": "RCF-V-009", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-29", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B1 — Wrong Tool, Not Wrong You",
+        "Marketing Angle": "MA-R2 — Calm Before Clear",
+        "Situational Driver": "SD8 — Mirror Spiral",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E5 — Shame → Confidence",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M3 — Belief Installation / Reframe",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyanka Yadav",
+        "Meta Ad ID": "AD 418",
+        "Drive Link": "https://drive.google.com/drive/folders/1Wid5wwVJC6sNGJmp-gN-34TBYvzRwr4h",
+        "Notes": "Hook: and then I just came home and cried | Script 2 Porcellia - There was this aunty",
+        "ROAS": 1.010, "Amount Spent": 4798.51, "Revenue": 4846, "Avg Cost Per Reach": 0.306,
+        "CTR": 0.004493, "CPC": 41.73, "ATC Rate": 0.193, "CVR": 0.0455, "AOV": 1211.5,
+        "Hook Rate": 0.1578, "Hold Rate": 0.3187, "CAC": 1199.63,
+        "ROAS (L30)": 1.010, "Amount Spent (L30)": 4798.51, "Revenue (L30)": 4846,
+        "Avg Cost Per Reach (L30)": 0.306, "CTR (L30)": 0.004493, "CPC (L30)": 41.73,
+        "ATC Rate (L30)": 0.193, "CVR (L30)": 0.0455, "AOV (L30)": 1211.5,
+        "Hook Rate (L30)": 0.1578, "Hold Rate (L30)": 0.3187, "CAC (L30)": 1199.63,
+        "ROAS (L7)": 5.277, "Amount Spent (L7)": 312.46, "Revenue (L7)": 1649,
+        "Avg Cost Per Reach (L7)": 0.274, "CTR (L7)": 0.004801, "CPC (L7)": 44.64,
+        "ATC Rate (L7)": 0.2, "CVR (L7)": 0.2, "AOV (L7)": 1649,
+        "Hook Rate (L7)": 0.2387, "Hold Rate (L7)": 0.4598, "CAC (L7)": 312.46,
+    },
+    {
+        "Asset ID": "RCF-V-010", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-29", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C2 — Long-term Burnt Out",
+        "Belief": "B5 — One Right Step Beats Five",
+        "Marketing Angle": "MA-R5 — One Step, Right Problem",
+        "Situational Driver": "None",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E2 — Confusion → Clarity",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M1 — Permission / De-risking",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyanka Yadav",
+        "Meta Ad ID": "AD 420",
+        "Drive Link": "https://drive.google.com/drive/folders/1yc6BT_bGeJGrYjg9q5GBVNbRsKRdRLPI",
+        "Notes": "Hook: I always had acne | Script 4 Porcellia - IT WORKS I DON'T HAVE TO THINK ABOUT IT ANYMORE",
+        "ROAS": 1.065, "Amount Spent": 4830.8, "Revenue": 5144, "Avg Cost Per Reach": 0.254,
+        "CTR": 0.004139, "CPC": 43.13, "ATC Rate": 0.197, "CVR": 0.0789, "AOV": 857.33,
+        "Hook Rate": 0.1037, "Hold Rate": 0.2463, "CAC": 805.13,
+        "ROAS (L30)": 1.065, "Amount Spent (L30)": 4830.8, "Revenue (L30)": 5144,
+        "Avg Cost Per Reach (L30)": 0.254, "CTR (L30)": 0.004139, "CPC (L30)": 43.13,
+        "ATC Rate (L30)": 0.197, "CVR (L30)": 0.0789, "AOV (L30)": 857.33,
+        "Hook Rate (L30)": 0.1037, "Hold Rate (L30)": 0.2463, "CAC (L30)": 805.13,
+        "ROAS (L7)": 5.945, "Amount Spent (L7)": 453.64, "Revenue (L7)": 2697,
+        "Avg Cost Per Reach (L7)": 0.145, "CTR (L7)": 0.008497, "CPC (L7)": 15.64,
+        "ATC Rate (L7)": 0.4, "CVR (L7)": 0.3, "AOV (L7)": 899,
+        "Hook Rate (L7)": 0.1154, "Hold Rate (L7)": 0.2716, "CAC (L7)": 151.21,
+    },
+    {
+        "Asset ID": "RCF-V-011", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-29", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B1 — Wrong Tool, Not Wrong You",
+        "Marketing Angle": "MA-R1 — Wrong Tool (SA vs BPO mechanism)",
+        "Situational Driver": "None",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E1 — Pain → Relief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M3 — Belief Installation / Reframe",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyanka Yadav",
+        "Meta Ad ID": "AD 419",
+        "Drive Link": "https://drive.google.com/drive/folders/1BIXIRrlk8eIgTRkJ6F6lsyihdjLDmN5E",
+        "Notes": "Hook: every time I get an acne I'm like shit yaar | Script 1 Porcellia - WHAT DID I DO WRONG?",
+        "ROAS": 0.789, "Amount Spent": 22695.65, "Revenue": 17909, "Avg Cost Per Reach": 0.298,
+        "CTR": 0.00315, "CPC": 65.98, "ATC Rate": 0.204, "CVR": 0.0415, "AOV": 1377.62,
+        "Hook Rate": 0.1492, "Hold Rate": 0.1904, "CAC": 1745.82,
+        "ROAS (L30)": 0.789, "Amount Spent (L30)": 22695.65, "Revenue (L30)": 17909,
+        "Avg Cost Per Reach (L30)": 0.298, "CTR (L30)": 0.00315, "CPC (L30)": 65.98,
+        "ATC Rate (L30)": 0.204, "CVR (L30)": 0.0415, "AOV (L30)": 1377.62,
+        "Hook Rate (L30)": 0.1492, "Hold Rate (L30)": 0.1904, "CAC (L30)": 1745.82,
+        "ROAS (L7)": 1.215, "Amount Spent (L7)": 5056.8, "Revenue (L7)": 6144,
+        "Avg Cost Per Reach (L7)": 0.257, "CTR (L7)": 0.00303, "CPC (L7)": 69.27,
+        "ATC Rate (L7)": 0.222, "CVR (L7)": 0.0635, "AOV (L7)": 1536,
+        "Hook Rate (L7)": 0.1520, "Hold Rate (L7)": 0.1992, "CAC (L7)": 1264.2,
+    },
+    {
+        "Asset ID": "RCF-V-012", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-30", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B1 — Wrong Tool, Not Wrong You",
+        "Marketing Angle": "MA-R2 — Calm Before Clear",
+        "Situational Driver": "SD8 — Mirror Spiral",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E5 — Shame → Confidence",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M3 — Belief Installation / Reframe",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyanka Yadav",
+        "Meta Ad ID": "AD 423",
+        "Drive Link": "https://drive.google.com/drive/folders/1pTFF6OK9hUD91G9U87EAF2Ppt2LVRLX9",
+        "Notes": "Hook: you know like you want your skin to get better | Script 1 editlobby - WANTING TO LOOK BETTER FOR OTHERS",
+        "ROAS": 0.757, "Amount Spent": 2111.22, "Revenue": 1599, "Avg Cost Per Reach": 0.193,
+        "CTR": 0.003282, "CPC": 37.04, "ATC Rate": 0.206, "CVR": 0.0294, "AOV": 1599,
+        "Hook Rate": 0.0906, "Hold Rate": 0.2390, "CAC": 2111.22,
+        "ROAS (L30)": 0.757, "Amount Spent (L30)": 2111.22, "Revenue (L30)": 1599,
+        "Avg Cost Per Reach (L30)": 0.193, "CTR (L30)": 0.003282, "CPC (L30)": 37.04,
+        "ATC Rate (L30)": 0.206, "CVR (L30)": 0.0294, "AOV (L30)": 1599,
+        "Hook Rate (L30)": 0.0906, "Hold Rate (L30)": 0.2390, "CAC (L30)": 2111.22,
+        "ROAS (L7)": 0, "Amount Spent (L7)": 36.74, "Revenue (L7)": "",
+        "Avg Cost Per Reach (L7)": 0.140, "CTR (L7)": 0.01083, "CPC (L7)": 12.25,
+        "ATC Rate (L7)": 0, "CVR (L7)": 0, "AOV (L7)": "",
+        "Hook Rate (L7)": 0.0903, "Hold Rate (L7)": 0.24, "CAC (L7)": "",
+    },
+    {
+        "Asset ID": "RCF-V-013", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-04-03", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B2 — Years of Nothing Working",
+        "Marketing Angle": "MA-R2 — Calm Before Clear",
+        "Situational Driver": "SD8 — Mirror Spiral",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E5 — Shame → Confidence",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M3 — Belief Installation / Reframe",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyanka Yadav",
+        "Meta Ad ID": "AD 452",
+        "Drive Link": "https://drive.google.com/drive/folders/1MW0j4q7Y08TuEeUnSfMSsw1ebOGpObW_",
+        "Notes": "Hook: I did not eat all of this for 6 months | Script 3 editlobby - my husband will see my face without acne for the 1st time",
+        "ROAS": 0, "Amount Spent": 406.04, "Revenue": "", "Avg Cost Per Reach": 0.132,
+        "CTR": 0.003727, "CPC": 31.23, "ATC Rate": 0, "CVR": 0, "AOV": "",
+        "Hook Rate": 0.0894, "Hold Rate": 0.2564, "CAC": "",
+        "ROAS (L30)": 0, "Amount Spent (L30)": 406.04, "Revenue (L30)": "",
+        "Avg Cost Per Reach (L30)": 0.132, "CTR (L30)": 0.003727, "CPC (L30)": 31.23,
+        "ATC Rate (L30)": 0, "CVR (L30)": 0, "AOV (L30)": "",
+        "Hook Rate (L30)": 0.0894, "Hold Rate (L30)": 0.2564, "CAC (L30)": "",
+        "ROAS (L7)": 0, "Amount Spent (L7)": 175.24, "Revenue (L7)": "",
+        "Avg Cost Per Reach (L7)": 0.079, "CTR (L7)": 0.004549, "CPC (L7)": 15.93,
+        "ATC Rate (L7)": 0, "CVR (L7)": 0, "AOV (L7)": "",
+        "Hook Rate (L7)": 0.0728, "Hold Rate (L7)": 0.2614, "CAC (L7)": "",
+    },
+    {
+        "Asset ID": "RCF-V-014", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-04-08", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "Porcelia", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B1 — Wrong Tool, Not Wrong You",
+        "Marketing Angle": "MA-R2 — Calm Before Clear",
+        "Situational Driver": "None",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E1 — Pain → Relief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M2 — Reassurance / Anti-Panic",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyanka Yadav",
+        "Meta Ad ID": "AD 458",
+        "Drive Link": "https://drive.google.com/drive/folders/1DlOK-sRf-t6_xvl07zzDx7ErfNfoX4D9",
+        "Notes": "Script 3 Porcellia Variation 2 — second cut of 'I could not sleep on my side'",
+        "ROAS": 1.004, "Amount Spent": 446.41, "Revenue": 448, "Avg Cost Per Reach": 0.269,
+        "CTR": 0.004805, "CPC": 49.60, "ATC Rate": 0, "CVR": 0.2, "AOV": 448,
+        "Hook Rate": 0.1607, "Hold Rate": 0.3023, "CAC": 446.41,
+        "ROAS (L30)": 1.004, "Amount Spent (L30)": 446.41, "Revenue (L30)": 448,
+        "Avg Cost Per Reach (L30)": 0.269, "CTR (L30)": 0.004805, "CPC (L30)": 49.60,
+        "ATC Rate (L30)": 0, "CVR (L30)": 0.2, "AOV (L30)": 448,
+        "Hook Rate (L30)": 0.1607, "Hold Rate (L30)": 0.3023, "CAC (L30)": 446.41,
+        "ROAS (L7)": 1.004, "Amount Spent (L7)": 446.41, "Revenue (L7)": 448,
+        "Avg Cost Per Reach (L7)": 0.269, "CTR (L7)": 0.004805, "CPC (L7)": 49.60,
+        "ATC Rate (L7)": 0, "CVR (L7)": 0.2, "AOV (L7)": 448,
+        "Hook Rate (L7)": 0.1607, "Hold Rate (L7)": 0.3023, "CAC (L7)": 446.41,
+    },
 
-raw = st.session_state["legacy_raw"]
+    # ══ AYUSHI ═══════════════════════════════════════════════════════════════
+    {
+        "Asset ID": "RCF-V-015", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-28", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C3 — Event-Driven / Panic",
+        "Belief": "B3 — Effective ≠ Harsh",
+        "Marketing Angle": "MA-R3 — Won't Backfire",
+        "Situational Driver": "SD1 — Pre-Event Panic",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E4 — Fear → Safety",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M2 — Reassurance / Anti-Panic",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Ayushi",
+        "Meta Ad ID": "AD 416",
+        "Drive Link": "https://f.io/VAIbBedk",
+        "Notes": "Hook: Just a night before my wedding, a random facial gave 5 pimples | Pre-marriage acne panic | Original product was LPP",
+        "ROAS": 0.222, "Amount Spent": 9881.24, "Revenue": 2198, "Avg Cost Per Reach": 0.499,
+        "CTR": 0.004572, "CPC": 79.69, "ATC Rate": 0.133, "CVR": 0.0177, "AOV": 1099,
+        "Hook Rate": 0.1890, "Hold Rate": 0.3790, "CAC": 4940.62,
+        "ROAS (L30)": 0.222, "Amount Spent (L30)": 9881.24, "Revenue (L30)": 2198,
+        "Avg Cost Per Reach (L30)": 0.499, "CTR (L30)": 0.004572, "CPC (L30)": 79.69,
+        "ATC Rate (L30)": 0.133, "CVR (L30)": 0.0177, "AOV (L30)": 1099,
+        "Hook Rate (L30)": 0.1890, "Hold Rate (L30)": 0.3790, "CAC (L30)": 4940.62,
+        "ROAS (L7)": "", "Amount Spent (L7)": "", "Revenue (L7)": "",
+        "Avg Cost Per Reach (L7)": "", "CTR (L7)": "", "CPC (L7)": "",
+        "ATC Rate (L7)": "", "CVR (L7)": "", "AOV (L7)": "",
+        "Hook Rate (L7)": "", "Hold Rate (L7)": "", "CAC (L7)": "",
+    },
+    {
+        "Asset ID": "RCF-V-016", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-29", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C3 — Event-Driven / Panic",
+        "Belief": "B3 — Effective ≠ Harsh",
+        "Marketing Angle": "MA-R3 — Won't Backfire",
+        "Situational Driver": "SD1 — Pre-Event Panic",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E4 — Fear → Safety",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M2 — Reassurance / Anti-Panic",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Ayushi",
+        "Meta Ad ID": "AD 417",
+        "Drive Link": "https://f.io/ljHy4sIb",
+        "Notes": "Hook: I did a blunder of trusting my makeup artist to do a random facial | Pre-marriage acne panic Var 2",
+        "ROAS": 0.746, "Amount Spent": 7827.89, "Revenue": 5836, "Avg Cost Per Reach": 0.312,
+        "CTR": 0.003275, "CPC": 76.00, "ATC Rate": 0.0714, "CVR": 0.0408, "AOV": 1459,
+        "Hook Rate": 0.1457, "Hold Rate": 0.3277, "CAC": 1956.97,
+        "ROAS (L30)": 0.746, "Amount Spent (L30)": 7827.89, "Revenue (L30)": 5836,
+        "Avg Cost Per Reach (L30)": 0.312, "CTR (L30)": 0.003275, "CPC (L30)": 76.00,
+        "ATC Rate (L30)": 0.0714, "CVR (L30)": 0.0408, "AOV (L30)": 1459,
+        "Hook Rate (L30)": 0.1457, "Hold Rate (L30)": 0.3277, "CAC (L30)": 1956.97,
+        "ROAS (L7)": 3.993, "Amount Spent (L7)": 335.58, "Revenue (L7)": 1340,
+        "Avg Cost Per Reach (L7)": 0.380, "CTR (L7)": 0.005964, "CPC (L7)": 55.93,
+        "ATC Rate (L7)": 0, "CVR (L7)": 0.1, "AOV (L7)": 1340,
+        "Hook Rate (L7)": 0.1879, "Hold Rate (L7)": 0.3228, "CAC (L7)": 335.58,
+    },
 
-# Headers are in row 2 (index 1) — row 1 is merged category labels
-# Search all rows just in case; fall back to index 1
-header_row_idx = next(
-    (i for i, row in enumerate(raw)
-     if any("client details" in c.lower() for c in row)),
-    1  # fallback: assume row index 1
-)
+    # ══ NAMRATA ═══════════════════════════════════════════════════════════════
+    {
+        "Asset ID": "RCF-V-017", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-05", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C2 — Long-term Burnt Out",
+        "Belief": "B2 — Years of Nothing Working",
+        "Marketing Angle": "MA-R4 — Early Signal Matters",
+        "Situational Driver": "None",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E6 — Resignation → Hope",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M5 — Proof Delivery",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Namrata",
+        "Meta Ad ID": "AD 346",
+        "Drive Link": "https://f.io/i55kIEbf",
+        "Notes": "Hook: I've had acne since I was in 8th standard | I've tried everything nothing worked this did",
+        "ROAS": 1.096, "Amount Spent": 166516.71, "Revenue": 182573, "Avg Cost Per Reach": 0.523,
+        "CTR": 0.002884, "CPC": 67.01, "ATC Rate": 0.394, "CVR": 0.0809, "AOV": 1049.27,
+        "Hook Rate": 0.0741, "Hold Rate": 0.2272, "CAC": 956.99,
+        "ROAS (L30)": 1.057, "Amount Spent (L30)": 145927.28, "Revenue (L30)": 154181,
+        "Avg Cost Per Reach (L30)": 0.494, "CTR (L30)": 0.002843, "CPC (L30)": 67.56,
+        "ATC Rate (L30)": 0.371, "CVR (L30)": 0.0765, "AOV (L30)": 1056.03,
+        "Hook Rate (L30)": 0.0740, "Hold Rate (L30)": 0.2286, "CAC (L30)": 999.50,
+        "ROAS (L7)": 1.253, "Amount Spent (L7)": 28830.7, "Revenue (L7)": 36133,
+        "Avg Cost Per Reach (L7)": 0.356, "CTR (L7)": 0.002947, "CPC (L7)": 69.64,
+        "ATC Rate (L7)": 0.268, "CVR (L7)": 0.0893, "AOV (L7)": 1032.37,
+        "Hook Rate (L7)": 0.0718, "Hold Rate (L7)": 0.2559, "CAC (L7)": 823.73,
+    },
+    {
+        "Asset ID": "RCF-V-018", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-05", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C2 — Long-term Burnt Out",
+        "Belief": "B4 — Early Proof, Not Just Hope",
+        "Marketing Angle": "MA-R4 — Early Signal Matters",
+        "Situational Driver": "None",
+        "Hook Type": "H1 — Title Hook / Super (text overlay)",
+        "Emotional Arc": "E3 — Skepticism → Belief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M5 — Proof Delivery",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Namrata",
+        "Meta Ad ID": "AD 353",
+        "Drive Link": "https://f.io/YozX93-S",
+        "Notes": "Hook: This FW is crazy (title super) | Hook change from Var 1 — same story",
+        "ROAS": 0.865, "Amount Spent": 28231.38, "Revenue": 24428, "Avg Cost Per Reach": 0.230,
+        "CTR": 0.002142, "CPC": 51.24, "ATC Rate": 0.441, "CVR": 0.0769, "AOV": 939.54,
+        "Hook Rate": 0.0656, "Hold Rate": 0.1565, "CAC": 1085.82,
+        "ROAS (L30)": 0.680, "Amount Spent (L30)": 11717.75, "Revenue (L30)": 7969,
+        "Avg Cost Per Reach (L30)": 0.146, "CTR (L30)": 0.001923, "CPC (L30)": 47.63,
+        "ATC Rate (L30)": 0.317, "CVR (L30)": 0.0552, "AOV (L30)": 996.13,
+        "Hook Rate (L30)": 0.0594, "Hold Rate (L30)": 0.1518, "CAC (L30)": 1464.72,
+        "ROAS (L7)": 10.018, "Amount Spent (L7)": 219.31, "Revenue (L7)": 2197,
+        "Avg Cost Per Reach (L7)": 0.107, "CTR (L7)": 0.000875, "CPC (L7)": 109.66,
+        "ATC Rate (L7)": 3, "CVR (L7)": 2, "AOV (L7)": 1098.5,
+        "Hook Rate (L7)": 0.0783, "Hold Rate (L7)": 0.1341, "CAC (L7)": 109.66,
+    },
+    {
+        "Asset ID": "RCF-V-019", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-03-25", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C2 — Long-term Burnt Out",
+        "Belief": "B2 — Years of Nothing Working",
+        "Marketing Angle": "MA-R4 — Early Signal Matters",
+        "Situational Driver": "None",
+        "Hook Type": "H6 — Social Proof",
+        "Emotional Arc": "E3 — Skepticism → Belief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M5 — Proof Delivery",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Namrata",
+        "Meta Ad ID": "AD 410",
+        "Drive Link": "https://drive.google.com/drive/folders/1NTqL8veFvshA76WN9gFMemzkNTLwGhDm",
+        "Notes": "Hook: the fact that you've made something that worked for somebody like me | Hook + story change from Var 1",
+        "ROAS": 0.455, "Amount Spent": 3623.99, "Revenue": 1649, "Avg Cost Per Reach": 0.366,
+        "CTR": 0.003254, "CPC": 84.28, "ATC Rate": 0.211, "CVR": 0.0263, "AOV": 1649,
+        "Hook Rate": 0.0882, "Hold Rate": 0.2976, "CAC": 3623.99,
+        "ROAS (L30)": 0.455, "Amount Spent (L30)": 3623.99, "Revenue (L30)": 1649,
+        "Avg Cost Per Reach (L30)": 0.366, "CTR (L30)": 0.003254, "CPC (L30)": 84.28,
+        "ATC Rate (L30)": 0.211, "CVR (L30)": 0.0263, "AOV (L30)": 1649,
+        "Hook Rate (L30)": 0.0882, "Hold Rate (L30)": 0.2976, "CAC (L30)": 3623.99,
+        "ROAS (L7)": 0, "Amount Spent (L7)": 189.41, "Revenue (L7)": "",
+        "Avg Cost Per Reach (L7)": 0.160, "CTR (L7)": 0.001976, "CPC (L7)": 63.14,
+        "ATC Rate (L7)": 0, "CVR (L7)": 0, "AOV (L7)": "",
+        "Hook Rate (L7)": 0.0935, "Hold Rate (L7)": 0.3451, "CAC (L7)": "",
+    },
 
-headers = raw[header_row_idx]
-data_rows = [r for r in raw[header_row_idx + 1:] if any(c.strip() for c in r)]
+    # ══ PRIYAL VIRA ═══════════════════════════════════════════════════════════
+    {
+        "Asset ID": "RCF-V-020", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-04-09", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B1 — Wrong Tool, Not Wrong You",
+        "Marketing Angle": "MA-R1 — Wrong Tool (SA vs BPO mechanism)",
+        "Situational Driver": "None",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E5 — Shame → Confidence",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M3 — Belief Installation / Reframe",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyal Vira",
+        "Meta Ad ID": "AD 462",
+        "Drive Link": "https://drive.google.com/drive/folders/1AknkvtVHoxTrB48g14G7kTd8WnOCJsJJ",
+        "Notes": "Hook: पहले ऐसा लगता था कि यार मैं ही हूं — I used to think why do only I get acne | Variation 1 - why only me",
+        "ROAS": 1.597, "Amount Spent": 7113.18, "Revenue": 11362, "Avg Cost Per Reach": 0.395,
+        "CTR": 0.005958, "CPC": 53.08, "ATC Rate": 0.331, "CVR": 0.0847, "AOV": 1136.2,
+        "Hook Rate": 0.1598, "Hold Rate": 0.2979, "CAC": 711.32,
+        "ROAS (L30)": 1.597, "Amount Spent (L30)": 7113.09, "Revenue (L30)": 11362,
+        "Avg Cost Per Reach (L30)": 0.395, "CTR (L30)": 0.005959, "CPC (L30)": 53.08,
+        "ATC Rate (L30)": 0.331, "CVR (L30)": 0.0847, "AOV (L30)": 1136.2,
+        "Hook Rate (L30)": 0.1599, "Hold Rate (L30)": 0.2979, "CAC (L30)": 711.31,
+        "ROAS (L7)": 1.597, "Amount Spent (L7)": 7113.09, "Revenue (L7)": 11362,
+        "Avg Cost Per Reach (L7)": 0.395, "CTR (L7)": 0.005959, "CPC (L7)": 53.08,
+        "ATC Rate (L7)": 0.331, "CVR (L7)": 0.0847, "AOV (L7)": 1136.2,
+        "Hook Rate (L7)": 0.1599, "Hold Rate (L7)": 0.2979, "CAC (L7)": 711.31,
+    },
+    {
+        "Asset ID": "RCF-V-021", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-04-10", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C2 — Long-term Burnt Out",
+        "Belief": "B2 — Years of Nothing Working",
+        "Marketing Angle": "MA-R4 — Early Signal Matters",
+        "Situational Driver": "None",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E6 — Resignation → Hope",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M5 — Proof Delivery",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyal Vira",
+        "Meta Ad ID": "AD 467",
+        "Drive Link": "https://drive.google.com/drive/folders/1DnuUdOZMLfeDXaZhGTvApk4urj4AgmV8",
+        "Notes": "Hook: Itne Ho jate the ki mujhe face touch karne ko bhi dar lagta tha | 13-year acne journey, tried all derma treatments",
+        "ROAS": 1.837, "Amount Spent": 13324.26, "Revenue": 24476, "Avg Cost Per Reach": 0.283,
+        "CTR": 0.008922, "CPC": 27.93, "ATC Rate": 0.194, "CVR": 0.0458, "AOV": 1112.55,
+        "Hook Rate": 0.2983, "Hold Rate": 0.2518, "CAC": 605.65,
+        "ROAS (L30)": 1.837, "Amount Spent (L30)": 13323.88, "Revenue (L30)": 24476,
+        "Avg Cost Per Reach (L30)": 0.283, "CTR (L30)": 0.008922, "CPC (L30)": 27.93,
+        "ATC Rate (L30)": 0.194, "CVR (L30)": 0.0458, "AOV (L30)": 1112.55,
+        "Hook Rate (L30)": 0.2983, "Hold Rate (L30)": 0.2518, "CAC (L30)": 605.63,
+        "ROAS (L7)": 1.837, "Amount Spent (L7)": 13323.88, "Revenue (L7)": 24476,
+        "Avg Cost Per Reach (L7)": 0.283, "CTR (L7)": 0.008922, "CPC (L7)": 27.93,
+        "ATC Rate (L7)": 0.194, "CVR (L7)": 0.0458, "AOV (L7)": 1112.55,
+        "Hook Rate (L7)": 0.2983, "Hold Rate (L7)": 0.2518, "CAC (L7)": 605.63,
+    },
+    {
+        "Asset ID": "RCF-V-022", "Variant #": "A", "Status": "Draft",
+        "Published Date": "", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B2 — Years of Nothing Working",
+        "Marketing Angle": "MA-R1 — Wrong Tool (SA vs BPO mechanism)",
+        "Situational Driver": "SD2 — Hormonal Cycle Flare",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E6 — Resignation → Hope",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M3 — Belief Installation / Reframe",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyal Vira",
+        "Meta Ad ID": "", "Drive Link": "",
+        "Notes": "Hook: मैं तो इतना ही wish करती हूं कि I want a clean skin and that's all | Hormonal acne since 10th standard | With Editor",
+    },
+    {
+        "Asset ID": "RCF-V-023", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-04-09", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C2 — Long-term Burnt Out",
+        "Belief": "B4 — Early Proof, Not Just Hope",
+        "Marketing Angle": "MA-R4 — Early Signal Matters",
+        "Situational Driver": "None",
+        "Hook Type": "H6 — Social Proof",
+        "Emotional Arc": "E3 — Skepticism → Belief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M5 — Proof Delivery",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyal Vira",
+        "Meta Ad ID": "AD 463",
+        "A/B Pair ID": "RCF-V-024",
+        "Drive Link": "https://drive.google.com/drive/folders/1s5QnjJCkbLA6gFC-61KCL_rc3QJM57lqHK",
+        "Notes": "Hook: it's almost 8-10 days and my skin is the cleanest of all | A/B tested vs RCF-V-024",
+        "ROAS": 1.031, "Amount Spent": 1979.31, "Revenue": 2040, "Avg Cost Per Reach": 0.381,
+        "CTR": 0.005060, "CPC": 53.49, "ATC Rate": 0.296, "CVR": 0.0741, "AOV": 1020,
+        "Hook Rate": 0.1157, "Hold Rate": 0.3191, "CAC": 989.66,
+        "ROAS (L30)": 1.031, "Amount Spent (L30)": 1979.31, "Revenue (L30)": 2040,
+        "Avg Cost Per Reach (L30)": 0.381, "CTR (L30)": 0.005060, "CPC (L30)": 53.49,
+        "ATC Rate (L30)": 0.296, "CVR (L30)": 0.0741, "AOV (L30)": 1020,
+        "Hook Rate (L30)": 0.1157, "Hold Rate (L30)": 0.3191, "CAC (L30)": 989.66,
+        "ROAS (L7)": 1.031, "Amount Spent (L7)": 1979.31, "Revenue (L7)": 2040,
+        "Avg Cost Per Reach (L7)": 0.381, "CTR (L7)": 0.005060, "CPC (L7)": 53.49,
+        "ATC Rate (L7)": 0.296, "CVR (L7)": 0.0741, "AOV (L7)": 1020,
+        "Hook Rate (L7)": 0.1157, "Hold Rate (L7)": 0.3191, "CAC (L7)": 989.66,
+    },
+    {
+        "Asset ID": "RCF-V-024", "Parent Asset ID": "RCF-V-023", "Variant #": "B",
+        "What's Different": "Different Visual Hook — before after in the same frame",
+        "A/B Pair ID": "RCF-V-023",
+        "Status": "Published", "Published Date": "2025-04-09",
+        "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C2 — Long-term Burnt Out",
+        "Belief": "B4 — Early Proof, Not Just Hope",
+        "Marketing Angle": "MA-R4 — Early Signal Matters",
+        "Situational Driver": "None",
+        "Hook Type": "H2 — Visual Hook (striking image/motion)",
+        "Emotional Arc": "E3 — Skepticism → Belief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M5 — Proof Delivery",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Priyal Vira",
+        "Meta Ad ID": "AD 464",
+        "Drive Link": "https://drive.google.com/drive/folders/1MGnF-zfKHDQEVwJsweWFw3aLrxoh6ilb",
+        "Notes": "Variant B of RCF-V-023 — same script, different visual hook (before/after in same frame) | A/B tested",
+        "ROAS": 0, "Amount Spent": 1966.37, "Revenue": "", "Avg Cost Per Reach": 0.356,
+        "CTR": 0.004984, "CPC": 51.75, "ATC Rate": 0.214, "CVR": 0, "AOV": "",
+        "Hook Rate": 0.1160, "Hold Rate": 0.2930, "CAC": "",
+        "ROAS (L30)": 0, "Amount Spent (L30)": 1966.36, "Revenue (L30)": "",
+        "Avg Cost Per Reach (L30)": 0.356, "CTR (L30)": 0.004985, "CPC (L30)": 51.75,
+        "ATC Rate (L30)": 0.214, "CVR (L30)": 0, "AOV (L30)": "",
+        "Hook Rate (L30)": 0.1160, "Hold Rate (L30)": 0.2930, "CAC (L30)": "",
+        "ROAS (L7)": 0, "Amount Spent (L7)": 1966.36, "Revenue (L7)": "",
+        "Avg Cost Per Reach (L7)": 0.356, "CTR (L7)": 0.004985, "CPC (L7)": 51.75,
+        "ATC Rate (L7)": 0.214, "CVR (L7)": 0, "AOV (L7)": "",
+        "Hook Rate (L7)": 0.1160, "Hold Rate (L7)": 0.2930, "CAC (L7)": "",
+    },
 
-def cell(row, col_name):
-    try:
-        return row[headers.index(col_name)].strip()
-    except (ValueError, IndexError):
-        return ""
+    # ══ SNEHA SOMAN ═══════════════════════════════════════════════════════════
+    {
+        "Asset ID": "RCF-V-025", "Variant #": "A", "Status": "Published",
+        "Published Date": "2025-04-10", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B1 — Wrong Tool, Not Wrong You",
+        "Marketing Angle": "MA-R1 — Wrong Tool (SA vs BPO mechanism)",
+        "Situational Driver": "SD2 — Hormonal Cycle Flare",
+        "Hook Type": "H3 — Pain Statement",
+        "Emotional Arc": "E1 — Pain → Relief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M3 — Belief Installation / Reframe",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Sneha Soman",
+        "Meta Ad ID": "AD 468",
+        "Drive Link": "https://drive.google.com/drive/folders/10rZio_MCMGElJf6DUU90fLoHAUvtezlS",
+        "Notes": "Hook: अगर शाम तक wait करूंगी तो कल सुबह the other volcano will erupt on my face | ₹12k derm failure + can't do complex routine",
+        "ROAS": 3.206, "Amount Spent": 623.25, "Revenue": 1998, "Avg Cost Per Reach": 0.204,
+        "CTR": 0.003581, "CPC": 51.94, "ATC Rate": 0.286, "CVR": 0.286, "AOV": 999,
+        "Hook Rate": 0.1301, "Hold Rate": 0.2661, "CAC": 311.63,
+        "ROAS (L30)": 3.206, "Amount Spent (L30)": 623.25, "Revenue (L30)": 1998,
+        "Avg Cost Per Reach (L30)": 0.204, "CTR (L30)": 0.003581, "CPC (L30)": 51.94,
+        "ATC Rate (L30)": 0.286, "CVR (L30)": 0.286, "AOV (L30)": 999,
+        "Hook Rate (L30)": 0.1301, "Hold Rate (L30)": 0.2661, "CAC (L30)": 311.63,
+        "ROAS (L7)": 3.206, "Amount Spent (L7)": 623.25, "Revenue (L7)": 1998,
+        "Avg Cost Per Reach (L7)": 0.204, "CTR (L7)": 0.003581, "CPC (L7)": 51.94,
+        "ATC Rate (L7)": 0.286, "CVR (L7)": 0.286, "AOV (L7)": 999,
+        "Hook Rate (L7)": 0.1301, "Hold Rate (L7)": 0.2661, "CAC (L7)": 311.63,
+    },
+    {
+        "Asset ID": "RCF-V-026", "Variant #": "A", "Status": "Draft",
+        "Published Date": "2025-04-13", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B4 — Early Proof, Not Just Hope",
+        "Marketing Angle": "MA-R4 — Early Signal Matters",
+        "Situational Driver": "SD2 — Hormonal Cycle Flare",
+        "Hook Type": "H6 — Social Proof",
+        "Emotional Arc": "E1 — Pain → Relief",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M5 — Proof Delivery",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Sneha Soman",
+        "Meta Ad ID": "", "Drive Link": "",
+        "Notes": "Hook: I get acne every day but the acne get tamed first day itself | Want a makeup free skin | With Editor",
+    },
+    {
+        "Asset ID": "RCF-V-027", "Variant #": "A", "Status": "Draft",
+        "Published Date": "", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B3 — Effective ≠ Harsh",
+        "Marketing Angle": "MA-R6 — Barrier-First Design",
+        "Situational Driver": "None",
+        "Hook Type": "H9 — Authority / Credential",
+        "Emotional Arc": "E2 — Confusion → Clarity",
+        "Funnel Stage": "MOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M4 — Demonstration",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Sneha Soman",
+        "Meta Ad ID": "", "Drive Link": "",
+        "Notes": "Micronized benzoyl peroxide explanation cut | With Editor",
+    },
 
-# ── STEP 2: build preview DataFrame ───────────────────────────────────────────
-preview_rows = []
-for row in data_rows:
-    name     = cell(row, "Client Details")
-    product_raw = cell(row, "Product")
-    if not name:
-        continue
+    # ══ LAKSHMI VENUGOPAL ════════════════════════════════════════════════════
+    {
+        "Asset ID": "RCF-V-028", "Variant #": "A", "Status": "Draft",
+        "Published Date": "", "Product": "RCF", "Bucket": "Performance",
+        "Channel": "In-house", "Creative Type": "Consumer Testimonial",
+        "Cohort": "C1 — Hormonal / Painful Inflamed",
+        "Belief": "B1 — Wrong Tool, Not Wrong You",
+        "Marketing Angle": "MA-R4 — Early Signal Matters",
+        "Situational Driver": "SD8 — Mirror Spiral",
+        "Hook Type": "H8 — Relatable Scenario",
+        "Emotional Arc": "E6 — Resignation → Hope",
+        "Funnel Stage": "TOFU",
+        "Creator Archetype": "LEV — Lived Experience Validator",
+        "Influence Mode": "M3 — Belief Installation / Reframe",
+        "Visual Style": "N/A — video", "CTA Style": "C2 — Creator Natural CTA",
+        "Creator / Consumer Name": "Lakshmi Venugopal",
+        "Meta Ad ID": "", "Drive Link": "",
+        "Notes": "Identity rupture hook: why me, my whole family had clear skin | Cystic daily acne + pain | Resigned at 30 | Saw reel → overnight pimple dried | First ever review | Data cut off in source",
+    },
+]
 
-    product = "RCF" if product_raw.upper() in ("RCF", "") else (
-        "Clear Protect Gel Sunscreen" if "sunscreen" in product_raw.lower() else "RCF"
+# ── INSERT ────────────────────────────────────────────────────────────────────
+st.markdown(f"**{len(ASSETS)} assets** pre-mapped and ready to insert.")
+
+with st.expander("Preview all assets"):
+    import pandas as pd
+    preview_cols = ["Asset ID", "Creator / Consumer Name", "Cohort", "Belief",
+                    "Marketing Angle", "Hook Type", "Emotional Arc", "Status", "Meta Ad ID"]
+    st.dataframe(
+        pd.DataFrame([{c: a.get(c, "") for c in preview_cols} for a in ASSETS]),
+        use_container_width=True, hide_index=True,
     )
 
-    old_angle  = cell(row, "Marketing Angle").lower().strip()
-    new_angle  = ANGLE_MAP.get(old_angle, ANGLES_RCF[0])
-    hook_raw   = cell(row, "HOOK TYPE").lower().strip()
-    hook       = HOOK_MAP.get(hook_raw, "H3 — Pain Statement")
-    status_raw = cell(row, "Status").lower().strip()
-    status     = STATUS_MAP.get(status_raw, "Draft")
-
-    pub_date = cell(row, "Published date") or cell(row, "Publish Date")
-
-    notes_parts = [
-        f"Legacy name: {cell(row, 'Video name')}",
-        f"Pillar: {cell(row, 'Pillar')}",
-        f"Old angle: {cell(row, 'Marketing Angle')}",
-        f"Situation: {cell(row, 'Situation')}",
-        f"Hook script: {cell(row, 'HOOK')}",
-        f"POC: {cell(row, 'POC')}",
-        f"Notes: {cell(row, 'NOTES')}",
-    ]
-    notes = " | ".join(p for p in notes_parts if not p.endswith(": "))
-
-    preview_rows.append({
-        "Consumer": name,
-        "Product": product,
-        "Old Angle": cell(row, "Marketing Angle"),
-        "→ New Angle": new_angle,
-        "Hook Type": hook,
-        "Status": status,
-        "Published Date": pub_date,
-        "Meta Ad ID": cell(row, "Perf AD Code"),
-        "Drive Link": cell(row, "Video link"),
-        "_notes": notes,
-        "_row": row,
-        "_old_angle_raw": old_angle,
-        "_product_raw": product_raw,
-    })
-
-st.subheader(f"Preview — {len(preview_rows)} assets found")
-
-st.dataframe(
-    pd.DataFrame(preview_rows)[
-        ["Consumer", "Product", "Old Angle", "→ New Angle", "Hook Type", "Status", "Published Date", "Meta Ad ID"]
-    ],
-    use_container_width=True,
-    hide_index=True,
-)
-
-# ── MAPPING NOTICE ─────────────────────────────────────────────────────────────
-with st.expander("ℹ️ What's been auto-mapped — review before importing"):
-    st.markdown("""
-| Field | How it's mapped |
-|---|---|
-| Creative Type | Consumer Testimonial (all) |
-| Bucket | Performance |
-| Channel | In-house |
-| Product | RCF (default; update "LPP" / Kit rows after import) |
-| Marketing Angle | Best-guess from old angle text — **review each one** |
-| Hook Type | Negative → H3 Pain Statement, Positive → H6 Social Proof |
-| Status | Published → Published, With Editor → Draft |
-| Cohort | **C1 — Hormonal / Painful Inflamed (placeholder — update after import)** |
-| Belief | **B1 — Wrong Tool, Not Wrong You (placeholder — update after import)** |
-| Funnel Stage | TOFU |
-| Creator Archetype | LEV — Lived Experience Validator |
-| Influence Mode | M1 — Permission / De-risking |
-| Emotional Arc | E1 — Pain → Relief |
-| CTA Style | C2 — Creator Natural CTA |
-| Visual Style | N/A — video |
-| Performance columns | Copied directly |
-| Notes | Legacy name + pillar + old angle + situation + hook script preserved |
-""")
-
-st.warning(
-    "⚠️ After importing, go to Asset Registry and update **Cohort** and **Belief** "
-    "for each asset — these can't be auto-mapped reliably."
-)
-
-# ── STEP 3: import ─────────────────────────────────────────────────────────────
-st.markdown("---")
-
-existing_assets = load_assets()
-existing_ids = existing_assets["Asset ID"].tolist() if not existing_assets.empty else []
-
-if st.button("✅ Import all assets", type="primary"):
+if st.button("✅ Insert all into Master_Asset_Registry", type="primary"):
+    ws = _ws("Master_Asset_Registry")
     errors = []
-    success_count = 0
-    running_ids = list(existing_ids)
-
     progress = st.progress(0)
-    status_text = st.empty()
-
-    for i, p in enumerate(preview_rows):
-        row = p["_row"]
-        progress.progress((i + 1) / len(preview_rows))
-        status_text.text(f"Importing {i+1}/{len(preview_rows)}: {p['Consumer']}…")
-
-        asset_id = next_asset_id(p["Product"], "Consumer Testimonial", running_ids)
-        running_ids.append(asset_id)
-
-        def perf(col):
-            try:
-                val = row[headers.index(col)].strip().replace("₹", "").replace(",", "").replace("%", "")
-                return float(val) if val else ""
-            except (ValueError, IndexError):
-                return ""
-
-        record = {
-            "Asset ID":                asset_id,
-            "Parent Asset ID":         "",
-            "Variant #":               "A",
-            "What's Different":        "",
-            "A/B Pair ID":             "",
-            "Status":                  p["Status"],
-            "Created Date":            "",
-            "Published Date":          p["Published Date"],
-            "Product":                 p["Product"],
-            "Bucket":                  "Performance",
-            "Channel":                 "In-house",
-            "Creative Type":           "Consumer Testimonial",
-            "Cohort":                  "C1 — Hormonal / Painful Inflamed",
-            "Belief":                  "B1 — Wrong Tool, Not Wrong You",
-            "Marketing Angle":         p["→ New Angle"],
-            "Situational Driver":      "None",
-            "Hook Type":               p["Hook Type"],
-            "Emotional Arc":           "E1 — Pain → Relief",
-            "Funnel Stage":            "TOFU",
-            "Creator Archetype":       "LEV — Lived Experience Validator",
-            "Influence Mode":          "M1 — Permission / De-risking",
-            "Visual Style":            "N/A — video",
-            "CTA Style":               "C2 — Creator Natural CTA",
-            "Source Interview ID":     "",
-            "Creator / Consumer Name": p["Consumer"],
-            "Experiment ID":           "",
-            "Meta Ad ID":              p["Meta Ad ID"],
-            "Campaign Name":           "",
-            "Ad Set Name":             "",
-            "Drive Link":              p["Drive Link"],
-            "Brief Link":              "",
-            "Notes":                   p["_notes"],
-            **{col: perf(col) for col in PERF_COLS},
-        }
-
+    for i, asset in enumerate(ASSETS):
+        progress.progress((i + 1) / len(ASSETS))
         try:
-            save_asset(record)
-            success_count += 1
+            row = [asset.get(h, "") for h in ASSET_HEADERS]
+            ws.append_row(row, value_input_option="USER_ENTERED")
         except Exception as e:
-            errors.append(f"{p['Consumer']}: {e}")
-
+            errors.append(f"{asset['Asset ID']}: {e}")
     progress.progress(1.0)
-    status_text.empty()
-
-    if success_count:
-        st.success(f"✅ Imported {success_count} assets successfully.")
-        st.info(
-            "Next steps:\n"
-            "1. Go to **Asset Registry** and filter by Cohort = C1 to see all imported assets\n"
-            "2. Update **Cohort** and **Belief** for each asset based on the consumer's story\n"
-            "3. Check **Marketing Angle** mappings — highlighted in the preview above\n"
-            "4. Add **Source Interview** records in Source Library for each unique consumer"
-        )
     if errors:
         st.error("Some rows failed:")
         for e in errors:
             st.write(e)
+    else:
+        st.success("All 28 assets inserted. Go to Asset Registry to verify.")
+        st.info("Next: add Meta Ad IDs to the Draft assets once published. SyncWith will fill performance data automatically.")

@@ -25,12 +25,22 @@ classified = classified.copy()
 classified = classified[classified["AD CODE"].astype(str).str.strip() != ""]
 classified = classified[classified["_Date"].notna()]
 
+# Defensive clamp: one malformed far-future/far-past parsed date in Meta Ads
+# should not break the whole dashboard window logic.
+reasonable_floor = pd.Timestamp("2020-01-01")
+reasonable_ceiling = pd.Timestamp.today().normalize() + pd.Timedelta(days=365)
+classified = classified[
+    (classified["_Date"] >= reasonable_floor) &
+    (classified["_Date"] <= reasonable_ceiling)
+]
+
 if classified.empty:
-    st.warning("No live Meta Ads rows with both an AD CODE and a live date were found.")
+    st.warning("No live Meta Ads rows with both an AD CODE and a sane live date were found.")
     st.stop()
 
 today = date.today()
-anchor = classified["_Date"].max().date()
+anchor_ts = classified["_Date"].max().normalize()
+anchor = anchor_ts.date()
 
 st.sidebar.header("Date range")
 window = st.sidebar.radio(

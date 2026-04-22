@@ -1,13 +1,13 @@
 import streamlit as st
 import pandas as pd
-from utils.sheets import load_assets
-from utils.taxonomy import PRODUCTS, CREATIVE_TYPES, STATUSES, FUNNEL_STAGES
+from utils.sheets import load_inhouse_live
+from utils.taxonomy import PRODUCTS, FORMATS, VIDEO_SUBTYPES, STATIC_SUBTYPES, FUNNEL_STAGES
 
 st.set_page_config(page_title="Asset Registry — Creative OS", layout="wide")
-st.title("Asset Registry")
-st.caption("Every asset ever logged. Filter, inspect, download.")
+st.title("Inhouse Live Asset Registry")
+st.caption("Every inhouse asset that went live on Meta. Filter, inspect, download.")
 
-assets_df = load_assets()
+assets_df = load_inhouse_live()
 
 if assets_df.empty:
     st.info("No assets logged yet.")
@@ -17,22 +17,23 @@ if assets_df.empty:
 st.sidebar.header("Filters")
 
 products = st.sidebar.multiselect("Product", PRODUCTS, default=PRODUCTS)
-types    = st.sidebar.multiselect("Creative Type", CREATIVE_TYPES, default=CREATIVE_TYPES)
-statuses = st.sidebar.multiselect("Status", STATUSES, default=STATUSES)
+formats  = st.sidebar.multiselect("Format", FORMATS, default=FORMATS)
 
-search = st.sidebar.text_input("Search Asset ID or Notes", placeholder="e.g. RCF-V-007")
+search = st.sidebar.text_input("Search Asset ID, AD CODE, or Notes", placeholder="e.g. RCF-V-007 or AD 467")
 
 df = assets_df.copy()
-df = df[df["Product"].isin(products)]
-df = df[df["Creative Type"].isin(types)]
-df = df[df["Status"].isin(statuses)]
+if "Product" in df.columns:
+    df = df[df["Product"].isin(products)]
+if "Format" in df.columns and formats:
+    # Tolerate blank Format (legacy rows) — keep them unless user filters strictly
+    df = df[df["Format"].isin(formats) | (df["Format"].astype(str).str.strip() == "")]
 
 if search:
-    mask = (
-        df["Asset ID"].astype(str).str.contains(search, case=False, na=False) |
-        df["Notes"].astype(str).str.contains(search, case=False, na=False)
-    )
-    df = df[mask]
+    search_cols = [c for c in ["Asset ID", "AD CODE", "Notes"] if c in df.columns]
+    mask = False
+    for c in search_cols:
+        mask = mask | df[c].astype(str).str.contains(search, case=False, na=False)
+    df = df[mask] if isinstance(mask, pd.Series) else df
 
 # ── SUMMARY STRIP ─────────────────────────────────────────────────────────────
 st.markdown(f"**{len(df)}** assets matching filters &nbsp;|&nbsp; "
@@ -42,13 +43,12 @@ st.markdown("---")
 
 # ── MAIN TABLE ────────────────────────────────────────────────────────────────
 summary_cols = [
-    "Asset ID", "Creator / Consumer Name", "Status", "Product", "Creative Type",
-    "Bucket", "Channel", "Cohort", "Marketing Angle", "Belief", "Hook Type",
-    "Funnel Stage", "Influence Mode", "Creator Archetype", "Visual Style", "CTA Style",
-    "Published Date",
+    "Asset ID", "AD CODE", "Creator / Consumer Name", "Product", "Format",
+    "Video Subtype", "Static Subtype", "Bucket", "Cohort", "Marketing Angle",
+    "Belief", "Hook Type", "Funnel Stage", "Influence Mode", "Creator Archetype",
+    "Visual Style", "CTA Style", "Published Date",
     "ROAS", "Amount Spent", "CTR", "Hook Rate", "Hold Rate", "CAC",
-    "ROAS (L30)", "ROAS (L7)",
-    "Meta Ad ID", "Drive Link",
+    "ROAS (L30)", "ROAS (L7)", "Drive Link",
 ]
 available = [c for c in summary_cols if c in df.columns]
 
@@ -78,20 +78,20 @@ if asset_ids:
         c1, c2, c3 = st.columns(3)
         with c1:
             st.markdown("**Identity**")
-            for f in ["Asset ID","Parent Asset ID","Variant #","What's Different",
-                      "A/B Pair ID","Status","Created Date","Published Date"]:
+            for f in ["Asset ID","AD CODE","Parent Asset ID","Variant #","What's Different",
+                      "A/B Pair ID","Published Date"]:
                 st.write(f"**{f}:** {row.get(f,'')}")
         with c2:
             st.markdown("**Taxonomy**")
-            for f in ["Product","Bucket","Channel","Creative Type","Cohort","Belief",
-                      "Marketing Angle","Situational Driver","Hook Type","Emotional Arc",
-                      "Funnel Stage","Creator Archetype","Influence Mode",
-                      "Visual Style","CTA Style"]:
+            for f in ["Product","Bucket","Format","Video Subtype","Static Subtype",
+                      "Cohort","Belief","Marketing Angle","Situational Driver",
+                      "Hook Type","Emotional Arc","Funnel Stage","Creator Archetype",
+                      "Influence Mode","Visual Style","CTA Style"]:
                 st.write(f"**{f}:** {row.get(f,'')}")
         with c3:
             st.markdown("**Publishing & Performance**")
-            for f in ["Meta Ad ID","Campaign Name","Ad Set Name",
-                      "Drive Link","Brief Link","Notes",
+            for f in ["Campaign Name","Ad Set Name","Drive Link","Brief Link",
+                      "Reference Image Link","Experiment ID","Notes",
                       "ROAS","Amount Spent","CTR","Hook Rate","Hold Rate","CAC",
                       "ROAS (L30)","CTR (L30)","Hook Rate (L30)",
                       "ROAS (L7)","CTR (L7)","Hook Rate (L7)"]:

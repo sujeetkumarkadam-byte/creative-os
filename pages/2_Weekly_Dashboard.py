@@ -2,17 +2,17 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import date, timedelta
-from utils.sheets import load_assets
-from utils.taxonomy import PRODUCTS, CREATIVE_TYPES, BELIEFS, FUNNEL_STAGES
+from utils.sheets import load_inhouse_live
+from utils.taxonomy import PRODUCTS, FORMATS, FUNNEL_STAGES
 
 st.set_page_config(page_title="Weekly Dashboard — Creative OS", layout="wide")
 st.title("Weekly Dashboard")
 st.caption("Monday meeting view. Volume shipped last week by product, type, belief, cohort.")
 
-assets_df = load_assets()
+assets_df = load_inhouse_live()
 
 if assets_df.empty:
-    st.info("No assets logged yet. Head to Log Asset to add your first creative.")
+    st.info("No inhouse live assets logged yet. Head to Log Live Asset to add your first.")
     st.stop()
 
 # ── DATE FILTER ───────────────────────────────────────────────────────────────
@@ -39,8 +39,11 @@ df = df[df["Product"].isin(prod_filter)]
 
 # ── HEADER METRICS ────────────────────────────────────────────────────────────
 total   = len(df)
-videos  = df["Creative Type"].isin({"Consumer Testimonial","Brand-Led","Founder-Led","Skit","Event Coverage","AI-Video"}).sum()
-statics = total - videos
+if "Format" in df.columns:
+    videos  = (df["Format"] == "Video").sum()
+    statics = (df["Format"] == "Static").sum()
+else:
+    videos = statics = 0
 
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("Total Assets", total)
@@ -77,13 +80,16 @@ with row1_l:
     st.plotly_chart(fig, use_container_width=True)
 
 with row1_r:
-    st.subheader("By Creative Type")
-    type_counts = df["Creative Type"].value_counts().reset_index()
-    type_counts.columns = ["Creative Type", "Count"]
-    fig2 = px.pie(type_counts, names="Creative Type", values="Count",
-                  color_discrete_sequence=px.colors.sequential.Teal)
-    fig2.update_layout(margin=dict(t=20, b=20))
-    st.plotly_chart(fig2, use_container_width=True)
+    st.subheader("By Format")
+    if "Format" in df.columns:
+        type_counts = df["Format"].value_counts().reset_index()
+        type_counts.columns = ["Format", "Count"]
+        fig2 = px.pie(type_counts, names="Format", values="Count",
+                      color_discrete_sequence=px.colors.sequential.Teal)
+        fig2.update_layout(margin=dict(t=20, b=20))
+        st.plotly_chart(fig2, use_container_width=True)
+    else:
+        st.info("Format column not present.")
 
 row2_l, row2_r = st.columns(2)
 
@@ -134,8 +140,9 @@ with row3_r:
 st.markdown("---")
 st.subheader("Assets this period")
 display_cols = [
-    "Asset ID", "Creator / Consumer Name", "Product", "Creative Type", "Cohort",
-    "Marketing Angle", "Belief", "Funnel Stage", "Status", "Published Date",
+    "Asset ID", "AD CODE", "Creator / Consumer Name", "Product",
+    "Format", "Video Subtype", "Static Subtype", "Cohort",
+    "Marketing Angle", "Belief", "Funnel Stage", "Published Date",
 ]
 available = [c for c in display_cols if c in df.columns]
 st.dataframe(df[available].sort_values("Published Date", ascending=False),

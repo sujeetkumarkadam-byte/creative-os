@@ -17,23 +17,38 @@ BUCKETS = ["Performance", "Organic"]
 
 CHANNELS = ["In-house", "Porcelia", "Influencer-Direct", "Influencer-Agency"]
 
-CREATIVE_TYPES = [
-    "Consumer Testimonial",
-    "Brand-Led",
-    "Founder-Led",
-    "Skit",
-    "Event Coverage",
-    "Static",
-    "Carousel",
-    "GIF",
-    "AI-Video",
-    "AI-Static",
+# ── FORMAT ────────────────────────────────────────────────────────────────────
+# Top-level format split: drives which taxonomy fields the Log form shows.
+FORMATS = ["Video", "Static"]
+
+# Video subtypes — shown when Format=Video
+VIDEO_SUBTYPES = [
+    "Consumer Testimonial",   # Real consumer on camera telling their story
+    "Brand-Led",              # Brand team speaking (no founder, no consumer)
+    "Founder-Led",            # Founder on camera — authority / intent lens
+    "Skit",                   # Scripted acted scene with characters
+    "Event Coverage",         # Real-world event footage (pop-up, launch)
+    "AI-Video",               # AI-generated or AI-heavy video
 ]
 
-VIDEO_TYPES = {
-    "Consumer Testimonial", "Brand-Led", "Founder-Led",
-    "Skit", "Event Coverage", "AI-Video",
-}
+# Static subtypes — shown when Format=Static
+STATIC_SUBTYPES = [
+    "SS1 — Single Image",                         # One hero frame, usually product + headline
+    "SS2 — Carousel",                             # Multi-frame swipeable sequence
+    "SS3 — Before / After",                       # Visual contrast of two states
+    "SS4 — Proof Screenshot",                     # Review / DM / press / chat screenshot
+    "SS5 — Comparison",                           # vs competitor, vs old routine, vs myth
+    "SS6 — Product Hero",                         # Clean product shot — minimal styling
+    "SS7 — Meme / Topical",                       # Cultural reference or trending format
+    "SS8 — Infographic / Educational",            # Teaches a concept (how SA vs BPO works)
+    "SS9 — Ingredient Focus",                     # Single ingredient spotlight
+    "SS10 — Data / Stats Card",                   # Clinical number or study result
+    "SS11 — AI-Generated Static",                 # AI-created visual (Midjourney, DALL-E, etc)
+]
+
+# Legacy — some pages still import these names
+CREATIVE_TYPES = VIDEO_SUBTYPES + STATIC_SUBTYPES
+VIDEO_TYPES = set(VIDEO_SUBTYPES)
 
 # ── COHORTS ───────────────────────────────────────────────────────────────────
 # RCF — 7 cohorts based on acne experience & trigger type
@@ -374,6 +389,271 @@ SOURCE_TYPES = [
 ]
 
 STORY_STRENGTHS = [1, 2, 3, 4, 5]
+
+
+# ── DEFINITIONS ───────────────────────────────────────────────────────────────
+# Code → one-line definition. Used by pages/6_Taxonomy_Reference.py to render
+# the "what does this tag mean?" view. Leave blank ("") for anything you want
+# to define later — the Reference page will render those with a "TBD" note.
+
+DEFINITIONS = {
+    # ── Cohorts — RCF ──────────────────────────────────────────────────────
+    "C1": "Cystic, cyclical, painful — acne tied to hormones",
+    "C2": "Years of failed treatments; exhausted and resigned",
+    "C3": "Sudden breakout before a big moment — wedding, exam, shoot",
+    "C4": "Skin that reacts to everything; easily inflamed or stripped",
+    "C5": "Teens or first-time acne; figuring out skin for the first time",
+    "C6": "Men with low skincare involvement — wants a simple fix",
+    "C7": "Hormonal shift from postpartum or stopping contraceptives",
+
+    # Cohorts — Sunscreen
+    "SC1": "Skips SPF entirely; multiple objections to wearing it",
+    "SC2": "Post-acne marks; knows SPF helps fade them",
+    "SC3": "On actives; knows SPF is non-negotiable",
+    "SC4": "Burned before by chalky / greasy / white-cast SPF",
+    "SC5": "Outdoors / commuter; needs lightweight sweat-proof formula",
+    "SC6": "Heavy makeup user; needs SPF that layers with makeup",
+
+    # Cohorts — LPP
+    "LC1": "Wears makeup daily + has active breakouts; wants both",
+    "LC2": "Pre-event panic breakout; needs fast concealment",
+    "LC3": "Worried about PIH / scarring post-pimple",
+    "LC4": "Daily ongoing acne; consistent user who manages spots",
+    "LC5": "Pimple picker / accidental toucher; needs a physical barrier",
+    "LC6": "Commuter / outdoor; dust and pollution worsen acne",
+
+    # Cohorts — EMC
+    "EC1": "Daily makeup wearer with acne-prone skin; fears breakouts from cleansers",
+    "EC2": "Knows about double cleansing; looking for the right single product",
+    "EC3": "Barrier damaged by over-stripping cleansers in the past",
+    "EC4": "On RCF / actives; needs a clean canvas without barrier disruption",
+    "EC5": "Non-makeup but heavy SPF / sebum; wants thorough cleanse",
+
+    # Cohorts — SFS
+    "SF1": "Acne cleared but marks remain; losing confidence",
+    "SF2": "Actives worked on acne; left behind hyperpigmentation",
+    "SF3": "Months/years-old marks that haven't faded on their own",
+    "SF4": "Post-treatment sensitive skin; wants to fade marks gently",
+
+    # ── Beliefs ────────────────────────────────────────────────────────────
+    "B1": "It's not your skin's fault — BPO was always the right tool",
+    "B2": "Exhaustion from failed treatments; seeking something genuinely different",
+    "B3": "Clearing acne doesn't require burning your barrier",
+    "B4": "Small early signals (day 4) reassure before full 6-week clearing",
+    "B5": "Simplicity that works beats complex multi-step routines",
+
+    "BS1": "Safe, non-comedogenic sunscreen exists for acne-prone skin",
+    "BS2": "Great SPF should feel invisible — sensory pain is a design flaw",
+    "BS3": "Actives without SPF is incomplete treatment",
+    "BS4": "Your old SPF was the problem — not SPF itself",
+
+    "BL1": "Visible acne doesn't have to be your reality while you heal",
+    "BL2": "Accidental touching / dust / makeup contact silently slows healing",
+    "BL3": "Makeup and acne care are not mutually exclusive",
+    "BL4": "A liquid format adapts to any pimple — stickers can't",
+
+    "BE1": "Thorough and gentle cleansing are not a trade-off",
+    "BE2": "The wrong first step undermines every step after it",
+    "BE3": "Your barrier survives makeup removal — with the right product",
+
+    "BB1": "Barrier repair is prevention, not recovery — fix it before breakouts",
+    "BB2": "Actives work better on a healthy barrier; BRGM boosts RCF",
+
+    "BF1": "Cleared acne is not solved skin — marks are the second chapter",
+    "BF2": "PIH responds to targeted treatment; marks fade faster with the right approach",
+    "BF3": "Your barrier needs to be ready before you try to fade marks",
+
+    # ── Marketing Angles — RCF ─────────────────────────────────────────────
+    "MA-R1": "Why salicylic acid failed; BPO addresses bacteria not just clog",
+    "MA-R2": "Calm inflammation first; clearing follows naturally",
+    "MA-R3": "Safe for sensitive skin; won't cause purging or worsening",
+    "MA-R4": "Day-4 early improvement as proof before the full 6-week journey",
+    "MA-R5": "Replace the entire failed stack with one targeted product",
+    "MA-R6": "Ceramides + gentle base; clears without destroying skin",
+    "MA-R7": "78% clearer in 6 weeks; clinically tested, starts at day 4",
+    "MA-R8": "Face washes can clear acne if designed to stay on for 2 minutes",
+    "MA-R9": "Sudden breakouts from travel / stress / disruption — not a disorder",
+    "MA-R10": "How a face wash becomes a treatment: leave it on, let it work",
+    "MA-R11": "Ceramides + allantoin + gentle base address the harshness fear",
+    "MA-R12": "Clinical results vs ₹8–16k in peel sessions — without escalating",
+
+    # Marketing Angles — Sunscreen
+    "MA-S1": "Gel texture; no greasiness or heaviness — feels like nothing",
+    "MA-S2": "Specifically formulated for Indian skin tones — no white cast",
+    "MA-S3": "No oil / alcohol / fragrance; no pore-clogging ingredients",
+    "MA-S4": "Wear SPF without sacrificing comfort, finish, or acne safety",
+    "MA-S5": "Works as a primer / makeup base without ruining makeup",
+    "MA-S6": "Protection that actually works without visual evidence",
+    "MA-S7": "UV + sweat + heat + acne actives = SPF is non-negotiable",
+    "MA-S8": "Your reasons to skip SPF are myths from old formulas",
+    "MA-S9": "Evolved stable filters — SPF designed for today's skin",
+    "MA-S10": "Day-by-day documented UGC test: no breakouts confirmed",
+
+    # Marketing Angles — BRGM
+    "MA-B1": "Repair damage caused by actives; make treatment sustainable",
+    "MA-B2": "Barrier repair lets you stay on treatment without quitting",
+    "MA-B3": "Light gel formula; won't feel heavy or cause congestion",
+    "MA-B4": "Moisturiser that repairs without adding oil or congestion",
+    "MA-B5": "Daily habit for acne-prone skin that reacts to everything",
+
+    # Marketing Angles — LPP
+    "MA-L1": "Acne becomes invisible visually while healing continues underneath",
+    "MA-L2": "Environmental contact slows healing — liquid shields actively",
+    "MA-L3": "Makeup applies seamlessly over patch; no peeling or cracking",
+    "MA-L4": "Buffer between makeup and acne; healing undisturbed",
+    "MA-L5": "Liquid fits irregular pimples; rigid stickers cannot",
+    "MA-L6": "India's first liquid pimple patch — format credibility",
+    "MA-L7": "Physical barrier removes the need for willpower",
+    "MA-L8": "Less irritation during healing = fewer marks after",
+    "MA-L9": "Protection enables uninterrupted recovery over days",
+    "MA-L10": "Phone, sleep, clothing friction — patch removes daily risk",
+    "MA-L11": "Superior adhesion and wear time vs traditional sticker patches",
+
+    # Marketing Angles — EMC
+    "MA-E1": "100% makeup removal with zero barrier damage — the core claim",
+    "MA-E2": "No oil / alcohol / soap — what's NOT in it is the proof",
+    "MA-E3": "Permanent marker demo: removes anything = removes makeup",
+    "MA-E4": "Replaces the oil cleanser + water cleanser combo — one step",
+    "MA-E5": "Safe for acne-prone skin; no pore-clogging residue",
+    "MA-E6": "Clean canvas = your RCF / actives work better",
+
+    # Marketing Angles — SFS
+    "MA-SF1": "Marks are the emotional scar that stays after acne is gone",
+    "MA-SF2": "The chapter after clearing — marks respond to the right care",
+    "MA-SF3": "Actives cleared acne but left hyperpigmentation — fix this",
+
+    # ── Situational Drivers ────────────────────────────────────────────────
+    "SD1": "Big day coming; sudden pre-event breakout",
+    "SD2": "Monthly hormonal flare; predictable but frustrating",
+    "SD3": "Tried something new; skin reacted worse",
+    "SD4": "Someone commented on their acne — social trigger",
+    "SD5": "Had clear skin; now relapsed and broken out again",
+    "SD6": "Life transition (new city, job, college) changed their skin",
+    "SD7": "On derm prescription; skin reacting to treatment",
+    "SD8": "Fixation on skin in the mirror; daily emotional distress",
+
+    "SS1_DRIVER": "Post-acne clearing; marks remain; SPF needed",
+    "SS2_DRIVER": "Started active treatment — told SPF is mandatory",
+    "SS3_DRIVER": "Summer / climate change — heat and UV creating urgency",
+    "SS4_DRIVER": "Thinks their current SPF causes acne",
+    "SS5_DRIVER": "Building a first routine; SPF is the last step",
+    "SS6_DRIVER": "Pre-event / vacation; reliable sun protection needed",
+
+    "LD1": "Event tomorrow; pimple appeared today",
+    "LD2": "Pimple during work day; need to look presentable now",
+    "LD3": "On actives; pimple appeared and skin is extra sensitive",
+    "LD4": "Full-face makeup planned; wants to treat + cover at once",
+    "LD5": "Long day outside; wants dust / pollution protection",
+
+    "DE1": "Heavy / full-coverage makeup day — full removal needed",
+    "DE2": "Starting RCF / retinol — clean canvas is now critical",
+    "DE3": "Previous cleanser damaged barrier; looking for gentler option",
+    "DE4": "Transitioning from wipes / micellar water — upgrading",
+
+    # Drivers — SFS use SF1/SF2/SF3 which overlap with cohort codes;
+    # the UI renders them in context so no clash in practice.
+
+    # ── Hook Types (video) ─────────────────────────────────────────────────
+    "H1": "Bold text / title overlay in the opening frames",
+    "H2": "A striking image or motion does the scroll-stopping",
+    "H3": "Opens by naming the exact frustration the viewer feels",
+    "H4": "Withholds information to create a need to watch on",
+    "H5": "Unexpected visual or statement that breaks scroll habit",
+    "H6": "Opens with a result, testimonial, or proof signal",
+    "H7": "Leads with the exact objection — then resolves it",
+    "H8": "Mirrors a specific lived moment the audience recognises",
+    "H9": "Expert / dermat / clinical proof leads the opening",
+    "H10": "Visual or verbal before-after contrast from the start",
+
+    # ── Emotional Arcs ─────────────────────────────────────────────────────
+    "E1": "Pain → Relief — acne hurts; this relieves it",
+    "E2": "Confusion → Clarity — didn't understand skin; now they do",
+    "E3": "Skepticism → Belief — was doubtful; evidence shifted them",
+    "E4": "Fear → Safety — was scared of products; now feels safe",
+    "E5": "Shame → Confidence — hid because of skin; now shows up",
+    "E6": "Resignation → Hope — had given up; new option gives reason to try",
+    "E7": "Urgency → Action — time pressure creates immediate motivation",
+    "E8": "Unawareness → Decision — didn't know this existed; now ready",
+
+    # ── Funnel Stages ──────────────────────────────────────────────────────
+    "TOFU": "Top of funnel — cold audience, problem-aware",
+    "MOFU": "Middle of funnel — solution-aware, comparing options",
+    "BOFU": "Bottom of funnel — ready to buy, needs final push",
+    "TSOF": "Cold but high-intent — convert directly without a journey",
+
+    # ── Creator Archetypes ─────────────────────────────────────────────────
+    "AA": "Dermatologist / expert / scientist — trusted for credentials",
+    "LEV": "Real consumer who endured the problem — trusted for honesty",
+    "FO": "Brand founder — trusted for intent and behind-the-scenes access",
+    "CSA-R": "Creator who mirrors everyday acne moments — trusted for recognition",
+    "CSA-D": "Creator who found something new — trusted for curiosity",
+
+    # ── Influence Modes ────────────────────────────────────────────────────
+    "M1": "Permission / de-risking — makes trying feel safe",
+    "M2": "Reassurance / anti-panic — calms, prevents impulse to quit",
+    "M3": "Belief installation / reframe — shifts a held belief",
+    "M4": "Demonstration — shows how the product works in action",
+    "M5": "Proof delivery — evidence, clinical, before-after, numbers",
+    "M6": "Objection handling — addresses the #1 reason not to buy",
+    "M7": "Acute stabiliser — meets consumer in the panic moment",
+    "M8": "Social proof loop — others like me used this and it worked",
+    "M9": "Conversion close — urgency, offer, risk reversal, direct CTA",
+
+    # ── Visual Styles (statics) ────────────────────────────────────────────
+    "V1": "Clean product shot; white or minimal background",
+    "V2": "Product in real-life setting (bathroom, desk, outdoor)",
+    "V3": "Side-by-side comparison (before/after, this vs that)",
+    "V4": "Copy is the hero; visual supports but text leads",
+    "V5": "Macro skin texture or transformation; no product in frame",
+    "V6": "Ingredient highlighted (BPO crystal, ceramide, azelaic)",
+    "V7": "Step-by-step usage guide in visual format",
+    "V8": "Clinical number, percentage, or study result featured",
+    "V9": "Myth busted visually; two-panel or call-out format",
+    "V10": "AI-generated visual or illustration",
+    "V11": "Multi-frame carousel with narrative or educational arc",
+
+    # ── CTA Styles ─────────────────────────────────────────────────────────
+    "C1": "Closing slide with AI voiceover CTA",
+    "C2": "Talent speaks the CTA naturally in their own voice",
+    "C3": "Static text card at end; no voiceover",
+    "C4": "Urgency CTA — time-limited or stock-limited framing",
+    "C5": "Soft permission CTA — low-commitment ask ('try for 7 days')",
+    "C6": "Social proof CTA — anchored to results others got",
+    "C7": "Problem restate CTA — restate the pain before the ask",
+    "C8": "Risk reversal CTA — money-back or try-before-you-buy framing",
+
+    # ── Static Subtypes ────────────────────────────────────────────────────
+    "SS1": "One hero frame, usually product + headline",
+    "SS2": "Multi-frame swipeable sequence",
+    "SS3": "Visual contrast of two states",
+    "SS4": "Review / DM / press / chat screenshot as proof",
+    "SS5": "vs competitor, vs old routine, vs a myth",
+    "SS6": "Clean product shot — minimal styling",
+    "SS7": "Cultural reference or trending meme format",
+    "SS8": "Teaches a concept (how SA vs BPO works, the 4-day protocol)",
+    "SS9": "Single-ingredient spotlight",
+    "SS10": "Clinical number or study result as the hero",
+    "SS11": "AI-created visual (Midjourney, DALL-E, etc)",
+}
+
+
+def code_of(item: str) -> str:
+    """Extract the code prefix from a taxonomy item like 'MA-R1 — Wrong Tool...' → 'MA-R1'."""
+    if " — " in item:
+        return item.split(" — ", 1)[0].strip()
+    return item.strip()
+
+
+def label_of(item: str) -> str:
+    """Extract the human label from a taxonomy item."""
+    if " — " in item:
+        return item.split(" — ", 1)[1].strip()
+    return item.strip()
+
+
+def define(item: str) -> str:
+    """Look up the definition for a taxonomy item (string or code)."""
+    return DEFINITIONS.get(code_of(item), "")
 
 
 # ── HELPER FUNCTIONS ──────────────────────────────────────────────────────────

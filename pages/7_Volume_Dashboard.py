@@ -25,6 +25,34 @@ if meta.empty:
 
 tagged = classify_meta_ads(meta, inhouse, influencer)
 
+# ── DIAGNOSTICS (temporary; helps verify classifier correctness) ──────────────
+with st.expander("🔍 Classifier diagnostics (click to verify matching is working)", expanded=False):
+    st.write(f"**Meta Ads rows loaded:** {len(meta)}")
+    st.write(f"**Inhouse_Live_Assets rows:** {len(inhouse)}")
+    st.write(f"**Live Entries 2026 rows:** {len(influencer)}")
+    d1, d2, d3 = st.columns(3)
+    with d1:
+        st.markdown("**Sample Meta AD CODEs (col AL)**")
+        st.code("\n".join(str(x) for x in meta.get("AD CODE", pd.Series(dtype=str)).head(10).tolist()))
+    with d2:
+        st.markdown("**Sample Inhouse AD CODEs**")
+        if "AD CODE" in inhouse.columns:
+            st.code("\n".join(str(x) for x in inhouse["AD CODE"].head(10).tolist()))
+        else:
+            st.code("(no AD CODE column)")
+    with d3:
+        st.markdown("**Sample Influencer Ad Codes**")
+        inf_col = next((c for c in influencer.columns
+                        if c.strip().lower() in ("ad code", "adcode")), None)
+        if inf_col:
+            st.code("\n".join(str(x) for x in influencer[inf_col].head(10).tolist()))
+        else:
+            st.code(f"(no Ad Code col; headers: {list(influencer.columns)[:8]}…)")
+    st.caption(
+        "If the 3 formats don't match exactly (e.g. 'AD 437' vs '437' vs 'Ad 437'), "
+        "classification will be wrong. Paste a few values back to me so I can fix the matcher."
+    )
+
 # Attempt to find standard columns by name (they exist in the first block of Meta Ads)
 def _first_col(df, *candidates):
     for c in candidates:
@@ -222,8 +250,9 @@ display_cols = [c for c in [
 ] if c and c in df.columns]
 # Dedupe
 seen = set(); display_cols = [c for c in display_cols if not (c in seen or seen.add(c))]
-st.dataframe(df[display_cols].sort_values("_Date", ascending=False) if "_Date" in df.columns else df[display_cols],
-             use_container_width=True, hide_index=True)
+# Sort FIRST (on internal _Date), then subset display cols
+df_sorted = df.sort_values("_Date", ascending=False) if "_Date" in df.columns else df
+st.dataframe(df_sorted[display_cols], use_container_width=True, hide_index=True)
 
 csv = df[display_cols].to_csv(index=False).encode("utf-8")
 st.download_button("⬇ Download filtered CSV", data=csv,

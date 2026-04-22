@@ -17,21 +17,47 @@ if assets_df.empty:
 
 # ── DATE FILTER ───────────────────────────────────────────────────────────────
 today = date.today()
-last_monday = today - timedelta(days=today.weekday() + 7)
-last_sunday  = last_monday + timedelta(days=6)
+assets_df["Published Date"] = pd.to_datetime(assets_df["Published Date"], errors="coerce")
+
+# Smart default: if we have dates, anchor on the most recent; else last 7 days
+valid_dates = assets_df["Published Date"].dropna()
+if not valid_dates.empty:
+    most_recent = valid_dates.max().date()
+    default_end = max(most_recent, today)
+    default_start = default_end - timedelta(days=30)
+else:
+    default_end = today
+    default_start = today - timedelta(days=30)
 
 st.sidebar.header("Date range")
-start = st.sidebar.date_input("From", value=last_monday)
-end   = st.sidebar.date_input("To",   value=last_sunday)
+mode = st.sidebar.radio("Window", ["Last 7 days", "Last 30 days", "All time", "Custom"],
+                        index=1)
+if mode == "Last 7 days":
+    start = default_end - timedelta(days=7)
+    end   = default_end
+elif mode == "Last 30 days":
+    start = default_start
+    end   = default_end
+elif mode == "All time":
+    start = valid_dates.min().date() if not valid_dates.empty else today - timedelta(days=365)
+    end   = default_end
+else:
+    start = st.sidebar.date_input("From", value=default_start)
+    end   = st.sidebar.date_input("To",   value=default_end)
 
-assets_df["Published Date"] = pd.to_datetime(assets_df["Published Date"], errors="coerce")
 start_ts = pd.Timestamp(start)
 end_ts   = pd.Timestamp(end)
 mask = (
     (assets_df["Published Date"] >= start_ts) &
     (assets_df["Published Date"] <= end_ts)
 )
-df = assets_df[mask].copy()
+# Include rows with no parsed date too — better to show something than nothing
+undated = assets_df["Published Date"].isna()
+df = assets_df[mask | undated].copy()
+st.sidebar.caption(
+    f"Showing {len(df)} of {len(assets_df)} total rows "
+    f"({int(undated.sum())} undated rows always included)."
+)
 
 st.sidebar.markdown("---")
 prod_filter = st.sidebar.multiselect("Product", PRODUCTS, default=PRODUCTS)

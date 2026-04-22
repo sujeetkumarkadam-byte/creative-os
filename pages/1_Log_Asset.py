@@ -3,10 +3,10 @@ from datetime import datetime
 from utils.sheets import load_assets, load_sources, load_experiments, save_asset, next_asset_id
 from utils.taxonomy import (
     PRODUCTS, BUCKETS, CHANNELS, CREATIVE_TYPES, VIDEO_TYPES,
-    BELIEFS, HOOK_TYPES, EMOTIONAL_ARCS, FUNNEL_STAGES,
+    HOOK_TYPES, EMOTIONAL_ARCS, FUNNEL_STAGES,
     ARCHETYPES, INFLUENCE_MODES, VISUAL_STYLES, CTA_STYLES,
     STATUSES, VARIANT_LETTERS,
-    get_cohorts, get_angles, get_drivers,
+    get_cohorts, get_angles, get_drivers, get_beliefs,
 )
 
 st.set_page_config(page_title="Log Asset — Creative OS", layout="wide")
@@ -71,10 +71,11 @@ with st.form("log_asset", clear_on_submit=True):
     cohorts = get_cohorts(product)
     angles  = get_angles(product)
     drivers = get_drivers(product)
+    beliefs = get_beliefs(product)
 
     t1, t2, t3 = st.columns(3)
     cohort   = t1.selectbox("Cohort *", cohorts)
-    belief   = t1.selectbox("Belief *", BELIEFS)
+    belief   = t1.selectbox("Belief *", beliefs)
     angle    = t2.selectbox("Marketing Angle *", angles)
     driver   = t2.selectbox("Situational Driver", drivers)
     funnel   = t3.selectbox("Funnel Stage *", FUNNEL_STAGES)

@@ -127,6 +127,7 @@ _PRODUCT_CODE = {
     "Clear Protect Gel Sunscreen": "CPGS",
     "Barrier Repair Gel Moisturiser": "BRGM",
     "Liquid Pimple Patch": "LPP",
+    "Effortless Melting Cleanser": "EMC",
     "Spot Fade Serum": "SFS",
 }
 

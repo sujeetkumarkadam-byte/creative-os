@@ -29,18 +29,18 @@ st.markdown("---")
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.info("**📋 Log Asset**\n\nAdd a new video or static with full taxonomy tags.")
+    st.info("**📋 Log Live Asset**\n\nLog new inhouse videos directly or promote statics from Stage-1 briefs.")
 with col2:
-    st.info("**📊 Weekly Dashboard**\n\nVolume by product, type, angle and cohort. Built for Monday.")
+    st.info("**📊 Dashboard**\n\nOne merged live view for volume, source split, format mix, and inhouse taxonomy coverage.")
 with col3:
-    st.info("**🗂 Asset Registry**\n\nFull filterable table of every asset ever logged.")
+    st.info("**🗂 Asset Registry**\n\nClean detailed inspector for any live inhouse asset, including links and performance.")
 with col4:
-    st.info("**🧪 Experiment Log**\n\nPlan and track intentional tests.")
+    st.info("**🛠 Admin / Backlog**\n\nRun migrations, inspect sheets, and retro-tag already-live inhouse backlog assets.")
 
 st.markdown("---")
 st.markdown("#### Navigate using the sidebar ←")
 st.markdown(
-    "First time? Run **Setup** from the sidebar to initialise your Google Sheet."
+    "For taxonomy definitions, use **Taxonomy Reference**. For one-off live backlog cleanup, use **Admin / Diagnostics**."
 )
 
 # First-run setup button

@@ -94,6 +94,15 @@ def _ws(sheet_name: str):
     return _client().open(st.secrets["spreadsheet_name"]).worksheet(sheet_name)
 
 
+@st.cache_data(ttl=120, show_spinner=False)
+def _sheet_values(sheet_name: str):
+    return _ws(sheet_name).get_all_values()
+
+
+def _clear_sheet_cache():
+    _sheet_values.clear()
+
+
 def _clean_header(value) -> str:
     return re.sub(r"\s+", " ", str(value or "").replace("|", " ")).strip()
 
@@ -204,10 +213,21 @@ def _drop_truly_blank_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df[keep]
 
 
+def _records_from_values(values: list[list[str]], fallback_columns: list[str]) -> pd.DataFrame:
+    if not values:
+        return pd.DataFrame(columns=fallback_columns)
+    headers = [_clean_header(value) for value in values[0]]
+    if not any(headers):
+        return pd.DataFrame(columns=fallback_columns)
+    headers = _dedupe_headers(headers)
+    rows = values[1:] if len(values) > 1 else []
+    return pd.DataFrame(rows, columns=headers) if rows else pd.DataFrame(columns=headers)
+
+
 def load_assets() -> pd.DataFrame:
     try:
-        records = _ws(SHEET_ASSETS).get_all_records()
-        return pd.DataFrame(records) if records else pd.DataFrame(columns=ASSET_HEADERS)
+        values = _sheet_values(SHEET_ASSETS)
+        return _records_from_values(values, ASSET_HEADERS)
     except Exception as exc:
         st.error(f"Could not load assets: {exc}")
         return pd.DataFrame(columns=ASSET_HEADERS)
@@ -215,8 +235,8 @@ def load_assets() -> pd.DataFrame:
 
 def load_inhouse_live() -> pd.DataFrame:
     try:
-        records = _ws(SHEET_INHOUSE).get_all_records()
-        df = pd.DataFrame(records) if records else pd.DataFrame(columns=INHOUSE_LIVE_HEADERS)
+        values = _sheet_values(SHEET_INHOUSE)
+        df = _records_from_values(values, INHOUSE_LIVE_HEADERS)
         if "AD CODE" in df.columns:
             df["AD CODE"] = df["AD CODE"].map(normalize_ad_code)
         return df
@@ -228,6 +248,7 @@ def load_inhouse_live() -> pd.DataFrame:
 def save_inhouse_live(data: dict):
     row = [data.get(header, "") for header in INHOUSE_LIVE_HEADERS]
     _ws(SHEET_INHOUSE).append_row(row, value_input_option="USER_ENTERED")
+    _clear_sheet_cache()
 
 
 def ensure_inhouse_sheet():
@@ -241,12 +262,13 @@ def ensure_inhouse_sheet():
         cols=len(INHOUSE_LIVE_HEADERS) + 2,
     )
     ws.append_row(INHOUSE_LIVE_HEADERS)
+    _clear_sheet_cache()
     return True
 
 
 def load_meta_ads() -> pd.DataFrame:
     try:
-        values = _ws(SHEET_META_ADS).get_all_values()
+        values = _sheet_values(SHEET_META_ADS)
         if len(values) < 3:
             return pd.DataFrame()
 
@@ -271,7 +293,7 @@ def load_meta_ads() -> pd.DataFrame:
 
 def load_influencer_ads() -> pd.DataFrame:
     try:
-        values = _ws(SHEET_INFLUENCER).get_all_values()
+        values = _sheet_values(SHEET_INFLUENCER)
         if len(values) < 2:
             return pd.DataFrame()
 
@@ -519,8 +541,8 @@ def migrate_master_to_inhouse() -> tuple[int, int, list[str]]:
 
 def load_experiments() -> pd.DataFrame:
     try:
-        records = _ws(SHEET_EXPERIMENTS).get_all_records()
-        return pd.DataFrame(records) if records else pd.DataFrame(columns=EXPERIMENT_HEADERS)
+        values = _sheet_values(SHEET_EXPERIMENTS)
+        return _records_from_values(values, EXPERIMENT_HEADERS)
     except Exception as exc:
         st.error(f"Could not load experiments: {exc}")
         return pd.DataFrame(columns=EXPERIMENT_HEADERS)
@@ -528,8 +550,8 @@ def load_experiments() -> pd.DataFrame:
 
 def load_sources() -> pd.DataFrame:
     try:
-        records = _ws(SHEET_SOURCES).get_all_records()
-        return pd.DataFrame(records) if records else pd.DataFrame(columns=SOURCE_HEADERS)
+        values = _sheet_values(SHEET_SOURCES)
+        return _records_from_values(values, SOURCE_HEADERS)
     except Exception as exc:
         st.error(f"Could not load sources: {exc}")
         return pd.DataFrame(columns=SOURCE_HEADERS)
@@ -538,16 +560,19 @@ def load_sources() -> pd.DataFrame:
 def save_asset(data: dict):
     row = [data.get(header, "") for header in ASSET_HEADERS]
     _ws(SHEET_ASSETS).append_row(row, value_input_option="USER_ENTERED")
+    _clear_sheet_cache()
 
 
 def save_experiment(data: dict):
     row = [data.get(header, "") for header in EXPERIMENT_HEADERS]
     _ws(SHEET_EXPERIMENTS).append_row(row, value_input_option="USER_ENTERED")
+    _clear_sheet_cache()
 
 
 def save_source(data: dict):
     row = [data.get(header, "") for header in SOURCE_HEADERS]
     _ws(SHEET_SOURCES).append_row(row, value_input_option="USER_ENTERED")
+    _clear_sheet_cache()
 
 
 def update_asset(asset_id: str, field: str, value):
@@ -556,6 +581,7 @@ def update_asset(asset_id: str, field: str, value):
     if cell:
         col = ASSET_HEADERS.index(field) + 1
         ws.update_cell(cell.row, col, value)
+        _clear_sheet_cache()
 
 
 _PRODUCT_CODE = {
@@ -620,4 +646,5 @@ def initialise_sheets():
         if name not in existing:
             ws = spreadsheet.add_worksheet(title=name, rows=2000, cols=len(headers) + 5)
             ws.append_row(headers)
+    _clear_sheet_cache()
     return True

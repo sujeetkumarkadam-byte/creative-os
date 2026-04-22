@@ -151,20 +151,43 @@ def ensure_inhouse_sheet():
 
 
 def load_meta_ads() -> pd.DataFrame:
-    """Reads the IMPORTRANGE'd Meta Ads sheet. Columns detected dynamically."""
+    """Reads the IMPORTRANGE'd Meta Ads sheet.
+
+    Structure: row 1 = role labels, row 2 = actual headers. Column AL (index 37)
+    is the AD CODE column (one of the 'EMPTY COLUMN IN CASE NEW ITEMS...' slots).
+    Duplicate header names (Creative Name, Creative Type, etc. repeat across
+    the 3 side-by-side blocks) are suffixed _2 / _3 so pandas doesn't collapse them.
+    """
     try:
         vals = _ws(SHEET_META_ADS).get_all_values()
-        if not vals or len(vals) < 2:
+        if not vals or len(vals) < 3:
             return pd.DataFrame()
-        # Find the header row — try row 1 first, fall back to row 2
-        for hdr_idx in [0, 1]:
-            hdrs = vals[hdr_idx]
-            if sum(1 for h in hdrs if h.strip()) >= 3:
-                df = pd.DataFrame(vals[hdr_idx + 1:], columns=hdrs)
-                # Drop fully-empty columns (from IMPORTRANGE padding)
-                df = df.loc[:, [c for c in df.columns if c.strip()]]
-                return df
-        return pd.DataFrame()
+
+        raw_hdrs = vals[1]  # row 2
+        # Force column AL (index 37) to "AD CODE"
+        hdrs = list(raw_hdrs)
+        AD_CODE_COL = 37
+        if len(hdrs) > AD_CODE_COL:
+            hdrs[AD_CODE_COL] = "AD CODE"
+
+        # Dedupe: keep first occurrence, suffix repeats
+        seen = {}
+        deduped = []
+        for h in hdrs:
+            h = (h or "").strip() or "_blank"
+            if h in seen:
+                seen[h] += 1
+                deduped.append(f"{h}_{seen[h]}")
+            else:
+                seen[h] = 1
+                deduped.append(h)
+
+        df = pd.DataFrame(vals[2:], columns=deduped)
+        # Drop any trailing fully-empty columns (IMPORTRANGE padding)
+        df = df.loc[:, ~df.columns.str.startswith("_blank")]
+        # Drop duplicate empty-column placeholders
+        df = df.loc[:, ~df.columns.str.startswith("EMPTY COLUMN IN CASE NEW ITEMS NEED TO BE ADDED")]
+        return df
     except Exception as e:
         st.warning(f"Could not load Meta Ads sheet: {e}")
         return pd.DataFrame()
@@ -186,6 +209,58 @@ def load_influencer_ads() -> pd.DataFrame:
     except Exception as e:
         st.warning(f"Could not load Live Entries 2026 sheet: {e}")
         return pd.DataFrame()
+
+
+def classify_meta_ads(meta_df: pd.DataFrame, inhouse_df: pd.DataFrame,
+                      influencer_df: pd.DataFrame) -> pd.DataFrame:
+    """Tag every Meta Ads row as Inhouse / Influencer / Porcellia by AD CODE match.
+    Returns meta_df with a new 'Source' column."""
+    if meta_df.empty:
+        return meta_df
+
+    def _norm(s):
+        return str(s).strip().upper()
+
+    inhouse_codes = set()
+    if not inhouse_df.empty and "AD CODE" in inhouse_df.columns:
+        inhouse_codes = {_norm(x) for x in inhouse_df["AD CODE"] if _norm(x)}
+
+    influencer_codes = set()
+    if not influencer_df.empty:
+        inf_col = next((c for c in influencer_df.columns
+                        if c.strip().lower() in ("ad code", "adcode")), None)
+        if inf_col:
+            influencer_codes = {_norm(x) for x in influencer_df[inf_col] if _norm(x)}
+
+    def _classify(code):
+        c = _norm(code)
+        if not c:
+            return "Unclassified"
+        if c in inhouse_codes:
+            return "Inhouse"
+        if c in influencer_codes:
+            return "Influencer"
+        return "Porcellia"
+
+    out = meta_df.copy()
+    ad_col = "AD CODE" if "AD CODE" in out.columns else None
+    out["Source"] = out[ad_col].apply(_classify) if ad_col else "Unclassified"
+    return out
+
+
+def unimported_meta_candidates() -> pd.DataFrame:
+    """Meta Ads rows whose AD CODE is NOT yet in Inhouse_Live_Assets and NOT
+    in Live Entries 2026. The retro-tag pool (inhouse backlog + porcellia)."""
+    meta = load_meta_ads()
+    if meta.empty or "AD CODE" not in meta.columns:
+        return pd.DataFrame()
+    tagged = classify_meta_ads(meta, load_inhouse_live(), load_influencer_ads())
+    # Candidates = Porcellia (residual) + Unclassified — the user will pick
+    # their ~40 inhouse ones from within this pool.
+    candidates = tagged[tagged["Source"].isin(["Porcellia", "Unclassified"])].copy()
+    # Only keep rows with a non-empty AD CODE
+    candidates = candidates[candidates["AD CODE"].astype(str).str.strip() != ""]
+    return candidates
 
 
 def migrate_master_to_inhouse() -> tuple[int, int, list]:

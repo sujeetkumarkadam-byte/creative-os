@@ -78,6 +78,7 @@ SOURCE_HEADERS = [
 ]
 
 AD_CODE_RE = re.compile(r"\bAD\s*[-_]?\s*(\d+)\b", re.IGNORECASE)
+META_AD_CODE_COL_INDEX = 37  # Column AL in 0-based indexing
 
 
 @st.cache_resource
@@ -115,6 +116,20 @@ def parse_mixed_dates(series: pd.Series) -> pd.Series:
         return pd.Series(dtype="datetime64[ns]")
     cleaned = series.astype(str).str.strip().replace({"": pd.NA, "nan": pd.NA, "None": pd.NA})
     parsed = pd.to_datetime(cleaned, errors="coerce", dayfirst=True)
+    remaining = cleaned[parsed.isna()].dropna()
+    if not remaining.empty:
+        serial_mask = remaining.str.fullmatch(r"\d+(\.\d+)?")
+        if serial_mask.any():
+            serial_values = pd.to_numeric(remaining[serial_mask], errors="coerce")
+            serial_values = serial_values[(serial_values >= 30000) & (serial_values <= 70000)]
+            if not serial_values.empty:
+                serial_dates = pd.to_datetime(
+                    serial_values,
+                    unit="D",
+                    origin="1899-12-30",
+                    errors="coerce",
+                )
+                parsed.loc[serial_dates.index] = serial_dates
     return parsed
 
 
@@ -239,7 +254,7 @@ def load_meta_ads() -> pd.DataFrame:
         raw_headers = [_clean_header(value) for value in values[header_row_idx]]
         rows = values[header_row_idx + 1:]
 
-        ad_code_idx = _detect_ad_code_index(rows, raw_headers)
+        ad_code_idx = META_AD_CODE_COL_INDEX if len(raw_headers) > META_AD_CODE_COL_INDEX else _detect_ad_code_index(rows, raw_headers)
         if ad_code_idx is not None and ad_code_idx < len(raw_headers):
             raw_headers[ad_code_idx] = "AD CODE"
 

@@ -475,19 +475,22 @@ def build_classified_meta_view(meta_df: pd.DataFrame | None = None,
     if not inhouse.empty and "AD CODE" in inhouse.columns:
         inhouse = inhouse.copy()
         inhouse["AD CODE"] = inhouse["AD CODE"].map(normalize_ad_code)
-        join_cols = [column for column in [
-            "AD CODE", "Asset ID", "Published Date", "Product", "Format",
-            "Video Subtype", "Static Subtype", "Cohort", "Belief",
-            "Marketing Angle", "Situational Driver", "Funnel Stage",
-            "Influence Mode", "Creator Archetype", "Creator / Consumer Name",
-            "Drive Link", "Reference Image Link",
-        ] if column in inhouse.columns]
-        tagged = tagged.merge(
-            inhouse[join_cols],
-            on="AD CODE",
-            how="left",
-            suffixes=("", "_inhouse"),
-        )
+        inhouse = inhouse[inhouse["AD CODE"].astype(str).str.strip() != ""]
+        inhouse = inhouse.drop_duplicates(subset=["AD CODE"], keep="first")
+        if not inhouse.empty:
+            join_cols = [column for column in [
+                "AD CODE", "Asset ID", "Published Date", "Product", "Format",
+                "Video Subtype", "Static Subtype", "Cohort", "Belief",
+                "Marketing Angle", "Situational Driver", "Funnel Stage",
+                "Influence Mode", "Creator Archetype", "Creator / Consumer Name",
+                "Drive Link", "Reference Image Link",
+            ] if column in inhouse.columns]
+            tagged = tagged.merge(
+                inhouse[join_cols],
+                on="AD CODE",
+                how="left",
+                suffixes=("", "_inhouse"),
+            )
 
     tagged["Format Derived"] = ""
     if "Format" in tagged.columns:

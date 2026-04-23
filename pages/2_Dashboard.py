@@ -47,7 +47,71 @@ if classified.empty:
         f"rows with parsed live date = {rows_with_date}."
     )
 
-    with st.expander("Show Meta Ads diagnostics"):
+    with st.expander("Show Meta Ads diagnostics", expanded=True):
+        # Directly inspect the raw date column so we can see what's failing
+        from utils.sheets import load_meta_ads, first_present_column
+        meta_raw = load_meta_ads()
+
+        st.markdown("**All date-looking columns detected in Meta Ads:**")
+        date_like_cols = [c for c in meta_raw.columns if "date" in c.lower()]
+        st.code("\n".join(date_like_cols) or "(none)")
+
+        primary_date_col = first_present_column(
+            meta_raw, "Date [Ad Taken Live]", "Date [Ad Taken Live] ",
+        )
+        st.markdown(f"**Primary date column being read:** `{primary_date_col or 'NONE FOUND'}`")
+
+        if primary_date_col and "AD CODE" in meta_raw.columns:
+            # Filter to rows that have an AD CODE — those are the ads that matter
+            with_code = meta_raw[meta_raw["AD CODE"].astype(str).str.strip() != ""].copy()
+
+            live_dates_raw = with_code[primary_date_col].astype(str).str.strip()
+            non_empty_dates = live_dates_raw[live_dates_raw != ""]
+
+            st.markdown(
+                f"**Of {len(with_code)} rows with AD CODE:** "
+                f"`{len(non_empty_dates)}` have *any* value in `{primary_date_col}`."
+            )
+
+            if len(non_empty_dates) > 0:
+                st.markdown("**First 15 raw date values (these are what parse_mixed_dates sees):**")
+                sample = non_empty_dates.head(15).tolist()
+                st.code("\n".join(f"{i+1:2}. {repr(v)}" for i, v in enumerate(sample)))
+                st.caption(
+                    "The `repr()` shows exact whitespace / quotes. If these look like real dates "
+                    "but only 2 of them parse, paste this block back and I'll fix the parser."
+                )
+            else:
+                st.warning(
+                    "NO rows with AD CODE have anything in the 'Date [Ad Taken Live]' column. "
+                    "Either the media buyer isn't populating it, or the actual live-date is "
+                    "stored under a different column name. Check which of the date-like columns "
+                    "above actually has values."
+                )
+
+            # Also sample some of the other date columns to see if ANY of them has the real date
+            st.markdown("---")
+            st.markdown(
+                "**Sanity check — non-empty value counts across every date-like column "
+                "(for rows with AD CODE):**"
+            )
+            counts = {}
+            for c in date_like_cols:
+                v = with_code[c].astype(str).str.strip()
+                counts[c] = int((v != "").sum())
+            st.dataframe(
+                pd.DataFrame([{"Column": k, "Non-empty count": v} for k, v in counts.items()])
+                  .sort_values("Non-empty count", ascending=False),
+                use_container_width=True, hide_index=True,
+            )
+            st.caption(
+                "If one of the other Date columns has ~542 non-empty values while "
+                "'Date [Ad Taken Live]' has ~2, THAT is the real live-date column — we're "
+                "reading the wrong one."
+            )
+
+        st.markdown("---")
+        st.markdown("**Sample of first 25 classified rows:**")
         sample_cols = [
             "AD CODE", "Meta Product", "Meta Creative Type", "Meta Creative Name",
             "_Date", "Meta FB Ad Name", "Meta Ad Name (TSS)", "Meta Ad Name (Porcellia)",

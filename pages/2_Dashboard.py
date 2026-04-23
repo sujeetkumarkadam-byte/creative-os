@@ -21,6 +21,7 @@ if classified.empty:
     st.error("Could not build the live dashboard view from the connected sheets.")
     st.stop()
 
+raw_classified = classified.copy()
 classified = classified.copy()
 classified = classified[classified["AD CODE"].astype(str).str.strip() != ""]
 classified = classified[classified["_Date"].notna()]
@@ -36,6 +37,25 @@ classified = classified[
 
 if classified.empty:
     st.warning("No live Meta Ads rows with both an AD CODE and a sane live date were found.")
+
+    total_rows = len(raw_classified)
+    rows_with_code = int(raw_classified["AD CODE"].astype(str).str.strip().ne("").sum()) if "AD CODE" in raw_classified.columns else 0
+    rows_with_date = int(raw_classified["_Date"].notna().sum()) if "_Date" in raw_classified.columns else 0
+
+    st.info(
+        f"Diagnostics: total rows loaded = {total_rows}, rows with AD CODE = {rows_with_code}, "
+        f"rows with parsed live date = {rows_with_date}."
+    )
+
+    with st.expander("Show Meta Ads diagnostics"):
+        sample_cols = [
+            "AD CODE", "Meta Product", "Meta Creative Type", "Meta Creative Name",
+            "_Date", "Meta FB Ad Name", "Meta Ad Name (TSS)", "Meta Ad Name (Porcellia)",
+        ]
+        debug = raw_classified[[c for c in sample_cols if c in raw_classified.columns]].copy().head(25)
+        if "_Date" in debug.columns:
+            debug = debug.rename(columns={"_Date": "Parsed Live Date"})
+        st.dataframe(debug, use_container_width=True, hide_index=True)
     st.stop()
 
 today = date.today()

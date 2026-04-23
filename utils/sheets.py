@@ -124,8 +124,26 @@ def parse_mixed_dates(series: pd.Series) -> pd.Series:
     if series is None or len(series) == 0:
         return pd.Series(dtype="datetime64[ns]")
     cleaned = series.astype(str).str.strip().replace({"": pd.NA, "nan": pd.NA, "None": pd.NA})
-    parsed = pd.to_datetime(cleaned, errors="coerce", dayfirst=True)
+    parsed_dayfirst = pd.to_datetime(cleaned, errors="coerce", dayfirst=True)
+    parsed_monthfirst = pd.to_datetime(cleaned, errors="coerce", dayfirst=False)
+    parsed = parsed_dayfirst.where(parsed_dayfirst.notna(), parsed_monthfirst)
     remaining = cleaned[parsed.isna()].dropna()
+    if not remaining.empty:
+        # Handle strings that include trailing time fragments or timezone-ish text.
+        trimmed = (
+            remaining
+            .str.replace(r"\s+\d{1,2}:\d{2}(:\d{2})?(\s*[APMapm]{2})?$", "", regex=True)
+            .str.replace(r"T\d{2}:\d{2}(:\d{2})?.*$", "", regex=True)
+            .str.replace(r"\s+UTC.*$", "", regex=True)
+            .str.strip()
+        )
+        reparsed_dayfirst = pd.to_datetime(trimmed, errors="coerce", dayfirst=True)
+        reparsed_monthfirst = pd.to_datetime(trimmed, errors="coerce", dayfirst=False)
+        reparsed = reparsed_dayfirst.where(reparsed_dayfirst.notna(), reparsed_monthfirst)
+        parsed.loc[reparsed.index] = reparsed
+
+        remaining = cleaned[parsed.isna()].dropna()
+
     if not remaining.empty:
         serial_mask = remaining.str.fullmatch(r"\d+(\.\d+)?")
         if serial_mask.any():

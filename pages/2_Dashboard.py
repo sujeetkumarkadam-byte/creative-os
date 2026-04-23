@@ -177,6 +177,20 @@ selected_products = st.sidebar.multiselect(
 format_options = ["Video", "Static"]
 selected_formats = st.sidebar.multiselect("Format", format_options, default=format_options)
 
+angle_options = sorted(
+    value for value in classified["Marketing Angle Derived"].dropna().astype(str).unique()
+    if value.strip()
+) if "Marketing Angle Derived" in classified.columns else []
+selected_angles = st.sidebar.multiselect("Marketing Angle", angle_options, default=angle_options)
+
+cohort_options = sorted(
+    value for value in classified["Cohort"].dropna().astype(str).unique()
+    if value.strip()
+) if "Cohort" in classified.columns else []
+selected_cohorts = st.sidebar.multiselect("Cohort", cohort_options, default=cohort_options)
+
+creator_query = st.sidebar.text_input("Creator / Creative Search", placeholder="creator, creative name, ad code...")
+
 filtered = classified.copy()
 filtered = filtered[
     (filtered["_Date"] >= pd.Timestamp(start)) &
@@ -190,6 +204,25 @@ if selected_formats:
         filtered["Format Derived"].isin(selected_formats) |
         (filtered["Format Derived"].astype(str).str.strip() == "")
     ]
+if selected_angles:
+    filtered = filtered[filtered["Marketing Angle Derived"].isin(selected_angles)]
+if selected_cohorts:
+    filtered = filtered[
+        filtered["Cohort"].astype(str).str.strip().eq("") |
+        filtered["Cohort"].isin(selected_cohorts)
+    ]
+if creator_query.strip():
+    term = creator_query.strip().lower()
+    search_cols = [
+        column for column in [
+            "AD CODE", "Creative Name Derived", "Creator / Consumer Name",
+            "Meta FB Ad Name", "Meta Ad Name (TSS)", "Meta Ad Name (Porcellia)",
+        ] if column in filtered.columns
+    ]
+    mask = pd.Series(False, index=filtered.index)
+    for column in search_cols:
+        mask = mask | filtered[column].astype(str).str.lower().str.contains(term, na=False)
+    filtered = filtered[mask]
 
 if filtered.empty:
     st.warning("No live ads match the current filters.")
@@ -208,7 +241,7 @@ top_metrics[4].metric(
     help="Inhouse live ads that already have a row in Inhouse_Live_Assets.",
 )
 
-tab_overview, tab_inhouse, tab_raw = st.tabs(["Overview", "Inhouse Detail", "Raw Live Ads"])
+tab_overview, tab_assets, tab_raw = st.tabs(["Overview", "Asset Deep Dive", "Raw Live Ads"])
 
 with tab_overview:
     left, right = st.columns(2)
@@ -357,49 +390,82 @@ with tab_overview:
     else:
         st.info("No inhouse live ads match this window yet, so the taxonomy deep dive is empty.")
 
-with tab_inhouse:
-    st.subheader("Inhouse live assets")
-    if inhouse.empty:
-        st.info("No inhouse live ads match the current filters.")
-    else:
-        metrics = st.columns(4)
-        metrics[0].metric("Inhouse live ads", len(inhouse))
-        metrics[1].metric("Videos", int((inhouse["Format Derived"] == "Video").sum()))
-        metrics[2].metric("Statics", int((inhouse["Format Derived"] == "Static").sum()))
-        metrics[3].metric(
-            "Unique angles",
-            int(
-                inhouse["Marketing Angle Derived"]
-                .replace("", pd.NA)
-                .dropna()
-                .nunique()
-            ),
-        )
+with tab_assets:
+    st.subheader("Filtered asset view")
+    metrics = st.columns(5)
+    metrics[0].metric("Filtered live ads", len(filtered))
+    metrics[1].metric("Inhouse", int((filtered["Source"] == "Inhouse").sum()))
+    metrics[2].metric("Influencer", int((filtered["Source"] == "Influencer").sum()))
+    metrics[3].metric("Porcellia", int((filtered["Source"] == "Porcellia").sum()))
+    metrics[4].metric(
+        "Tagged taxonomy rows",
+        int(filtered["Marketing Angle Derived"].astype(str).str.strip().ne("").sum()) if "Marketing Angle Derived" in filtered.columns else 0,
+    )
 
-        display_cols = [
-            "Asset ID", "AD CODE", "_Date", "Product Derived", "Format Derived",
-            "Video Subtype", "Static Subtype", "Creator / Consumer Name",
-            "Marketing Angle Derived", "Belief", "Cohort", "Funnel Stage",
-            "Drive Link", "Reference Image Link",
-        ]
-        show = inhouse[[column for column in display_cols if column in inhouse.columns]].copy()
-        if "_Date" in show.columns:
-            show = show.rename(columns={"_Date": "Live Date"})
-        if "Product Derived" in show.columns:
-            show = show.rename(columns={"Product Derived": "Product"})
-        if "Format Derived" in show.columns:
-            show = show.rename(columns={"Format Derived": "Format"})
-        if "Marketing Angle Derived" in show.columns:
-            show = show.rename(columns={"Marketing Angle Derived": "Marketing Angle"})
+    display_cols = [
+        "Source", "AD CODE", "_Date", "Creative Name Derived", "Product Derived", "Format Derived",
+        "Video Subtype", "Static Subtype", "Creator / Consumer Name", "Marketing Angle Derived",
+        "Belief", "Cohort", "Funnel Stage", "Meta Status", "Drive Link", "Reference Image Link",
+        "ROAS", "CTR", "Hook Rate", "Hold Rate", "CAC",
+    ]
+    show = filtered[[column for column in display_cols if column in filtered.columns]].copy()
+    show = show.rename(columns={
+        "_Date": "Live Date",
+        "Creative Name Derived": "Creative Name",
+        "Product Derived": "Product",
+        "Format Derived": "Format",
+        "Marketing Angle Derived": "Marketing Angle",
+        "Meta Status": "Status",
+    })
+    if "Live Date" in show.columns:
+        show = show.sort_values("Live Date", ascending=False)
+    st.dataframe(show, use_container_width=True, hide_index=True, height=360)
 
-        st.dataframe(
-            show.sort_values("Live Date", ascending=False) if "Live Date" in show.columns else show,
-            use_container_width=True,
-            hide_index=True,
-            height=420,
-        )
+    inspect_choices = filtered.copy()
+    inspect_choices["_label"] = inspect_choices.apply(
+        lambda row: f"{row.get('AD CODE', '')} | {row.get('Creative Name Derived', '') or row.get('Meta FB Ad Name', '') or row.get('Meta Ad Name (TSS)', '') or row.get('Meta Ad Name (Porcellia)', '')}",
+        axis=1,
+    )
+    selected_label = st.selectbox("Inspect a filtered asset", inspect_choices["_label"].tolist())
+    picked = inspect_choices[inspect_choices["_label"] == selected_label].iloc[0]
 
-        st.caption("For a cleaner single-asset inspection, use Asset Registry.")
+    left, right = st.columns(2)
+    with left:
+        st.markdown("**Identity & live info**")
+        for field, label in [
+            ("Source", "Source"), ("AD CODE", "AD CODE"), ("_Date", "Live Date"),
+            ("Creative Name Derived", "Creative Name"), ("Product Derived", "Product"),
+            ("Format Derived", "Format"), ("Meta Creative Type", "Creative Type"),
+            ("Meta Status", "Status"), ("Meta Funnel Level", "Funnel Level"),
+        ]:
+            if field in picked.index:
+                value = picked.get(field, "")
+                if field == "_Date" and pd.notna(value):
+                    value = value.strftime("%Y-%m-%d")
+                st.write(f"**{label}:** {value or '?'}")
+        if picked.get("Drive Link", ""):
+            st.markdown(f"**Drive Link:** [Open asset]({picked['Drive Link']})")
+        elif picked.get("Meta Creative Folder", ""):
+            st.markdown(f"**Drive Link:** [Open folder]({picked['Meta Creative Folder']})")
+        else:
+            st.write("**Drive Link:** ?")
+
+    with right:
+        st.markdown("**Taxonomy & performance**")
+        for field, label in [
+            ("Marketing Angle Derived", "Marketing Angle"), ("Belief", "Belief"),
+            ("Cohort", "Cohort"), ("Situational Driver", "Situational Driver"),
+            ("Creator / Consumer Name", "Creator / Consumer Name"),
+            ("Video Subtype", "Video Subtype"), ("Static Subtype", "Static Subtype"),
+            ("ROAS", "ROAS"), ("CTR", "CTR"), ("Hook Rate", "Hook Rate"),
+            ("Hold Rate", "Hold Rate"), ("CAC", "CAC"),
+        ]:
+            if field in picked.index:
+                st.write(f"**{label}:** {picked.get(field, '') or '?'}")
+        if picked.get("Reference Image Link", ""):
+            st.markdown(f"**Reference Image:** [Open reference]({picked['Reference Image Link']})")
+        else:
+            st.write("**Reference Image:** ?")
 
 with tab_raw:
     st.subheader("Raw classified Meta Ads rows")

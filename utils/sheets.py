@@ -366,6 +366,13 @@ def load_influencer_ads() -> pd.DataFrame:
         headers = _dedupe_headers(headers)
         df = pd.DataFrame(rows, columns=headers)
         df = df.loc[:, [column for column in df.columns if column.strip()]]
+        perf_ad_col = first_present_column(df, "Perf AD Code", "Perf Ad Code", "Perf AD code", "Perf Ad code")
+        if perf_ad_col and perf_ad_col != "Perf AD Code":
+            df = df.rename(columns={perf_ad_col: "Perf AD Code"})
+            perf_ad_col = "Perf AD Code"
+        if perf_ad_col:
+            df[perf_ad_col] = df[perf_ad_col].map(normalize_ad_code)
+
         ad_col = first_present_column(df, "Ad Code", "AD CODE", "Ad code", "AdCode")
         if ad_col and ad_col != "Ad Code":
             df = df.rename(columns={ad_col: "Ad Code"})
@@ -397,7 +404,11 @@ def classify_meta_ads(meta_df: pd.DataFrame, inhouse_df: pd.DataFrame, influence
         }
 
     influencer_codes = set()
-    influencer_col = first_present_column(influencer_df, "Ad Code", "AD CODE", "Ad code", "AdCode")
+    influencer_col = first_present_column(
+        influencer_df,
+        "Perf AD Code", "Perf Ad Code", "Perf AD code", "Perf Ad code",
+        "Ad Code", "AD CODE", "Ad code", "AdCode",
+    )
     if not influencer_df.empty and influencer_col:
         influencer_codes = {
             normalize_ad_code(value)

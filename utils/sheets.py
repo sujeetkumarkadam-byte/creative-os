@@ -80,6 +80,45 @@ SOURCE_HEADERS = [
 AD_CODE_RE = re.compile(r"\bAD\s*[-_]?\s*(\d+)\b", re.IGNORECASE)
 META_AD_CODE_COL_INDEX = 37  # Column AL in 0-based indexing
 
+# Live-date patterns found INSIDE ad-name strings. Your team's naming
+# convention puts the launch date between pipes, e.g.:
+#   "AD 098 | Static | Rapid Clear Facewash | 31/10/25 | Visible Reduction"
+# We match DD/MM/YY, DD/MM/YYYY, DD-MM-YY, DD-MM-YYYY (and the month/day
+# flipped forms as a fallback).
+_ADNAME_DATE_RE = re.compile(r"\b(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{2,4})\b")
+
+
+def extract_date_from_name(value) -> pd.Timestamp:
+    """Pull the first DD/MM/YY (or similar) date out of an ad-name string.
+    Returns NaT if nothing matches or the parsed values aren't a valid date."""
+    text = str(value or "")
+    if not text.strip():
+        return pd.NaT
+    for match in _ADNAME_DATE_RE.finditer(text):
+        a, b, c = match.groups()
+        a, b, c = int(a), int(b), int(c)
+        if c < 100:
+            c += 2000
+        # Assume DD/MM/YY (team convention). If day > 12 it can't be month-first,
+        # so we're safe. If both <= 12, trust DD/MM as stated.
+        day, month, year = a, b, c
+        # Reject nonsense
+        if not (2020 <= year <= 2030):
+            continue
+        if not (1 <= month <= 12):
+            # try swapping if the "day" is actually a valid month
+            if 1 <= a <= 12 and 1 <= b <= 31:
+                day, month = b, a
+            else:
+                continue
+        if not (1 <= day <= 31):
+            continue
+        try:
+            return pd.Timestamp(year=year, month=month, day=day)
+        except (ValueError, OverflowError):
+            continue
+    return pd.NaT
+
 
 @st.cache_resource
 def _client():
@@ -407,6 +446,20 @@ def build_classified_meta_view(meta_df: pd.DataFrame | None = None,
     ad_name_porcellia_col = first_present_column(tagged, "Ad Name (Porcellia)")
 
     tagged["_Date"] = parse_mixed_dates(tagged[date_col]) if date_col else pd.NaT
+
+    # Fallback: many rows have no usable value in "Date [Ad Taken Live]", but the
+    # team's ad-naming convention embeds the launch date as DD/MM/YY inside the
+    # FB Ad Name / Ad Name (TSS) / Ad Name (Porcellia) strings. Harvest it.
+    fallback_name_cols = [c for c in [
+        fb_ad_name_col, ad_name_tss_col, ad_name_porcellia_col, creative_name_col,
+    ] if c]
+    for name_col in fallback_name_cols:
+        missing_mask = tagged["_Date"].isna()
+        if not missing_mask.any():
+            break
+        extracted = tagged.loc[missing_mask, name_col].map(extract_date_from_name)
+        tagged.loc[missing_mask, "_Date"] = extracted
+
     tagged["Meta Product"] = tagged[product_col] if product_col else ""
     tagged["Meta Creative Type"] = tagged[creative_type_col] if creative_type_col else ""
     tagged["Meta Creative Name"] = tagged[creative_name_col] if creative_name_col else ""

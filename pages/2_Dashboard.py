@@ -49,8 +49,18 @@ if classified.empty:
 
     with st.expander("Show Meta Ads diagnostics", expanded=True):
         # Directly inspect the raw date column so we can see what's failing
-        from utils.sheets import load_meta_ads, first_present_column
+        from utils.sheets import load_meta_ads, first_present_column, extract_date_from_name
         meta_raw = load_meta_ads()
+
+        # Test the ad-name fallback extractor — how many dates can we salvage?
+        st.markdown("**Ad-name date extraction (fallback):**")
+        for candidate in ["FB Ad Name", "Ad Name (TSS)", "Ad Name (Porcellia)"]:
+            if candidate in meta_raw.columns:
+                with_code_rows = meta_raw[meta_raw.get("AD CODE", pd.Series(dtype=str)).astype(str).str.strip() != ""]
+                extracted = with_code_rows[candidate].map(extract_date_from_name)
+                hits = extracted.notna().sum()
+                st.write(f"- `{candidate}` → **{int(hits)}** dates extracted (of {len(with_code_rows)} rows with AD CODE)")
+        st.markdown("---")
 
         st.markdown("**All date-looking columns detected in Meta Ads:**")
         date_like_cols = [c for c in meta_raw.columns if "date" in c.lower()]

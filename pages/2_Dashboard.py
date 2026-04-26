@@ -321,6 +321,7 @@ with tab_assets:
                 st.warning(picked.get("Needs Attention"))
 
         with perf_tab:
+            st.caption(f"Metric source: {_safe_text(picked.get('Metric Source'), 'No metric columns populated yet')}")
             p1, p2, p3, p4 = st.columns(4)
             p1.metric("ROAS", _metric_value(picked, "ROAS"))
             p2.metric("Spend", _metric_value(picked, "Amount Spent"))

@@ -16,6 +16,8 @@ from utils.sheets import (
     build_creative_ops_view,
     folder_id_from_url,
     load_assets,
+    meta_inhouse_import_candidates,
+    import_meta_inhouse_to_master,
     next_asset_id,
     normalize_ad_code,
     save_asset,
@@ -199,6 +201,44 @@ with tab_diag:
 
 with tab_audit:
     st.header("Creative Ops data audit")
+    st.subheader("One-time Meta Ads -> Master import")
+    st.caption(
+        "Finds Meta Ads rows where Creative Name contains `inhouse`, excludes rows already in Master, "
+        "excludes influencer Perf AD Code matches, and excludes Kuhu-tagged rows. Imported taxonomy is conservative."
+    )
+    if st.button("Preview importable in-house Meta rows"):
+        try:
+            st.session_state.meta_inhouse_candidates = meta_inhouse_import_candidates()
+        except Exception as exc:
+            st.error(f"Preview failed: {exc}")
+
+    meta_candidates = st.session_state.get("meta_inhouse_candidates")
+    if meta_candidates is not None:
+        if meta_candidates.empty:
+            st.success("No importable in-house Meta rows found.")
+        else:
+            st.warning(f"{len(meta_candidates)} rows can be imported into Master_Asset_Registry.")
+            cols = [
+                "AD CODE", "Date [Ad Taken Live]", "Creative Name", "Creative Type",
+                "Product", "Marketing Angle", "Funnel Level", "Content Bucket",
+                "Creative Folder Link", "1:1 Creative Link", "9:16 Creative Link",
+            ]
+            st.dataframe(meta_candidates[[c for c in cols if c in meta_candidates.columns]], use_container_width=True, hide_index=True, height=260)
+            confirm_import = st.checkbox("I confirm these should be imported into Master_Asset_Registry")
+            if st.button("Import these rows into Master", type="primary", disabled=not confirm_import):
+                try:
+                    imported, errors = import_meta_inhouse_to_master()
+                    st.success(f"Imported {imported} rows into Master_Asset_Registry.")
+                    if errors:
+                        st.warning("Some rows failed:")
+                        for error in errors:
+                            st.write(f"- {error}")
+                    st.session_state.pop("meta_inhouse_candidates", None)
+                    st.session_state.pop("audit_view", None)
+                except Exception as exc:
+                    st.error(f"Import failed: {exc}")
+
+    st.markdown("---")
     if st.button("Build current dashboard dataset", type="primary"):
         try:
             view = build_creative_ops_view()

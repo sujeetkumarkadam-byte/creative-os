@@ -196,6 +196,7 @@ with right:
                 st.write(f"**{field}:** {_safe(row.get(field))}")
 
     with tab_perf:
+        st.caption("These values are read from Master_Asset_Registry metric columns. They are not calculated or invented by the app.")
         perf_cols = [
             "ROAS", "Amount Spent", "Revenue", "Avg Cost Per Reach", "CTR", "CPC",
             "ATC Rate", "CVR", "AOV", "Hook Rate", "Hold Rate", "CAC",

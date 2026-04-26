@@ -102,6 +102,7 @@ AD_CODE_RE = re.compile(r"\bAD\s*[-_]?\s*0*(\d+)\b", re.IGNORECASE)
 META_AD_CODE_COL_INDEX = 37  # Column AL, zero-based.
 _ADNAME_DATE_RE = re.compile(r"\b(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{2,4})\b")
 _LIKELY_INHOUSE_RE = re.compile(r"\b(in\s*house|in-house|inhouse)\b", re.IGNORECASE)
+_KUHU_RE = re.compile(r"\bkuhu\b", re.IGNORECASE)
 
 
 @st.cache_resource
@@ -344,12 +345,16 @@ def _first_non_empty(*values) -> str:
 
 
 def _add_metric_fields(target: dict, *rows: pd.Series):
+    metric_source = ""
     for metric in PERFORMANCE_COLUMNS:
         for row in rows:
             if row is not None and metric in row.index and _truthy(row.get(metric)):
                 target[metric] = row.get(metric)
+                if not metric_source:
+                    metric_source = "Sheet metric columns"
                 break
         target.setdefault(metric, "")
+    target["Metric Source"] = metric_source
 
 
 def load_assets() -> pd.DataFrame:
@@ -485,6 +490,9 @@ def ensure_master_asset_schema() -> list[str]:
 
     missing = [header for header in ASSET_EXTRA_HEADERS if header not in headers]
     if missing:
+        needed_cols = len(headers) + len(missing)
+        if ws.col_count < needed_cols:
+            ws.add_cols(needed_cols - ws.col_count)
         for offset, header in enumerate(missing, start=1):
             ws.update_cell(1, len(headers) + offset, header)
         headers = headers + missing
@@ -497,6 +505,143 @@ def save_asset(data: dict):
     row = [data.get(header, "") for header in headers]
     _ws(SHEET_ASSETS).append_row(row, value_input_option="USER_ENTERED")
     _clear_sheet_cache()
+
+
+def _product_from_meta(value: str) -> str:
+    text = str(value or "").strip()
+    lowered = text.lower()
+    if "sunscreen" in lowered or "cpgs" in lowered:
+        return "Clear Protect Gel Sunscreen"
+    if "lpp" in lowered or "liquid pimple" in lowered:
+        return "Liquid Pimple Patch"
+    if "emc" in lowered or "melting cleanser" in lowered:
+        return "Effortless Melting Cleanser"
+    if "sfar" in lowered or "spot fade" in lowered or "serum" in lowered:
+        return "Spot Fade Serum"
+    if "rcf" in lowered or "rapid clear" in lowered or "acne combo" in lowered:
+        return "RCF"
+    return text
+
+
+def _video_subtype_from_meta(row: pd.Series) -> str:
+    text = _combine_text(row, ["Creative Name", "Content Bucket", "Creative Type"]).lower()
+    if "founder" in text:
+        return "Founder-Led"
+    if "testimonial" in text or "social proof" in text:
+        return "Consumer Testimonial"
+    if "skit" in text:
+        return "Skit"
+    if "ai" in text:
+        return "AI-Video"
+    return "Brand-Led"
+
+
+def _creator_from_inhouse_name(name: str) -> str:
+    text = re.sub(r"\bin\s*house\b|\binhouse\b|in-house", "", str(name or ""), flags=re.IGNORECASE)
+    text = re.sub(r"\b(video|static|statics|testimonial|brand|founderled|founder led)\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"[_\-]+", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    # Keep this conservative; names are often followed by angle descriptors.
+    words = text.split()
+    return " ".join(words[:3]) if words else ""
+
+
+def _master_row_from_meta_inhouse(meta_row: pd.Series, existing_ids: list[str]) -> dict:
+    raw_type = _coalesce(meta_row, "Creative Type")
+    fmt = infer_format(raw_type) or infer_format(_coalesce(meta_row, "Creative Name"))
+    if fmt not in {"Video", "Static"}:
+        fmt = "Static" if "static" in _coalesce(meta_row, "Creative Name").lower() else "Video"
+
+    product = _product_from_meta(_coalesce(meta_row, "Product"))
+    asset_id = next_asset_id(product, fmt, existing_ids)
+    existing_ids.append(asset_id)
+
+    live_date = _meta_live_date(pd.DataFrame([meta_row])).iloc[0]
+    published_date = live_date.strftime("%Y-%m-%d") if pd.notna(live_date) else ""
+    creative_name = _coalesce(meta_row, "Creative Name")
+    drive_link = _coalesce(meta_row, "Creative Folder Link", "Creative Folder", "1:1 Creative Link", "4:5 Creative Link", "9:16 Creative Link")
+    preview_link = _coalesce(meta_row, "1:1 Creative Link", "4:5 Creative Link", "9:16 Creative Link", "Creative Folder Link", "Creative Folder")
+
+    row = {
+        "Asset ID": asset_id,
+        "Variant #": "A",
+        "Status": "Published",
+        "Created Date": datetime_now_string(),
+        "Published Date": published_date,
+        "Product": product,
+        "Bucket": "Performance",
+        "Channel": "In-house",
+        "Creative Type": _video_subtype_from_meta(meta_row) if fmt == "Video" else infer_static_subtype(creative_name),
+        "Format": fmt,
+        "Video Subtype": _video_subtype_from_meta(meta_row) if fmt == "Video" else "",
+        "Static Subtype": infer_static_subtype(_combine_text(meta_row, ["Creative Name", "Creative Type", "Content Bucket"])) if fmt == "Static" else "",
+        "Marketing Angle": _coalesce(meta_row, "Marketing Angle"),
+        "Funnel Stage": _coalesce(meta_row, "Funnel Level"),
+        "Creator / Consumer Name": _creator_from_inhouse_name(creative_name),
+        "Meta Ad ID": normalize_ad_code(meta_row.get("AD CODE", "")),
+        "Campaign Name": _coalesce(meta_row, "FB Ad Name", "Ad Name (TSS)"),
+        "Drive Link": drive_link,
+        "Preview Asset Link": preview_link,
+        "Source Folder Link": _coalesce(meta_row, "Creative Folder Link", "Creative Folder"),
+        "Brief Link": _coalesce(meta_row, "Asana Link"),
+        "Notes": f"One-time import from Meta Ads. Meta Creative Name: {creative_name}",
+        "Taxonomy Review Status": "Needs Review",
+    }
+    return row
+
+
+def datetime_now_string() -> str:
+    return pd.Timestamp.now(tz=None).strftime("%Y-%m-%d")
+
+
+def meta_inhouse_import_candidates() -> pd.DataFrame:
+    meta = load_meta_ads()
+    assets = load_assets()
+    influencers = load_influencer_ads()
+    if meta.empty or "Creative Name" not in meta.columns:
+        return pd.DataFrame()
+
+    existing_codes = set()
+    if not assets.empty and "Meta Ad ID" in assets.columns:
+        existing_codes = {normalize_ad_code(value) for value in assets["Meta Ad ID"].tolist() if normalize_ad_code(value)}
+
+    influencer_codes = set()
+    if not influencers.empty and "Perf AD Code" in influencers.columns:
+        influencer_codes = {normalize_ad_code(value) for value in influencers["Perf AD Code"].tolist() if normalize_ad_code(value)}
+
+    creative_name = meta["Creative Name"].astype(str)
+    has_inhouse = creative_name.str.contains(r"\bin\s*house\b|\binhouse\b|in-house", case=False, regex=True, na=False)
+    has_kuhu = creative_name.str.contains(r"\bkuhu\b", case=False, regex=True, na=False)
+    out = meta[has_inhouse & ~has_kuhu].copy()
+    out["AD CODE"] = out["AD CODE"].map(normalize_ad_code) if "AD CODE" in out.columns else ""
+    out = out[out["AD CODE"].astype(str).str.strip() != ""]
+    out["Already In Master"] = out["AD CODE"].isin(existing_codes)
+    out["Matched Influencer"] = out["AD CODE"].isin(influencer_codes)
+    return out[~out["Already In Master"] & ~out["Matched Influencer"]].copy()
+
+
+def import_meta_inhouse_to_master() -> tuple[int, list[str]]:
+    candidates = meta_inhouse_import_candidates()
+    if candidates.empty:
+        return 0, []
+
+    assets = load_assets()
+    existing_ids = assets["Asset ID"].dropna().astype(str).tolist() if not assets.empty and "Asset ID" in assets.columns else []
+    ws = _ws(SHEET_ASSETS)
+    headers = ensure_master_asset_schema()
+    imported = 0
+    errors: list[str] = []
+
+    for _, meta_row in candidates.iterrows():
+        try:
+            row = _master_row_from_meta_inhouse(meta_row, existing_ids)
+            ws.append_row([row.get(header, "") for header in headers], value_input_option="USER_ENTERED")
+            imported += 1
+        except Exception as exc:
+            errors.append(f"{normalize_ad_code(meta_row.get('AD CODE', ''))}: {exc}")
+
+    _clear_sheet_cache()
+    return imported, errors
 
 
 def save_experiment(data: dict):
@@ -559,6 +704,8 @@ def classify_meta_ads(meta_df: pd.DataFrame, assets_df: pd.DataFrame, influencer
             return "Unclassified"
         if code in influencer_codes:
             return "Influencer"
+        if _is_kuhu_meta_row(row):
+            return "Influencer"
         if code in inhouse_codes:
             return "Inhouse"
         if bool(likely_mask.loc[row.name]):
@@ -594,7 +741,17 @@ def _is_likely_inhouse_meta_row(row: pd.Series) -> bool:
         "Ad Name (TSS)", "Ad Name (Porcellia)", "Growth SPOC/Project Manager", "Creative Strategist",
     ]
     text = _combine_text(row, columns)
+    if _KUHU_RE.search(text):
+        return False
     return bool(_LIKELY_INHOUSE_RE.search(text))
+
+
+def _is_kuhu_meta_row(row: pd.Series) -> bool:
+    columns = [
+        "Creative Name", "FB Ad Name", "Comment", "Creative Folder Link", "Creative Folder",
+        "Ad Name (TSS)", "Ad Name (Porcellia)", "Growth SPOC/Project Manager", "Creative Strategist",
+    ]
+    return bool(_KUHU_RE.search(_combine_text(row, columns)))
 
 
 def _normalized_master_row(asset: pd.Series, meta_row: pd.Series | None) -> dict:
@@ -841,7 +998,7 @@ def build_creative_ops_view(meta_df: pd.DataFrame | None = None,
             if not code or code in master_codes or code in influencer_perf_codes:
                 continue
             source = meta_row.get("Source", "Porcellia")
-            if source in {"Porcellia", "Needs Logging", "Unclassified"}:
+            if source in {"Porcellia", "Needs Logging", "Unclassified", "Influencer"}:
                 rows.append(_normalized_meta_row(meta_row, source))
 
     out = pd.DataFrame(rows)

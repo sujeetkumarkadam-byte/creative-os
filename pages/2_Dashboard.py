@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from utils.sheets import build_creative_ops_view
+from utils.sheets import build_creative_ops_view, load_performance_import, refresh_sheet_cache
 
 
 st.set_page_config(page_title="Dashboard - Creative OS", layout="wide")
@@ -104,6 +104,19 @@ st.caption(
     "One Creative Ops view across Inhouse, Influencer, and Porcellia. "
     "Dates are driven by live dates: Meta Ads for performance ads, Live Entries 2026 for influencer creator-live rows."
 )
+
+top_refresh, top_note = st.columns([0.22, 0.78])
+with top_refresh:
+    if st.button("Refresh sheet data", type="primary", use_container_width=True):
+        refresh_sheet_cache()
+        st.rerun()
+with top_note:
+    perf_df = load_performance_import()
+    if perf_df.empty:
+        st.caption("Performance source: no `Performance_Import` / performance SyncWith tab found yet.")
+    else:
+        source_name = perf_df["Performance Sheet"].iloc[0] if "Performance Sheet" in perf_df.columns else "Performance_Import"
+        st.caption(f"Performance source: `{source_name}` with {len(perf_df)} AD CODE rows. Click refresh after SyncWith updates.")
 
 with st.spinner("Loading Master, Meta Ads, and Live Entries 2026..."):
     raw = build_creative_ops_view()

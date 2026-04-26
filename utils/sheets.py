@@ -19,6 +19,17 @@ SHEET_SOURCES = "Source_Story_Library"
 SHEET_WEEKLY = "Weekly_Volume"
 SHEET_META_ADS = "Meta Ads"
 SHEET_INFLUENCER = "Live Entries 2026"
+SHEET_PERFORMANCE = "Performance_Import"
+PERFORMANCE_SHEET_CANDIDATES = [
+    "Performance_Import",
+    "Creative_Performance",
+    "Creative Performance",
+    "Meta Performance",
+    "Meta_Performance",
+    "Performance Import",
+    "SyncWith Performance",
+    "Creative Dashboard",
+]
 
 ASSET_HEADERS = [
     "Asset ID", "Parent Asset ID", "Variant #", "What's Different",
@@ -98,6 +109,24 @@ PERFORMANCE_COLUMNS = [
     "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
 ]
 
+PERFORMANCE_IMPORT_HEADERS = ["AD CODE"] + PERFORMANCE_COLUMNS + ["Last Updated", "Notes"]
+
+PERFORMANCE_ALIASES = {
+    "AD CODE": ["AD CODE", "Ad Code", "Meta Ad ID", "Meta AD ID", "Perf AD Code", "Ad ID"],
+    "ROAS": ["ROAS", "Website ROAS", "Purchase ROAS"],
+    "Amount Spent": ["Amount Spent", "Amount spent", "Spend", "Spent", "Amount Spent INR"],
+    "Revenue": ["Revenue", "Purchase Conversion Value", "Conversion Value", "Sales"],
+    "Avg Cost Per Reach": ["Avg Cost Per Reach", "Average Cost Per Reach", "CPM Reach"],
+    "CTR": ["CTR", "CTR %", "Link CTR", "CTR (link click-through rate)"],
+    "CPC": ["CPC", "Cost Per Click", "Cost per link click"],
+    "ATC Rate": ["ATC Rate", "Add To Cart Rate", "Add to cart rate"],
+    "CVR": ["CVR", "Conversion Rate", "Purchase Conversion Rate"],
+    "AOV": ["AOV", "Average Order Value"],
+    "Hook Rate": ["Hook Rate", "Thumbstop Rate", "3 sec view rate"],
+    "Hold Rate": ["Hold Rate", "Hold rate", "Average Watch Time Rate"],
+    "CAC": ["CAC", "CPA", "Cost Per Purchase", "Cost per purchase"],
+}
+
 AD_CODE_RE = re.compile(r"\bAD\s*[-_]?\s*0*(\d+)\b", re.IGNORECASE)
 META_AD_CODE_COL_INDEX = 37  # Column AL, zero-based.
 _ADNAME_DATE_RE = re.compile(r"\b(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{2,4})\b")
@@ -127,8 +156,18 @@ def _sheet_values(sheet_name: str):
     return _ws(sheet_name).get_all_values()
 
 
+@st.cache_data(ttl=600, show_spinner=False)
+def _sheet_titles():
+    return [ws.title for ws in _client().open(st.secrets["spreadsheet_name"]).worksheets()]
+
+
 def _clear_sheet_cache():
     _sheet_values.clear()
+    _sheet_titles.clear()
+
+
+def refresh_sheet_cache():
+    _clear_sheet_cache()
 
 
 def _clean_header(value) -> str:
@@ -185,6 +224,27 @@ def first_present_column(df: pd.DataFrame, *candidates: str):
         if lowered in lower_map:
             return lower_map[lowered]
     return None
+
+
+def _header_key(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", str(value or "").lower())
+
+
+def _rename_aliases(df: pd.DataFrame, aliases: dict[str, list[str]]) -> pd.DataFrame:
+    out = df.copy()
+    key_to_column = {_header_key(column): column for column in out.columns}
+    renames = {}
+    for canonical, options in aliases.items():
+        if canonical in out.columns:
+            continue
+        for option in options:
+            match = key_to_column.get(_header_key(option))
+            if match and match not in renames:
+                renames[match] = canonical
+                break
+    if renames:
+        out = out.rename(columns=renames)
+    return out
 
 
 def normalize_ad_code(value) -> str:
@@ -455,6 +515,34 @@ def load_influencer_ads() -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def load_performance_import() -> pd.DataFrame:
+    try:
+        titles = set(_sheet_titles())
+        sheet_name = next((name for name in PERFORMANCE_SHEET_CANDIDATES if name in titles), "")
+        if not sheet_name:
+            return pd.DataFrame(columns=PERFORMANCE_IMPORT_HEADERS)
+
+        values = _sheet_values(sheet_name)
+        df = _records_from_values(values, PERFORMANCE_IMPORT_HEADERS)
+        if df.empty:
+            return pd.DataFrame(columns=PERFORMANCE_IMPORT_HEADERS)
+
+        df = _rename_aliases(df, PERFORMANCE_ALIASES)
+        if "AD CODE" not in df.columns:
+            return pd.DataFrame(columns=PERFORMANCE_IMPORT_HEADERS)
+
+        df["AD CODE"] = df["AD CODE"].map(normalize_ad_code)
+        df = df[df["AD CODE"].astype(str).str.strip() != ""].copy()
+        if df.empty:
+            return pd.DataFrame(columns=PERFORMANCE_IMPORT_HEADERS)
+
+        df["Performance Sheet"] = sheet_name
+        return df
+    except Exception as exc:
+        st.warning(f"Could not load performance import sheet: {exc}")
+        return pd.DataFrame(columns=PERFORMANCE_IMPORT_HEADERS)
+
+
 def load_experiments() -> pd.DataFrame:
     try:
         values = _sheet_values(SHEET_EXPERIMENTS)
@@ -498,6 +586,17 @@ def ensure_master_asset_schema() -> list[str]:
         headers = headers + missing
         _clear_sheet_cache()
     return headers
+
+
+def ensure_performance_import_sheet():
+    spreadsheet = _client().open(st.secrets["spreadsheet_name"])
+    existing = {ws.title for ws in spreadsheet.worksheets()}
+    if SHEET_PERFORMANCE in existing:
+        return False
+    ws = spreadsheet.add_worksheet(title=SHEET_PERFORMANCE, rows=3000, cols=len(PERFORMANCE_IMPORT_HEADERS) + 5)
+    ws.append_row(PERFORMANCE_IMPORT_HEADERS)
+    _clear_sheet_cache()
+    return True
 
 
 def save_asset(data: dict):
@@ -941,12 +1040,45 @@ def _normalized_meta_row(meta: pd.Series, source: str) -> dict:
     return row
 
 
+def _apply_performance_import(out: pd.DataFrame, performance: pd.DataFrame) -> pd.DataFrame:
+    if out.empty or performance.empty or "AD CODE" not in performance.columns:
+        return out
+
+    perf = performance.copy()
+    perf["AD CODE"] = perf["AD CODE"].map(normalize_ad_code)
+    perf = perf[perf["AD CODE"].astype(str).str.strip() != ""]
+    if perf.empty:
+        return out
+
+    perf = perf.drop_duplicates(subset=["AD CODE"], keep="last").set_index("AD CODE")
+    updated = out.copy()
+    if "AD CODE Normalized" not in updated.columns:
+        updated["AD CODE Normalized"] = updated["AD CODE"].map(normalize_ad_code)
+
+    for idx, row in updated.iterrows():
+        code = normalize_ad_code(row.get("Perf AD Code", "")) or normalize_ad_code(row.get("AD CODE Normalized", ""))
+        if not code or code not in perf.index:
+            continue
+        perf_row = perf.loc[code]
+        touched = False
+        for metric in PERFORMANCE_COLUMNS:
+            if metric in perf_row.index and _truthy(perf_row.get(metric)):
+                updated.at[idx, metric] = perf_row.get(metric)
+                touched = True
+        if touched:
+            sheet_name = perf_row.get("Performance Sheet", SHEET_PERFORMANCE)
+            updated.at[idx, "Metric Source"] = f"{sheet_name} via AD CODE"
+    return updated
+
+
 def build_creative_ops_view(meta_df: pd.DataFrame | None = None,
                             assets_df: pd.DataFrame | None = None,
-                            influencer_df: pd.DataFrame | None = None) -> pd.DataFrame:
+                            influencer_df: pd.DataFrame | None = None,
+                            performance_df: pd.DataFrame | None = None) -> pd.DataFrame:
     meta = load_meta_ads() if meta_df is None else meta_df.copy()
     assets = load_assets() if assets_df is None else assets_df.copy()
     influencers = load_influencer_ads() if influencer_df is None else influencer_df.copy()
+    performance = load_performance_import() if performance_df is None else performance_df.copy()
 
     if not meta.empty:
         if "AD CODE" not in meta.columns:
@@ -1012,6 +1144,7 @@ def build_creative_ops_view(meta_df: pd.DataFrame | None = None,
     out["Format Derived"] = out["Format"].fillna("") if "Format" in out.columns else ""
     out["Marketing Angle Derived"] = out["Marketing Angle"].fillna("") if "Marketing Angle" in out.columns else ""
     out["Creative Name Derived"] = out["Creative Name"].fillna("") if "Creative Name" in out.columns else ""
+    out = _apply_performance_import(out, performance)
     return out
 
 
@@ -1123,6 +1256,7 @@ def initialise_sheets():
             "Week Start", "Week End", "Total", "Videos", "Statics",
             "RCF", "CPGS", "BRGM", "Diversity Score", "Notes",
         ],
+        SHEET_PERFORMANCE: PERFORMANCE_IMPORT_HEADERS,
     }
     for name, headers in to_create.items():
         if name not in existing:

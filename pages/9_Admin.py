@@ -13,13 +13,17 @@ from utils.sheets import (
     SHEET_EXPERIMENTS,
     SHEET_INFLUENCER,
     SHEET_META_ADS,
+    SHEET_PERFORMANCE,
     build_creative_ops_view,
+    ensure_performance_import_sheet,
     folder_id_from_url,
     load_assets,
+    load_performance_import,
     meta_inhouse_import_candidates,
     import_meta_inhouse_to_master,
     next_asset_id,
     normalize_ad_code,
+    refresh_sheet_cache,
     save_asset,
 )
 from utils.taxonomy import (
@@ -162,6 +166,26 @@ tab_diag, tab_audit, tab_drive = st.tabs(["Sheet Diagnostics", "Creative Ops Aud
 
 with tab_diag:
     st.header("Spreadsheet schema")
+    if st.button("Refresh cached sheet reads"):
+        refresh_sheet_cache()
+        st.success("Cleared sheet cache. Reload the page or rerun diagnostics for fresh data.")
+
+    if st.button("Create Performance_Import tab for SyncWith"):
+        try:
+            created = ensure_performance_import_sheet()
+            if created:
+                st.success(f"Created `{SHEET_PERFORMANCE}`. Point SyncWith to this tab and include an `AD CODE` column.")
+            else:
+                st.info(f"`{SHEET_PERFORMANCE}` already exists.")
+        except Exception as exc:
+            st.error(f"Could not create performance tab: {exc}")
+
+    perf_df = load_performance_import()
+    if perf_df.empty:
+        st.info("No performance import tab detected yet. Accepted tab names include `Performance_Import`, `Creative_Performance`, and `Meta Performance`.")
+    else:
+        st.success(f"Detected performance tab `{perf_df['Performance Sheet'].iloc[0]}` with {len(perf_df)} AD CODE rows.")
+
     if st.button("Scan all tabs", type="primary"):
         try:
             ss = _client().open(st.secrets["spreadsheet_name"])

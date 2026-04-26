@@ -3,13 +3,32 @@ import re
 import pandas as pd
 import streamlit as st
 
-from utils.sheets import load_assets, normalize_ad_code, parse_mixed_dates
+from utils.sheets import (
+    PERFORMANCE_COLUMNS,
+    load_assets,
+    load_performance_import,
+    normalize_ad_code,
+    parse_mixed_dates,
+    refresh_sheet_cache,
+)
 from utils.taxonomy import FORMATS, PRODUCTS
 
 
 st.set_page_config(page_title="Asset Registry - Creative OS", layout="wide")
 st.title("Asset Registry")
 st.caption("Primary in-house creative library from Master_Asset_Registry.")
+
+refresh_col, source_col = st.columns([0.2, 0.8])
+with refresh_col:
+    if st.button("Refresh sheet data", type="primary", use_container_width=True):
+        refresh_sheet_cache()
+        st.rerun()
+with source_col:
+    performance_df = load_performance_import()
+    if performance_df.empty:
+        st.caption("Performance source: Master metric columns only. Add `Performance_Import` for fresh SyncWith metrics.")
+    else:
+        st.caption(f"Performance source: `{performance_df['Performance Sheet'].iloc[0]}` via AD CODE.")
 
 st.markdown(
     """
@@ -71,6 +90,22 @@ if assets.empty:
 
 df = assets.copy()
 df["Meta Ad ID"] = df["Meta Ad ID"].map(normalize_ad_code) if "Meta Ad ID" in df.columns else ""
+if not performance_df.empty and "AD CODE" in performance_df.columns:
+    perf = performance_df.copy()
+    perf["AD CODE"] = perf["AD CODE"].map(normalize_ad_code)
+    perf = perf.drop_duplicates(subset=["AD CODE"], keep="last").set_index("AD CODE")
+    for idx, row in df.iterrows():
+        code = normalize_ad_code(row.get("Meta Ad ID", ""))
+        if not code or code not in perf.index:
+            continue
+        perf_row = perf.loc[code]
+        touched = False
+        for metric in PERFORMANCE_COLUMNS:
+            if metric in perf_row.index and str(perf_row.get(metric, "")).strip():
+                df.at[idx, metric] = perf_row.get(metric)
+                touched = True
+        if touched:
+            df.at[idx, "Metric Source"] = f"{perf_row.get('Performance Sheet', 'Performance_Import')} via AD CODE"
 df["_Published Date"] = parse_mixed_dates(df["Published Date"]) if "Published Date" in df.columns else pd.NaT
 if "Format" not in df.columns:
     df["Format"] = ""
@@ -196,7 +231,7 @@ with right:
                 st.write(f"**{field}:** {_safe(row.get(field))}")
 
     with tab_perf:
-        st.caption("These values are read from Master_Asset_Registry metric columns. They are not calculated or invented by the app.")
+        st.caption(f"Metric source: {_safe(row.get('Metric Source'), 'Master_Asset_Registry metric columns')}. These values are read from sheets, not calculated by the app.")
         perf_cols = [
             "ROAS", "Amount Spent", "Revenue", "Avg Cost Per Reach", "CTR", "CPC",
             "ATC Rate", "CVR", "AOV", "Hook Rate", "Hold Rate", "CAC",

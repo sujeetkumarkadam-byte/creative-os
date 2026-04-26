@@ -1,502 +1,409 @@
 from datetime import date, timedelta
+import re
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from utils.sheets import build_classified_meta_view
-from utils.taxonomy import PRODUCTS
+from utils.sheets import build_creative_ops_view
 
-st.set_page_config(page_title="Dashboard — Creative OS", layout="wide")
+
+st.set_page_config(page_title="Dashboard - Creative OS", layout="wide")
+
+st.markdown(
+    """
+    <style>
+    .block-container { padding-top: 1.25rem; max-width: 1400px; }
+    h1 { letter-spacing: -0.04em; color: #18251f; }
+    h2, h3 { color: #18251f; }
+    div[data-testid="metric-container"] {
+        background: linear-gradient(135deg, #f7fbf4 0%, #edf6f2 100%);
+        border: 1px solid #d8e9df;
+        border-radius: 18px;
+        padding: 1rem 1.05rem;
+        box-shadow: 0 8px 26px rgba(30, 71, 50, 0.06);
+    }
+    .asset-card {
+        border: 1px solid #dce8df;
+        border-radius: 18px;
+        padding: 1rem;
+        background: #ffffff;
+        box-shadow: 0 10px 30px rgba(31, 49, 39, 0.06);
+        margin-bottom: 0.75rem;
+    }
+    .pill {
+        display: inline-block;
+        padding: 0.18rem 0.55rem;
+        border-radius: 999px;
+        background: #eaf5ef;
+        color: #174834;
+        font-size: 0.78rem;
+        margin-right: 0.35rem;
+        margin-bottom: 0.35rem;
+    }
+    .muted { color: #6d756f; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+def _safe_text(value, fallback="-"):
+    text = str(value or "").strip()
+    return text if text and text.lower() not in {"nan", "nat", "none"} else fallback
+
+
+def _file_id_from_drive_url(url: str) -> str:
+    text = str(url or "")
+    patterns = [
+        r"/file/d/([a-zA-Z0-9_-]+)",
+        r"/folders/([a-zA-Z0-9_-]+)",
+        r"[?&]id=([a-zA-Z0-9_-]+)",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            return match.group(1)
+    return ""
+
+
+def _thumbnail_url(row: pd.Series) -> str:
+    for column in ["Thumbnail Link", "Preview Asset Link", "Drive Link", "Source Folder Link"]:
+        value = str(row.get(column, "") or "").strip()
+        if not value:
+            continue
+        if value.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+            return value
+        file_id = _file_id_from_drive_url(value)
+        if file_id and "/folders/" not in value:
+            return f"https://drive.google.com/thumbnail?id={file_id}&sz=w900"
+    return ""
+
+
+def _fmt_date(value) -> str:
+    if pd.isna(value):
+        return "-"
+    try:
+        return pd.Timestamp(value).strftime("%d %b %Y")
+    except Exception:
+        return _safe_text(value)
+
+
+def _metric_value(row: pd.Series, field: str):
+    value = row.get(field, "")
+    return _safe_text(value)
+
+
+def _link(label: str, url: str):
+    if _safe_text(url, ""):
+        st.markdown(f"[{label}]({url})")
+
+
 st.title("Dashboard")
 st.caption(
-    "Live performance volume comes from Meta Ads. Inhouse taxonomy comes from Inhouse_Live_Assets. "
-    "Influencer is identified by Live Entries 2026, and everything left over is treated as Porcellia."
+    "One Creative Ops view across Inhouse, Influencer, and Porcellia. "
+    "Dates are driven by live dates: Meta Ads for performance ads, Live Entries 2026 for influencer creator-live rows."
 )
 
-with st.spinner("Loading Meta Ads, Inhouse, and Influencer sheets..."):
-    classified = build_classified_meta_view()
+with st.spinner("Loading Master, Meta Ads, and Live Entries 2026..."):
+    raw = build_creative_ops_view()
 
-if classified.empty:
-    st.error("Could not build the live dashboard view from the connected sheets.")
+if raw.empty:
+    st.error("No usable Creative OS data could be built from the connected sheets.")
     st.stop()
 
-raw_classified = classified.copy()
-classified = classified.copy()
-classified = classified[classified["AD CODE"].astype(str).str.strip() != ""]
-classified = classified[classified["_Date"].notna()]
-
-# Defensive clamp: one malformed far-future/far-past parsed date in Meta Ads
-# should not break the whole dashboard window logic.
+df = raw.copy()
+df = df[df["_Date"].notna()]
 reasonable_floor = pd.Timestamp("2020-01-01")
-reasonable_ceiling = pd.Timestamp.today().normalize() + pd.Timedelta(days=365)
-classified = classified[
-    (classified["_Date"] >= reasonable_floor) &
-    (classified["_Date"] <= reasonable_ceiling)
-]
+reasonable_ceiling = pd.Timestamp.today().normalize() + pd.Timedelta(days=7)
+df = df[(df["_Date"] >= reasonable_floor) & (df["_Date"] <= reasonable_ceiling)]
 
-if classified.empty:
-    st.warning("No live Meta Ads rows with both an AD CODE and a sane live date were found.")
-
-    total_rows = len(raw_classified)
-    rows_with_code = int(raw_classified["AD CODE"].astype(str).str.strip().ne("").sum()) if "AD CODE" in raw_classified.columns else 0
-    rows_with_date = int(raw_classified["_Date"].notna().sum()) if "_Date" in raw_classified.columns else 0
-
-    st.info(
-        f"Diagnostics: total rows loaded = {total_rows}, rows with AD CODE = {rows_with_code}, "
-        f"rows with parsed live date = {rows_with_date}."
-    )
-
-    with st.expander("Show Meta Ads diagnostics", expanded=True):
-        # Directly inspect the raw date column so we can see what's failing
-        from utils.sheets import load_meta_ads, first_present_column, extract_date_from_name
-        meta_raw = load_meta_ads()
-
-        # Test the ad-name fallback extractor — how many dates can we salvage?
-        st.markdown("**Ad-name date extraction (fallback):**")
-        for candidate in ["FB Ad Name", "Ad Name (TSS)", "Ad Name (Porcellia)"]:
-            if candidate in meta_raw.columns:
-                with_code_rows = meta_raw[meta_raw.get("AD CODE", pd.Series(dtype=str)).astype(str).str.strip() != ""]
-                extracted = with_code_rows[candidate].map(extract_date_from_name)
-                hits = extracted.notna().sum()
-                st.write(f"- `{candidate}` → **{int(hits)}** dates extracted (of {len(with_code_rows)} rows with AD CODE)")
-        st.markdown("---")
-
-        st.markdown("**All date-looking columns detected in Meta Ads:**")
-        date_like_cols = [c for c in meta_raw.columns if "date" in c.lower()]
-        st.code("\n".join(date_like_cols) or "(none)")
-
-        primary_date_col = first_present_column(
-            meta_raw, "Date [Ad Taken Live]", "Date [Ad Taken Live] ",
-        )
-        st.markdown(f"**Primary date column being read:** `{primary_date_col or 'NONE FOUND'}`")
-
-        if primary_date_col and "AD CODE" in meta_raw.columns:
-            # Filter to rows that have an AD CODE — those are the ads that matter
-            with_code = meta_raw[meta_raw["AD CODE"].astype(str).str.strip() != ""].copy()
-
-            live_dates_raw = with_code[primary_date_col].astype(str).str.strip()
-            non_empty_dates = live_dates_raw[live_dates_raw != ""]
-
-            st.markdown(
-                f"**Of {len(with_code)} rows with AD CODE:** "
-                f"`{len(non_empty_dates)}` have *any* value in `{primary_date_col}`."
-            )
-
-            if len(non_empty_dates) > 0:
-                st.markdown("**First 15 raw date values (these are what parse_mixed_dates sees):**")
-                sample = non_empty_dates.head(15).tolist()
-                st.code("\n".join(f"{i+1:2}. {repr(v)}" for i, v in enumerate(sample)))
-                st.caption(
-                    "The `repr()` shows exact whitespace / quotes. If these look like real dates "
-                    "but only 2 of them parse, paste this block back and I'll fix the parser."
-                )
-            else:
-                st.warning(
-                    "NO rows with AD CODE have anything in the 'Date [Ad Taken Live]' column. "
-                    "Either the media buyer isn't populating it, or the actual live-date is "
-                    "stored under a different column name. Check which of the date-like columns "
-                    "above actually has values."
-                )
-
-            # Also sample some of the other date columns to see if ANY of them has the real date
-            st.markdown("---")
-            st.markdown(
-                "**Sanity check — non-empty value counts across every date-like column "
-                "(for rows with AD CODE):**"
-            )
-            counts = {}
-            for c in date_like_cols:
-                v = with_code[c].astype(str).str.strip()
-                counts[c] = int((v != "").sum())
-            st.dataframe(
-                pd.DataFrame([{"Column": k, "Non-empty count": v} for k, v in counts.items()])
-                  .sort_values("Non-empty count", ascending=False),
-                use_container_width=True, hide_index=True,
-            )
-            st.caption(
-                "If one of the other Date columns has ~542 non-empty values while "
-                "'Date [Ad Taken Live]' has ~2, THAT is the real live-date column — we're "
-                "reading the wrong one."
-            )
-
-        st.markdown("---")
-        st.markdown("**Sample of first 25 classified rows:**")
-        sample_cols = [
-            "AD CODE", "Meta Product", "Meta Creative Type", "Meta Creative Name",
-            "_Date", "Meta FB Ad Name", "Meta Ad Name (TSS)", "Meta Ad Name (Porcellia)",
-        ]
-        debug = raw_classified[[c for c in sample_cols if c in raw_classified.columns]].copy().head(25)
-        if "_Date" in debug.columns:
-            debug = debug.rename(columns={"_Date": "Parsed Live Date"})
-        st.dataframe(debug, use_container_width=True, hide_index=True)
+if df.empty:
+    st.warning("Rows loaded, but none had a usable live date after parsing.")
+    with st.expander("Data audit", expanded=True):
+        st.write(f"Raw rows built: {len(raw)}")
+        st.dataframe(raw.head(50), use_container_width=True, hide_index=True)
     st.stop()
 
-today = date.today()
-anchor_ts = classified["_Date"].max().normalize()
-anchor = anchor_ts.date()
+latest = df["_Date"].max().date()
+earliest = df["_Date"].min().date()
 
-st.sidebar.header("Date range")
-window = st.sidebar.radio(
-    "Window",
-    ["Last 7 days", "Last 30 days", "Last 90 days", "All time", "Custom"],
-    index=1,
-)
+with st.sidebar:
+    st.header("Dashboard Filters")
+    preset = st.radio(
+        "Date range",
+        ["Last 7 days", "Last 14 days", "Last 30 days", "This month", "All time", "Custom"],
+        index=2,
+    )
+    today = date.today()
+    if preset == "Last 7 days":
+        start, end = latest - timedelta(days=6), latest
+    elif preset == "Last 14 days":
+        start, end = latest - timedelta(days=13), latest
+    elif preset == "Last 30 days":
+        start, end = latest - timedelta(days=29), latest
+    elif preset == "This month":
+        start, end = latest.replace(day=1), latest
+    elif preset == "All time":
+        start, end = earliest, latest
+    else:
+        start = st.date_input("From", value=max(earliest, latest - timedelta(days=29)))
+        end = st.date_input("To", value=latest if latest <= today + timedelta(days=365) else today)
 
-if window == "Last 7 days":
-    start, end = anchor - timedelta(days=7), anchor
-elif window == "Last 30 days":
-    start, end = anchor - timedelta(days=30), anchor
-elif window == "Last 90 days":
-    start, end = anchor - timedelta(days=90), anchor
-elif window == "All time":
-    start, end = classified["_Date"].min().date(), anchor
-else:
-    start = st.sidebar.date_input("From", value=anchor - timedelta(days=30))
-    end = st.sidebar.date_input("To", value=max(anchor, today))
+    st.caption(f"Available data: {earliest.strftime('%d %b %Y')} to {latest.strftime('%d %b %Y')}")
 
-st.sidebar.caption(f"Anchored on most recent live date: **{anchor}**")
+    source_order = ["Inhouse", "Influencer", "Porcellia", "Needs Logging", "Unclassified"]
+    sources_present = [source for source in source_order if source in set(df["Source"].astype(str))]
+    selected_sources = st.multiselect("Source", sources_present, default=[s for s in sources_present if s != "Unclassified"])
 
-st.sidebar.markdown("---")
-sources = st.sidebar.multiselect(
-    "Source",
-    ["Inhouse", "Influencer", "Porcellia", "Unclassified"],
-    default=["Inhouse", "Influencer", "Porcellia"],
-)
+    product_options = sorted(v for v in df["Product"].dropna().astype(str).unique() if v.strip())
+    selected_products = st.multiselect("Product", product_options, default=product_options)
 
-product_options = sorted(
-    product for product in classified["Product Derived"].dropna().astype(str).unique()
-    if product.strip()
-)
-selected_products = st.sidebar.multiselect(
-    "Product",
-    product_options or PRODUCTS,
-    default=product_options or PRODUCTS,
-)
+    format_options = sorted(v for v in df["Format"].dropna().astype(str).unique() if v.strip())
+    selected_formats = st.multiselect("Format", format_options, default=format_options)
 
-format_options = ["Video", "Static"]
-selected_formats = st.sidebar.multiselect("Format", format_options, default=format_options)
+    search = st.text_input("Search", placeholder="AD code, creator, asset, angle...")
 
-angle_options = sorted(
-    value for value in classified["Marketing Angle Derived"].dropna().astype(str).unique()
-    if value.strip()
-) if "Marketing Angle Derived" in classified.columns else []
-selected_angles = st.sidebar.multiselect("Marketing Angle", angle_options, default=angle_options)
 
-cohort_options = sorted(
-    value for value in classified["Cohort"].dropna().astype(str).unique()
-    if value.strip()
-) if "Cohort" in classified.columns else []
-selected_cohorts = st.sidebar.multiselect("Cohort", cohort_options, default=cohort_options)
-
-creator_query = st.sidebar.text_input("Creator / Creative Search", placeholder="creator, creative name, ad code...")
-
-filtered = classified.copy()
-filtered = filtered[
-    (filtered["_Date"] >= pd.Timestamp(start)) &
-    (filtered["_Date"] <= pd.Timestamp(end))
-]
-filtered = filtered[filtered["Source"].isin(sources)]
+filtered = df.copy()
+filtered = filtered[(filtered["_Date"] >= pd.Timestamp(start)) & (filtered["_Date"] <= pd.Timestamp(end))]
+if selected_sources:
+    filtered = filtered[filtered["Source"].isin(selected_sources)]
 if selected_products:
-    filtered = filtered[filtered["Product Derived"].isin(selected_products)]
+    filtered = filtered[filtered["Product"].isin(selected_products) | filtered["Product"].astype(str).str.strip().eq("")]
 if selected_formats:
-    filtered = filtered[
-        filtered["Format Derived"].isin(selected_formats) |
-        (filtered["Format Derived"].astype(str).str.strip() == "")
-    ]
-if selected_angles:
-    filtered = filtered[filtered["Marketing Angle Derived"].isin(selected_angles)]
-if selected_cohorts:
-    filtered = filtered[
-        filtered["Cohort"].astype(str).str.strip().eq("") |
-        filtered["Cohort"].isin(selected_cohorts)
-    ]
-if creator_query.strip():
-    term = creator_query.strip().lower()
+    filtered = filtered[filtered["Format"].isin(selected_formats) | filtered["Format"].astype(str).str.strip().eq("")]
+if search.strip():
+    term = search.strip().lower()
     search_cols = [
-        column for column in [
-            "AD CODE", "Creative Name Derived", "Creator / Consumer Name",
-            "Meta FB Ad Name", "Meta Ad Name (TSS)", "Meta Ad Name (Porcellia)",
-        ] if column in filtered.columns
+        "AD CODE", "Perf AD Code", "Asset ID", "Creative Name", "Creator", "Creator / Consumer Name",
+        "Marketing Angle", "Cohort", "Belief", "Drive Link", "Instagram / Live Link",
     ]
     mask = pd.Series(False, index=filtered.index)
-    for column in search_cols:
+    for column in [c for c in search_cols if c in filtered.columns]:
         mask = mask | filtered[column].astype(str).str.lower().str.contains(term, na=False)
     filtered = filtered[mask]
 
 if filtered.empty:
-    st.warning("No live ads match the current filters.")
+    st.warning("No creatives match the current filters.")
     st.stop()
 
-inhouse = filtered[filtered["Source"] == "Inhouse"].copy()
+st.markdown(f"### {len(filtered)} creatives live from {_fmt_date(pd.Timestamp(start))} to {_fmt_date(pd.Timestamp(end))}")
 
-top_metrics = st.columns(5)
-top_metrics[0].metric("Total live ads", len(filtered))
-top_metrics[1].metric("Inhouse", int((filtered["Source"] == "Inhouse").sum()))
-top_metrics[2].metric("Influencer", int((filtered["Source"] == "Influencer").sum()))
-top_metrics[3].metric("Porcellia", int((filtered["Source"] == "Porcellia").sum()))
-top_metrics[4].metric(
-    "Tagged inhouse",
-    int(inhouse["Asset ID"].astype(str).str.strip().ne("").sum()) if "Asset ID" in inhouse.columns else 0,
-    help="Inhouse live ads that already have a row in Inhouse_Live_Assets.",
+source_counts = filtered["Source"].value_counts()
+metrics = st.columns(6)
+metrics[0].metric("Total creatives", len(filtered))
+metrics[1].metric("Inhouse", int(source_counts.get("Inhouse", 0)))
+metrics[2].metric("Influencer", int(source_counts.get("Influencer", 0)))
+metrics[3].metric("Porcellia", int(source_counts.get("Porcellia", 0)))
+metrics[4].metric("Needs logging", int(source_counts.get("Needs Logging", 0)))
+metrics[5].metric("With AD CODE", int(filtered["AD CODE"].astype(str).str.contains("AD ", na=False).sum()))
+
+tab_overview, tab_assets, tab_quality, tab_audit = st.tabs(
+    ["Overview", "Creative Deep Dive", "Quality & Taxonomy", "Data Audit"]
 )
 
-tab_overview, tab_assets, tab_raw = st.tabs(["Overview", "Asset Deep Dive", "Raw Live Ads"])
+color_map = {
+    "Inhouse": "#0f6e56",
+    "Influencer": "#2b8fd8",
+    "Porcellia": "#e2a33a",
+    "Needs Logging": "#d85542",
+    "Unclassified": "#8c9490",
+}
 
 with tab_overview:
-    left, right = st.columns(2)
-
+    left, right = st.columns([1.05, 1])
     with left:
-        st.subheader("Live ads by source")
-        source_counts = filtered["Source"].value_counts().reset_index()
-        source_counts.columns = ["Source", "Count"]
-        fig = px.pie(
-            source_counts,
-            names="Source",
-            values="Count",
-            color="Source",
-            color_discrete_map={
-                "Inhouse": "#0F6E56",
-                "Influencer": "#2EA882",
-                "Porcellia": "#A8D5C6",
-                "Unclassified": "#D7E6E1",
-            },
-        )
-        fig.update_layout(margin=dict(t=10, b=10))
-        st.plotly_chart(fig, use_container_width=True)
-
-    with right:
-        st.subheader("Live ads over time")
         timeline = filtered.copy()
-        timeline["Week"] = timeline["_Date"].dt.to_period("W").dt.start_time
-        weekly = timeline.groupby(["Week", "Source"]).size().reset_index(name="Count")
+        timeline["Day"] = timeline["_Date"].dt.date
+        daily = timeline.groupby(["Day", "Source"]).size().reset_index(name="Creatives")
         fig = px.bar(
-            weekly,
-            x="Week",
-            y="Count",
+            daily,
+            x="Day",
+            y="Creatives",
             color="Source",
             barmode="stack",
-            color_discrete_map={
-                "Inhouse": "#0F6E56",
-                "Influencer": "#2EA882",
-                "Porcellia": "#A8D5C6",
-                "Unclassified": "#D7E6E1",
-            },
+            color_discrete_map=color_map,
         )
-        fig.update_layout(margin=dict(t=10, b=10), xaxis_title="", yaxis_title="Ads live")
-        st.plotly_chart(fig, use_container_width=True)
-
-    left, right = st.columns(2)
-
-    with left:
-        st.subheader("Source × product")
-        source_product = (
-            filtered.groupby(["Product Derived", "Source"])
-            .size()
-            .reset_index(name="Count")
-        )
-        fig = px.bar(
-            source_product,
-            x="Product Derived",
-            y="Count",
-            color="Source",
-            barmode="group",
-            color_discrete_map={
-                "Inhouse": "#0F6E56",
-                "Influencer": "#2EA882",
-                "Porcellia": "#A8D5C6",
-                "Unclassified": "#D7E6E1",
-            },
-        )
-        fig.update_layout(margin=dict(t=10, b=10), xaxis_title="", yaxis_title="Ads live")
+        fig.update_layout(margin=dict(l=10, r=10, t=20, b=10), xaxis_title="", yaxis_title="")
         st.plotly_chart(fig, use_container_width=True)
 
     with right:
-        st.subheader("Format split")
-        format_counts = (
-            filtered["Format Derived"]
-            .replace("", "Unknown")
-            .fillna("Unknown")
-            .value_counts()
-            .reset_index()
-        )
-        format_counts.columns = ["Format", "Count"]
-        fig = px.pie(format_counts, names="Format", values="Count", color_discrete_sequence=px.colors.sequential.Teal)
-        fig.update_layout(margin=dict(t=10, b=10))
+        split = filtered["Source"].value_counts().reset_index()
+        split.columns = ["Source", "Creatives"]
+        fig = px.pie(split, names="Source", values="Creatives", color="Source", color_discrete_map=color_map, hole=0.45)
+        fig.update_layout(margin=dict(l=10, r=10, t=20, b=10))
         st.plotly_chart(fig, use_container_width=True)
 
-    if not inhouse.empty:
-        left, right = st.columns(2)
-
-        with left:
-            st.subheader("Top inhouse marketing angles")
-            angle_counts = (
-                inhouse["Marketing Angle Derived"]
-                .replace("", pd.NA)
-                .dropna()
-                .value_counts()
-                .head(15)
-                .reset_index()
-            )
-            angle_counts.columns = ["Marketing Angle", "Count"]
-            if angle_counts.empty:
-                st.info("No inhouse marketing angles tagged yet.")
-            else:
-                fig = px.bar(
-                    angle_counts,
-                    x="Count",
-                    y="Marketing Angle",
-                    orientation="h",
-                    color="Count",
-                    color_continuous_scale="Teal",
-                    text="Count",
-                )
-                fig.update_layout(
-                    yaxis={"categoryorder": "total ascending"},
-                    coloraxis_showscale=False,
-                    margin=dict(t=10, b=10),
-                )
-                st.plotly_chart(fig, use_container_width=True)
-
-        with right:
-            st.subheader("Top inhouse cohorts")
-            cohort_counts = (
-                inhouse["Cohort"]
-                .replace("", pd.NA)
-                .dropna()
-                .value_counts()
-                .head(15)
-                .reset_index()
-            )
-            cohort_counts.columns = ["Cohort", "Count"]
-            if cohort_counts.empty:
-                st.info("No inhouse cohorts tagged yet.")
-            else:
-                fig = px.bar(
-                    cohort_counts,
-                    x="Count",
-                    y="Cohort",
-                    orientation="h",
-                    color="Count",
-                    color_continuous_scale="Teal",
-                    text="Count",
-                )
-                fig.update_layout(
-                    yaxis={"categoryorder": "total ascending"},
-                    coloraxis_showscale=False,
-                    margin=dict(t=10, b=10),
-                )
-                st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No inhouse live ads match this window yet, so the taxonomy deep dive is empty.")
+    left, mid, right = st.columns(3)
+    with left:
+        product = filtered["Product"].replace("", "Unknown").value_counts().head(12).reset_index()
+        product.columns = ["Product", "Creatives"]
+        st.subheader("Product mix")
+        st.dataframe(product, use_container_width=True, hide_index=True)
+    with mid:
+        fmt = filtered["Format"].replace("", "Unknown").value_counts().reset_index()
+        fmt.columns = ["Format", "Creatives"]
+        st.subheader("Format mix")
+        st.dataframe(fmt, use_container_width=True, hide_index=True)
+    with right:
+        perf_ready = filtered[filtered["Perf AD Code"].astype(str).str.contains("AD ", na=False)]
+        st.subheader("Performance readiness")
+        st.metric("Rows with Perf AD Code", len(perf_ready))
+        st.metric("Rows missing Perf AD Code", len(filtered) - len(perf_ready))
 
 with tab_assets:
-    st.subheader("Filtered asset view")
-    metrics = st.columns(5)
-    metrics[0].metric("Filtered live ads", len(filtered))
-    metrics[1].metric("Inhouse", int((filtered["Source"] == "Inhouse").sum()))
-    metrics[2].metric("Influencer", int((filtered["Source"] == "Influencer").sum()))
-    metrics[3].metric("Porcellia", int((filtered["Source"] == "Porcellia").sum()))
-    metrics[4].metric(
-        "Tagged taxonomy rows",
-        int(filtered["Marketing Angle Derived"].astype(str).str.strip().ne("").sum()) if "Marketing Angle Derived" in filtered.columns else 0,
-    )
+    st.subheader("Creative gallery")
+    st.caption("Use this as the working review surface: pick a date range, filter, then inspect the exact creatives.")
 
-    display_cols = [
-        "Source", "AD CODE", "_Date", "Creative Name Derived", "Product Derived", "Format Derived",
-        "Video Subtype", "Static Subtype", "Creator / Consumer Name", "Marketing Angle Derived",
-        "Belief", "Cohort", "Funnel Stage", "Meta Status", "Drive Link", "Reference Image Link",
-        "ROAS", "CTR", "Hook Rate", "Hold Rate", "CAC",
-    ]
-    show = filtered[[column for column in display_cols if column in filtered.columns]].copy()
-    show = show.rename(columns={
-        "_Date": "Live Date",
-        "Creative Name Derived": "Creative Name",
-        "Product Derived": "Product",
-        "Format Derived": "Format",
-        "Marketing Angle Derived": "Marketing Angle",
-        "Meta Status": "Status",
-    })
-    if "Live Date" in show.columns:
-        show = show.sort_values("Live Date", ascending=False)
-    st.dataframe(show, use_container_width=True, hide_index=True, height=360)
-
-    inspect_choices = filtered.copy()
-    inspect_choices["_label"] = inspect_choices.apply(
-        lambda row: f"{row.get('AD CODE', '')} | {row.get('Creative Name Derived', '') or row.get('Meta FB Ad Name', '') or row.get('Meta Ad Name (TSS)', '') or row.get('Meta Ad Name (Porcellia)', '')}",
+    sort_cols = ["_Date", "Source", "Creative Name"]
+    gallery = filtered.sort_values([c for c in sort_cols if c in filtered.columns], ascending=[False, True, True]).copy()
+    labels = gallery.apply(
+        lambda row: f"{_safe_text(row.get('AD CODE'))} | {_safe_text(row.get('Source'))} | {_safe_text(row.get('Creative Name'))}",
         axis=1,
-    )
-    selected_label = st.selectbox("Inspect a filtered asset", inspect_choices["_label"].tolist())
-    picked = inspect_choices[inspect_choices["_label"] == selected_label].iloc[0]
+    ).tolist()
 
-    left, right = st.columns(2)
-    with left:
-        st.markdown("**Identity & live info**")
-        for field, label in [
-            ("Source", "Source"), ("AD CODE", "AD CODE"), ("_Date", "Live Date"),
-            ("Creative Name Derived", "Creative Name"), ("Product Derived", "Product"),
-            ("Format Derived", "Format"), ("Meta Creative Type", "Creative Type"),
-            ("Meta Status", "Status"), ("Meta Funnel Level", "Funnel Level"),
-        ]:
-            if field in picked.index:
-                value = picked.get(field, "")
-                if field == "_Date" and pd.notna(value):
-                    value = value.strftime("%Y-%m-%d")
-                st.write(f"**{label}:** {value or '?'}")
-        if picked.get("Drive Link", ""):
-            st.markdown(f"**Drive Link:** [Open asset]({picked['Drive Link']})")
-        elif picked.get("Meta Creative Folder", ""):
-            st.markdown(f"**Drive Link:** [Open folder]({picked['Meta Creative Folder']})")
+    selected = st.selectbox("Open creative detail", labels)
+    picked = gallery.iloc[labels.index(selected)]
+
+    hero, detail = st.columns([0.9, 1.35])
+    with hero:
+        st.markdown('<div class="asset-card">', unsafe_allow_html=True)
+        thumb = _thumbnail_url(picked)
+        if thumb:
+            st.image(thumb, use_container_width=True)
         else:
-            st.write("**Drive Link:** ?")
+            st.info("No preview thumbnail available yet. Add a Preview Asset Link or Drive image link in Master.")
 
-    with right:
-        st.markdown("**Taxonomy & performance**")
-        for field, label in [
-            ("Marketing Angle Derived", "Marketing Angle"), ("Belief", "Belief"),
-            ("Cohort", "Cohort"), ("Situational Driver", "Situational Driver"),
-            ("Creator / Consumer Name", "Creator / Consumer Name"),
-            ("Video Subtype", "Video Subtype"), ("Static Subtype", "Static Subtype"),
-            ("ROAS", "ROAS"), ("CTR", "CTR"), ("Hook Rate", "Hook Rate"),
-            ("Hold Rate", "Hold Rate"), ("CAC", "CAC"),
-        ]:
-            if field in picked.index:
-                st.write(f"**{label}:** {picked.get(field, '') or '?'}")
-        if picked.get("Reference Image Link", ""):
-            st.markdown(f"**Reference Image:** [Open reference]({picked['Reference Image Link']})")
-        else:
-            st.write("**Reference Image:** ?")
+        st.markdown(f"### {_safe_text(picked.get('Creative Name'))}")
+        st.markdown(
+            f"<span class='pill'>{_safe_text(picked.get('Source'))}</span>"
+            f"<span class='pill'>{_safe_text(picked.get('Product'))}</span>"
+            f"<span class='pill'>{_safe_text(picked.get('Format'))}</span>",
+            unsafe_allow_html=True,
+        )
+        st.write(f"**Live date:** {_fmt_date(picked.get('_Date'))}")
+        st.write(f"**AD CODE:** {_safe_text(picked.get('AD CODE'))}")
+        st.write(f"**Perf AD Code:** {_safe_text(picked.get('Perf AD Code'))}")
+        _link("Open Drive / Creative Link", picked.get("Drive Link", ""))
+        _link("Open Source Folder", picked.get("Source Folder Link", ""))
+        _link("Open Instagram / Live Link", picked.get("Instagram / Live Link", ""))
+        _link("Open Brief / Asana", picked.get("Brief Link", ""))
+        st.markdown("</div>", unsafe_allow_html=True)
 
-with tab_raw:
-    st.subheader("Raw classified Meta Ads rows")
-    raw_cols = [
-        "Source", "AD CODE", "_Date", "Creative Name Derived",
-        "Meta Creative Type", "Product Derived", "Format Derived",
-        "Meta Funnel Level", "Meta Marketing Angle", "Meta Status",
-        "Asset ID", "Creator / Consumer Name", "Meta Creative Folder",
+    with detail:
+        id_tab, tax_tab, perf_tab = st.tabs(["Identity", "Taxonomy", "Performance"])
+        with id_tab:
+            cols = st.columns(2)
+            identity_fields = [
+                "Asset ID", "Record Type", "Status", "Creator", "Creator / Consumer Name",
+                "Agency", "POC", "Followers", "Platform", "Language", "Campaign Name",
+                "Ad Set Name", "Landing Page URL",
+            ]
+            for idx, field in enumerate(identity_fields):
+                with cols[idx % 2]:
+                    if field in picked.index:
+                        st.write(f"**{field}:** {_safe_text(picked.get(field))}")
+
+        with tax_tab:
+            taxonomy_fields = [
+                "Creative Type", "Video Subtype", "Static Subtype", "Content Bucket",
+                "Marketing Angle", "Belief", "Cohort", "Situational Driver",
+                "Funnel Stage", "Creator Archetype", "Influence Mode", "Visual Style",
+                "CTA Style", "Hook Type", "Emotional Arc", "Source Interview ID", "Experiment ID",
+            ]
+            cols = st.columns(2)
+            for idx, field in enumerate(taxonomy_fields):
+                with cols[idx % 2]:
+                    if field in picked.index:
+                        st.write(f"**{field}:** {_safe_text(picked.get(field))}")
+            if _safe_text(picked.get("Needs Attention"), ""):
+                st.warning(picked.get("Needs Attention"))
+
+        with perf_tab:
+            p1, p2, p3, p4 = st.columns(4)
+            p1.metric("ROAS", _metric_value(picked, "ROAS"))
+            p2.metric("Spend", _metric_value(picked, "Amount Spent"))
+            p3.metric("Revenue", _metric_value(picked, "Revenue"))
+            p4.metric("CAC", _metric_value(picked, "CAC"))
+
+            perf_cols = [
+                "CTR", "CPC", "ATC Rate", "CVR", "AOV", "Hook Rate", "Hold Rate",
+                "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "CTR (L30)", "Hook Rate (L30)", "Hold Rate (L30)",
+                "ROAS (L7)", "Amount Spent (L7)", "Revenue (L7)", "CTR (L7)", "Hook Rate (L7)", "Hold Rate (L7)",
+                "Views", "Likes", "Comments", "Shares", "Saves", "Total Engagement", "Engagement Rate (%)",
+            ]
+            perf_table = pd.DataFrame(
+                [{"Metric": field, "Value": picked.get(field, "")} for field in perf_cols if field in picked.index and _safe_text(picked.get(field), "")]
+            )
+            if perf_table.empty:
+                st.info("No performance metrics are populated for this creative yet.")
+            else:
+                st.dataframe(perf_table, use_container_width=True, hide_index=True)
+
+    st.markdown("---")
+    table_cols = [
+        "Source", "Record Type", "AD CODE", "Perf AD Code", "_Date", "Creative Name", "Product",
+        "Format", "Marketing Angle", "Creator", "ROAS", "Amount Spent", "Revenue", "CTR",
+        "Drive Link", "Instagram / Live Link",
     ]
-    raw = filtered[[column for column in raw_cols if column in filtered.columns]].copy()
-    raw = raw.rename(
-        columns={
-            "_Date": "Live Date",
-            "Creative Name Derived": "Creative Name",
-            "Product Derived": "Product",
-            "Format Derived": "Format",
-            "Meta Creative Type": "Meta Creative Type",
-            "Meta Funnel Level": "Meta Funnel Level",
-            "Meta Marketing Angle": "Meta Marketing Angle",
-            "Meta Status": "Meta Status",
-            "Meta Creative Folder": "Meta Creative Folder",
-        }
-    )
-    st.dataframe(
-        raw.sort_values("Live Date", ascending=False) if "Live Date" in raw.columns else raw,
-        use_container_width=True,
-        hide_index=True,
-        height=460,
-    )
+    table = gallery[[c for c in table_cols if c in gallery.columns]].copy()
+    table = table.rename(columns={"_Date": "Live Date"})
+    st.dataframe(table, use_container_width=True, hide_index=True, height=360)
 
-    st.caption(
-        "If a row is Inhouse but has blank taxonomy fields, it means the AD CODE matched but the asset still "
-        "needs richer tagging in Inhouse_Live_Assets."
-    )
+with tab_quality:
+    st.subheader("Quality and taxonomy coverage")
+    inhouse = filtered[filtered["Source"] == "Inhouse"].copy()
+    if inhouse.empty:
+        st.info("No in-house creatives in this filter window.")
+    else:
+        required = ["Marketing Angle", "Belief", "Cohort", "Funnel Stage", "Drive Link"]
+        coverage = []
+        for field in required:
+            if field in inhouse.columns:
+                coverage.append({
+                    "Field": field,
+                    "Filled": int(inhouse[field].astype(str).str.strip().ne("").sum()),
+                    "Total": len(inhouse),
+                    "Coverage": round(inhouse[field].astype(str).str.strip().ne("").mean() * 100, 1),
+                })
+        st.dataframe(pd.DataFrame(coverage), use_container_width=True, hide_index=True)
+
+        left, right = st.columns(2)
+        with left:
+            angle_counts = inhouse["Marketing Angle"].replace("", pd.NA).dropna().value_counts().head(12).reset_index()
+            angle_counts.columns = ["Marketing Angle", "Creatives"]
+            st.markdown("**Top in-house marketing angles**")
+            st.dataframe(angle_counts, use_container_width=True, hide_index=True)
+        with right:
+            cohort_counts = inhouse["Cohort"].replace("", pd.NA).dropna().value_counts().head(12).reset_index()
+            cohort_counts.columns = ["Cohort", "Creatives"]
+            st.markdown("**Top in-house cohorts**")
+            st.dataframe(cohort_counts, use_container_width=True, hide_index=True)
+
+    needs = filtered[filtered["Source"] == "Needs Logging"].copy()
+    if not needs.empty:
+        st.warning(f"{len(needs)} likely in-house rows are live in Meta Ads but missing from Master_Asset_Registry.")
+        st.dataframe(
+            needs[["AD CODE", "_Date", "Creative Name", "Product", "Format", "Drive Link", "Needs Attention"]]
+            .rename(columns={"_Date": "Live Date"}),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+with tab_audit:
+    st.subheader("Data audit")
+    st.caption("This is the boring plumbing view. Useful when counts look off.")
+    a1, a2, a3, a4 = st.columns(4)
+    a1.metric("Rows before filters", len(df))
+    a2.metric("Rows after filters", len(filtered))
+    a3.metric("Missing date rows", int(raw["_Date"].isna().sum()) if "_Date" in raw.columns else 0)
+    a4.metric("Needs logging rows", int((df["Source"] == "Needs Logging").sum()))
+
+    audit_cols = [
+        "Source", "Record Type", "AD CODE", "Perf AD Code", "_Date", "Creative Name", "Product",
+        "Format", "Asset ID", "Creator", "Needs Attention", "Drive Link", "Instagram / Live Link",
+    ]
+    audit = filtered[[c for c in audit_cols if c in filtered.columns]].copy()
+    audit = audit.rename(columns={"_Date": "Live Date"})
+    st.dataframe(audit.sort_values("Live Date", ascending=False), use_container_width=True, hide_index=True, height=520)

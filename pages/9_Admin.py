@@ -1,33 +1,31 @@
+from datetime import datetime
+import re
+
+from google.auth.transport.requests import AuthorizedSession
 import pandas as pd
 import streamlit as st
 
 from utils.sheets import (
     _client,
+    _credentials,
     _ws,
-    EXPERIMENT_HEADERS,
-    INHOUSE_LIVE_HEADERS,
     SHEET_ASSETS,
-    SHEET_INHOUSE,
-    backlog_tag_candidates,
-    build_classified_meta_view,
-    ensure_inhouse_sheet,
-    load_inhouse_live,
-    migrate_master_to_inhouse,
+    SHEET_EXPERIMENTS,
+    SHEET_INFLUENCER,
+    SHEET_META_ADS,
+    build_creative_ops_view,
+    folder_id_from_url,
+    load_assets,
     next_asset_id,
     normalize_ad_code,
-    save_inhouse_live,
+    save_asset,
 )
 from utils.taxonomy import (
     CTA_STYLES,
-    FORMATS,
-    HOOK_TYPES,
-    EMOTIONAL_ARCS,
     FUNNEL_STAGES,
-    ARCHETYPES,
     INFLUENCE_MODES,
     PRODUCTS,
     STATIC_SUBTYPES,
-    VIDEO_SUBTYPES,
     VISUAL_STYLES,
     get_angles,
     get_beliefs,
@@ -35,279 +33,322 @@ from utils.taxonomy import (
     get_drivers,
 )
 
-st.set_page_config(page_title="Admin / Diagnostics — Creative OS", layout="wide")
-st.title("Admin / Diagnostics")
-st.caption("Sheet inspection, one-off migration, and retro-tagging for already-live inhouse backlog assets.")
 
-st.header("1. Spreadsheet schema")
-if st.button("🔍 Scan all tabs", type="primary"):
-    try:
-        ss = _client().open(st.secrets["spreadsheet_name"])
-        worksheets = ss.worksheets()
-        st.success(f"Found **{len(worksheets)}** tabs in *{st.secrets['spreadsheet_name']}*")
+st.set_page_config(page_title="Admin - Creative OS", layout="wide")
+st.title("Admin")
+st.caption("Diagnostics, data audits, and one-off Drive backlog review. Nothing here auto-writes without approval.")
 
-        for ws in worksheets:
-            with st.expander(f"📄 **{ws.title}** — {ws.row_count:,} rows × {ws.col_count} cols", expanded=False):
-                raw = ws.get_values("A1:BU5")
-                if not raw:
-                    st.info("Empty sheet.")
-                    continue
 
-                st.markdown("**First 5 rows**")
-                st.dataframe(pd.DataFrame(raw), use_container_width=True, hide_index=True)
+DRIVE_ROOT_DEFAULT = "https://drive.google.com/drive/folders/1PYQyc6oSod-Z0NCPUf3caUMnkJartSq5?usp=drive_link"
 
-                for idx in [0, 1]:
-                    if idx < len(raw):
-                        headers = [header for header in raw[idx] if str(header).strip()]
-                        if headers:
-                            st.markdown(f"**Detected headers (row {idx + 1})**")
-                            st.code(" | ".join(headers), language=None)
-                            break
-    except Exception as exc:
-        st.error(f"Scan failed: {exc}")
 
-st.markdown("---")
-st.header("2. One-off migrations")
+def _safe(value, fallback=""):
+    text = str(value or "").strip()
+    return text if text and text.lower() not in {"nan", "nat", "none"} else fallback
 
-st.markdown(f"**Create `{SHEET_INHOUSE}`**")
-if st.button("🏗️ Create Inhouse_Live_Assets sheet"):
-    try:
-        created = ensure_inhouse_sheet()
-        if created:
-            st.success(f"Created `{SHEET_INHOUSE}`.")
-        else:
-            st.info(f"`{SHEET_INHOUSE}` already exists.")
-    except Exception as exc:
-        st.error(f"Failed: {exc}")
 
-st.markdown(f"**Migrate `{SHEET_ASSETS}` → `{SHEET_INHOUSE}`**")
-st.caption("Use this only once. Clicking it repeatedly will duplicate rows.")
-confirm = st.checkbox("I understand this should only be run once")
-if st.button("📦 Run migration", disabled=not confirm):
-    try:
-        with st.spinner("Migrating legacy rows..."):
-            migrated, skipped, errors = migrate_master_to_inhouse()
-        st.success(f"Migrated {migrated} rows. Skipped {skipped}.")
-        if errors:
-            st.warning("Some rows failed:")
-            for error in errors:
-                st.write(f"- {error}")
-    except Exception as exc:
-        st.error(f"Migration failed: {exc}")
+def _drive_session():
+    return AuthorizedSession(_credentials())
 
-st.markdown("---")
-st.header("3. Retro-tag already-live inhouse backlog")
-st.caption(
-    "This is only for historical inhouse ads that are already live in Meta Ads but still missing taxonomy "
-    "inside Inhouse_Live_Assets. New content should not go through here."
-)
 
-if st.button("🔄 Load backlog candidates"):
-    st.session_state.admin_backlog = backlog_tag_candidates()
+def _drive_list(folder_id: str) -> list[dict]:
+    session = _drive_session()
+    files: list[dict] = []
+    page_token = None
+    while True:
+        params = {
+            "q": f"'{folder_id}' in parents and trashed=false",
+            "fields": "nextPageToken, files(id,name,mimeType,webViewLink,thumbnailLink,createdTime,modifiedTime)",
+            "pageSize": 1000,
+            "supportsAllDrives": "true",
+            "includeItemsFromAllDrives": "true",
+        }
+        if page_token:
+            params["pageToken"] = page_token
+        response = session.get("https://www.googleapis.com/drive/v3/files", params=params, timeout=30)
+        response.raise_for_status()
+        payload = response.json()
+        files.extend(payload.get("files", []))
+        page_token = payload.get("nextPageToken")
+        if not page_token:
+            break
+    return files
 
-backlog = st.session_state.get("admin_backlog")
-if backlog is None:
-    st.info("Click **Load backlog candidates** to scan Meta Ads for residual live ads that are not yet tagged as Inhouse or Influencer.")
-else:
-    if backlog.empty:
-        st.success("No backlog candidates found.")
-    else:
-        st.write(
-            f"Found **{len(backlog)}** live Meta Ads rows that are currently residual "
-            "(Porcellia or unclassified). Pick the ones that are actually inhouse and tag them here."
-        )
 
-        search = st.text_input("Search backlog", placeholder="AD CODE, creative name, product...")
-        pool = backlog.copy()
-        if search.strip():
-            term = search.strip().lower()
-            hit_cols = [
-                column for column in [
-                    "AD CODE", "Creative Name Derived", "Product Derived",
-                    "Meta Creative Type", "Meta Creative Folder",
-                ] if column in pool.columns
-            ]
-            mask = pd.Series(False, index=pool.index)
-            for column in hit_cols:
-                mask = mask | pool[column].astype(str).str.lower().str.contains(term, na=False)
-            pool = pool[mask]
+def _infer_product(path: str, filename: str) -> str:
+    text = f"{path} {filename}".lower()
+    if re.search(r"\brcf\b|rapid clear", text):
+        return "RCF"
+    if re.search(r"\bss\b|sunscreen|clear protect|cpgs", text):
+        return "Clear Protect Gel Sunscreen"
+    if re.search(r"\bsfs\b|spot fade", text):
+        return "Spot Fade Serum"
+    if re.search(r"\blpp\b|liquid pimple", text):
+        return "Liquid Pimple Patch"
+    if re.search(r"\bemc\b|melting cleanser", text):
+        return "Effortless Melting Cleanser"
+    return PRODUCTS[0]
 
-        preview_cols = [
-            "AD CODE", "_Date", "Creative Name Derived", "Product Derived",
-            "Meta Creative Type", "Meta Marketing Angle", "Meta Creative Folder",
+
+def _infer_static_subtype(name: str, path: str) -> str:
+    text = f"{path} {name}".lower()
+    checks = [
+        ("carousel", "SS2"),
+        ("before", "SS3"),
+        ("after", "SS3"),
+        ("review", "SS4"),
+        ("testimonial", "SS4"),
+        ("comparison", "SS5"),
+        ("ingredient", "SS9"),
+        ("stat", "SS10"),
+        ("proof", "SS10"),
+        ("ai", "SS11"),
+    ]
+    code = next((result for needle, result in checks if needle in text), "SS1")
+    return next((item for item in STATIC_SUBTYPES if item.startswith(code)), STATIC_SUBTYPES[0])
+
+
+def _infer_angle(product: str, name: str, path: str) -> str:
+    text = f"{path} {name}".lower()
+    angles = get_angles(product)
+    for angle in angles:
+        label = angle.split(" - ", 1)[-1].lower()
+        label = label.replace("/", " ").replace("(", " ").replace(")", " ")
+        tokens = [token for token in re.split(r"\W+", label) if len(token) > 4]
+        if tokens and any(token in text for token in tokens[:4]):
+            return angle
+    return angles[0] if angles else ""
+
+
+def _scan_drive(folder_id: str, path: str, depth: int, max_depth: int) -> list[dict]:
+    if depth > max_depth:
+        return []
+    output = []
+    for item in _drive_list(folder_id):
+        name = item.get("name", "")
+        mime = item.get("mimeType", "")
+        child_path = f"{path}/{name}" if path else name
+        if mime == "application/vnd.google-apps.folder":
+            output.extend(_scan_drive(item["id"], child_path, depth + 1, max_depth))
+            continue
+        if mime.startswith("image/") or name.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+            product = _infer_product(path, name)
+            output.append({
+                "Product": product,
+                "File Name": name,
+                "Folder Path": path,
+                "Drive Link": item.get("webViewLink", ""),
+                "Thumbnail Link": item.get("thumbnailLink", ""),
+                "File ID": item.get("id", ""),
+                "Created Time": item.get("createdTime", ""),
+                "Modified Time": item.get("modifiedTime", ""),
+                "Suggested Static Subtype": _infer_static_subtype(name, path),
+                "Suggested Marketing Angle": _infer_angle(product, name, path),
+            })
+    return output
+
+
+def _scan_drive_cached(root_url: str, max_depth: int):
+    folder_id = folder_id_from_url(root_url)
+    if not folder_id:
+        return pd.DataFrame()
+    rows = _scan_drive(folder_id, "", 0, max_depth)
+    return pd.DataFrame(rows)
+
+
+tab_diag, tab_audit, tab_drive = st.tabs(["Sheet Diagnostics", "Creative Ops Audit", "Drive Static Review"])
+
+with tab_diag:
+    st.header("Spreadsheet schema")
+    if st.button("Scan all tabs", type="primary"):
+        try:
+            ss = _client().open(st.secrets["spreadsheet_name"])
+            worksheets = ss.worksheets()
+            st.success(f"Found {len(worksheets)} tabs in {st.secrets['spreadsheet_name']}")
+            for ws in worksheets:
+                with st.expander(f"{ws.title} - {ws.row_count:,} rows x {ws.col_count} cols", expanded=False):
+                    raw = ws.get_values("A1:BU5")
+                    if not raw:
+                        st.info("Empty sheet.")
+                        continue
+                    st.dataframe(pd.DataFrame(raw), use_container_width=True, hide_index=True)
+                    likely_header_idx = 1 if ws.title == SHEET_META_ADS and len(raw) > 1 else 0
+                    headers = [h for h in raw[likely_header_idx] if str(h).strip()] if likely_header_idx < len(raw) else []
+                    st.markdown(f"**Detected headers row {likely_header_idx + 1}**")
+                    st.code(" | ".join(headers), language=None)
+        except Exception as exc:
+            st.error(f"Scan failed: {exc}")
+
+    st.markdown("---")
+    st.header("Quick row sample")
+    tab_name = st.selectbox("Tab", [SHEET_META_ADS, SHEET_INFLUENCER, SHEET_ASSETS, SHEET_EXPERIMENTS])
+    rows = st.number_input("Rows to show", min_value=1, max_value=50, value=10)
+    if st.button("Fetch sample"):
+        try:
+            ws = _client().open(st.secrets["spreadsheet_name"]).worksheet(tab_name)
+            data = ws.get_all_values()
+            if not data:
+                st.info("Tab is empty.")
+            else:
+                header_idx = 1 if tab_name == SHEET_META_ADS and len(data) > 1 else 0
+                headers = data[header_idx]
+                body = data[header_idx + 1:]
+                st.dataframe(pd.DataFrame(body[: int(rows)], columns=headers), use_container_width=True, hide_index=True)
+        except Exception as exc:
+            st.error(f"Fetch failed: {exc}")
+
+with tab_audit:
+    st.header("Creative Ops data audit")
+    if st.button("Build current dashboard dataset", type="primary"):
+        try:
+            view = build_creative_ops_view()
+            if view.empty:
+                st.warning("No rows built.")
+            else:
+                st.session_state.audit_view = view
+        except Exception as exc:
+            st.error(f"Build failed: {exc}")
+
+    view = st.session_state.get("audit_view")
+    if view is not None:
+        st.metric("Rows built", len(view))
+        if "Source" in view.columns:
+            st.dataframe(view["Source"].value_counts().reset_index().rename(columns={"index": "Source", "Source": "Rows"}), use_container_width=True, hide_index=True)
+
+        needs = view[view["Source"] == "Needs Logging"].copy() if "Source" in view.columns else pd.DataFrame()
+        if not needs.empty:
+            st.warning(f"{len(needs)} likely in-house Meta Ads rows are missing from Master_Asset_Registry.")
+            cols = ["AD CODE", "_Date", "Creative Name", "Product", "Format", "Drive Link", "Needs Attention"]
+            st.dataframe(needs[[c for c in cols if c in needs.columns]], use_container_width=True, hide_index=True)
+
+        cols = [
+            "Source", "Record Type", "AD CODE", "Perf AD Code", "_Date", "Creative Name",
+            "Product", "Format", "Asset ID", "Creator", "Needs Attention",
         ]
-        preview = pool[[column for column in preview_cols if column in pool.columns]].copy()
-        preview = preview.rename(
-            columns={
-                "_Date": "Live Date",
-                "Creative Name Derived": "Creative Name",
-                "Product Derived": "Product",
-                "Meta Creative Type": "Meta Creative Type",
-                "Meta Marketing Angle": "Meta Marketing Angle",
-                "Meta Creative Folder": "Meta Creative Folder",
-            }
+        st.dataframe(view[[c for c in cols if c in view.columns]].head(1000), use_container_width=True, hide_index=True, height=420)
+
+with tab_drive:
+    st.header("Drive static review queue")
+    st.caption(
+        "This scans your static folders and creates suggested rows. It does not read text inside images yet, "
+        "and it does not write to Master until you approve a candidate."
+    )
+
+    root_url = st.text_input("Drive root folder", value=DRIVE_ROOT_DEFAULT)
+    depth = st.slider("Folder depth", min_value=1, max_value=5, value=3)
+    if st.button("Scan Drive folder", type="primary"):
+        try:
+            with st.spinner("Scanning Drive folders and image files..."):
+                st.session_state.drive_candidates = _scan_drive_cached(root_url, depth)
+        except Exception as exc:
+            st.error(f"Drive scan failed: {exc}")
+
+    candidates = st.session_state.get("drive_candidates")
+    if candidates is None:
+        st.info("Scan the Drive folder to start building a review queue.")
+    elif candidates.empty:
+        st.warning("No image files found in this folder tree.")
+    else:
+        st.success(f"Found {len(candidates)} image candidates.")
+        st.dataframe(
+            candidates[["Product", "File Name", "Folder Path", "Suggested Static Subtype", "Suggested Marketing Angle", "Drive Link"]],
+            use_container_width=True,
+            hide_index=True,
+            height=260,
         )
-        st.dataframe(preview.sort_values("Live Date", ascending=False), use_container_width=True, hide_index=True, height=260)
 
-        code_options = pool["AD CODE"].dropna().astype(str).tolist()
-        if code_options:
-            chosen_code = st.selectbox("Choose AD CODE to tag", code_options)
-            picked = pool[pool["AD CODE"].astype(str) == chosen_code].iloc[0]
+        labels = candidates.apply(lambda row: f"{row['Product']} | {row['Folder Path']} | {row['File Name']}", axis=1).tolist()
+        selected = st.selectbox("Review candidate", labels)
+        picked = candidates.iloc[labels.index(selected)]
 
-            st.info(
-                f"Creative: `{picked.get('Creative Name Derived', '—')}`  |  "
-                f"Product: `{picked.get('Product Derived', '—')}`  |  "
-                f"Meta type: `{picked.get('Meta Creative Type', '—')}`"
-            )
+        left, right = st.columns([0.8, 1.2])
+        with left:
+            if _safe(picked.get("Thumbnail Link")):
+                st.image(picked["Thumbnail Link"], use_container_width=True)
+            st.markdown(f"**File:** {picked['File Name']}")
+            st.markdown(f"**Folder:** {picked['Folder Path']}")
+            st.markdown(f"[Open in Drive]({picked['Drive Link']})")
 
-            with st.form("retro_tag_form", clear_on_submit=True):
-                default_product = picked.get("Product Derived", "")
-                if default_product not in PRODUCTS:
-                    default_product = PRODUCTS[0]
+        with right:
+            assets = load_assets()
+            existing_ids = assets["Asset ID"].dropna().astype(str).tolist() if not assets.empty and "Asset ID" in assets.columns else []
+            existing_codes = set()
+            if not assets.empty and "Meta Ad ID" in assets.columns:
+                existing_codes = {normalize_ad_code(v) for v in assets["Meta Ad ID"].tolist() if normalize_ad_code(v)}
 
-                top1, top2, top3 = st.columns(3)
-                product = top1.selectbox("Product *", PRODUCTS, index=PRODUCTS.index(default_product))
-                format_guess = picked.get("Format Derived", "") if picked.get("Format Derived", "") in FORMATS else FORMATS[0]
-                fmt = top2.selectbox("Format *", FORMATS, index=FORMATS.index(format_guess))
-                published_date = top3.text_input(
-                    "Published Date",
-                    value=picked.get("_Date").strftime("%Y-%m-%d") if pd.notna(picked.get("_Date")) else "",
+            with st.form("approve_drive_static"):
+                default_product = picked.get("Product") if picked.get("Product") in PRODUCTS else PRODUCTS[0]
+                product = st.selectbox("Product", PRODUCTS, index=PRODUCTS.index(default_product))
+                subtype = st.selectbox(
+                    "Static subtype",
+                    STATIC_SUBTYPES,
+                    index=STATIC_SUBTYPES.index(picked["Suggested Static Subtype"]) if picked["Suggested Static Subtype"] in STATIC_SUBTYPES else 0,
                 )
-
-                if fmt == "Video":
-                    video_subtype = st.selectbox("Video Subtype *", VIDEO_SUBTYPES)
-                    static_subtype = ""
-                else:
-                    video_subtype = ""
-                    static_subtype = st.selectbox("Static Subtype *", STATIC_SUBTYPES)
 
                 cohorts = get_cohorts(product)
                 beliefs = get_beliefs(product)
                 angles = get_angles(product)
                 drivers = get_drivers(product)
 
-                mid1, mid2, mid3 = st.columns(3)
-                cohort = mid1.selectbox("Cohort *", cohorts)
-                belief = mid1.selectbox("Belief *", beliefs)
-                angle = mid2.selectbox("Marketing Angle *", angles)
-                driver = mid2.selectbox("Situational Driver", drivers)
-                funnel = mid3.selectbox("Funnel Stage", FUNNEL_STAGES)
-                influence = mid3.selectbox("Influence Mode", INFLUENCE_MODES)
+                c1, c2 = st.columns(2)
+                cohort = c1.selectbox("Cohort", cohorts)
+                belief = c1.selectbox("Belief", beliefs)
+                angle_default = picked.get("Suggested Marketing Angle", "")
+                angle = c2.selectbox("Marketing angle", angles, index=angles.index(angle_default) if angle_default in angles else 0)
+                driver = c2.selectbox("Situational driver", drivers)
 
-                if fmt == "Video":
-                    low1, low2, low3 = st.columns(3)
-                    hook = low1.selectbox("Hook Type", HOOK_TYPES)
-                    arc = low2.selectbox("Emotional Arc", EMOTIONAL_ARCS)
-                    archetype = low3.selectbox("Creator Archetype", ARCHETYPES)
-                    visual_style = "N/A — video"
-                else:
-                    hook = arc = archetype = ""
-                    visual_style = st.selectbox("Visual Style", VISUAL_STYLES)
+                c3, c4 = st.columns(2)
+                funnel = c3.selectbox("Funnel stage", FUNNEL_STAGES)
+                influence = c3.selectbox("Influence mode", INFLUENCE_MODES)
+                visual = c4.selectbox("Visual style", [v for v in VISUAL_STYLES if not v.startswith("N/A")])
+                cta = c4.selectbox("CTA style", CTA_STYLES)
 
-                cta = st.selectbox("CTA Style", CTA_STYLES)
-                creator_name = st.text_input(
-                    "Creator / Consumer Name",
-                    value=str(picked.get("Creative Name Derived", "")),
-                )
-                drive_link = st.text_input(
-                    "Drive Link",
-                    value=str(picked.get("Meta Creative Folder", "")),
-                )
+                ad_code = st.text_input("AD CODE if already live", placeholder="Optional, e.g. AD 512")
+                creative_name = st.text_input("Creative name", value=picked["File Name"])
                 notes = st.text_area(
                     "Notes",
-                    value="Retro-tagged from Admin backlog.",
+                    value="Imported from Drive static review queue. Taxonomy approved manually.",
+                    height=80,
                 )
 
-                submitted = st.form_submit_button("💾 Save into Inhouse_Live_Assets", type="primary", use_container_width=True)
+                submitted = st.form_submit_button("Approve and save to Master_Asset_Registry", type="primary", use_container_width=True)
                 if submitted:
-                    live_now = load_inhouse_live()
-                    existing_codes = set()
-                    existing_ids = []
-                    if not live_now.empty:
-                        if "AD CODE" in live_now.columns:
-                            existing_codes = {
-                                normalize_ad_code(value) for value in live_now["AD CODE"].tolist()
-                                if normalize_ad_code(value)
-                            }
-                        if "Asset ID" in live_now.columns:
-                            existing_ids = live_now["Asset ID"].dropna().astype(str).tolist()
-
-                    normalized_code = normalize_ad_code(chosen_code)
-                    if normalized_code in existing_codes:
-                        st.error(f"{normalized_code} already exists in Inhouse_Live_Assets.")
+                    normalized_code = normalize_ad_code(ad_code)
+                    if normalized_code and normalized_code in existing_codes:
+                        st.error(f"{normalized_code} already exists in Master_Asset_Registry.")
                     else:
-                        asset_id = next_asset_id(product, fmt, existing_ids)
-                        payload = {header: "" for header in INHOUSE_LIVE_HEADERS}
-                        payload.update({
+                        asset_id = next_asset_id(product, "Static", existing_ids)
+                        row = {
                             "Asset ID": asset_id,
-                            "AD CODE": normalized_code,
-                            "Published Date": published_date,
+                            "Variant #": "A",
+                            "Status": "Backlog Review" if not normalized_code else "Published",
+                            "Created Date": datetime.now().strftime("%Y-%m-%d"),
+                            "Published Date": "",
                             "Product": product,
                             "Bucket": "Performance",
-                            "Format": fmt,
-                            "Video Subtype": video_subtype,
-                            "Static Subtype": static_subtype,
+                            "Channel": "In-house",
+                            "Creative Type": subtype,
+                            "Format": "Static",
+                            "Static Subtype": subtype,
                             "Cohort": cohort,
                             "Belief": belief,
                             "Marketing Angle": angle,
                             "Situational Driver": driver,
                             "Funnel Stage": funnel,
                             "Influence Mode": influence,
+                            "Visual Style": visual,
                             "CTA Style": cta,
-                            "Hook Type": hook,
-                            "Emotional Arc": arc,
-                            "Creator Archetype": archetype,
-                            "Visual Style": visual_style,
-                            "Creator / Consumer Name": creator_name,
-                            "Drive Link": drive_link,
+                            "Creator / Consumer Name": creative_name,
+                            "Meta Ad ID": normalized_code,
+                            "Drive Link": picked["Drive Link"],
+                            "Preview Asset Link": picked["Drive Link"],
+                            "Source Folder Link": picked["Folder Path"],
+                            "Thumbnail Link": picked.get("Thumbnail Link", ""),
                             "Notes": notes,
-                        })
+                            "Taxonomy Review Status": "Tagged",
+                        }
                         try:
-                            save_inhouse_live(payload)
-                            st.success(f"Saved {asset_id} for {normalized_code}.")
-                            if "admin_backlog" in st.session_state:
-                                st.session_state.admin_backlog = st.session_state.admin_backlog[
-                                    st.session_state.admin_backlog["AD CODE"].astype(str) != chosen_code
-                                ]
+                            save_asset(row)
+                            st.success(f"Saved {asset_id} to Master_Asset_Registry.")
                         except Exception as exc:
                             st.error(f"Save failed: {exc}")
-
-st.markdown("---")
-st.header("4. Quick diagnostics")
-
-if st.button("🧪 Build classified live view"):
-    try:
-        diagnostic = build_classified_meta_view()
-        st.write(f"Rows loaded: {len(diagnostic)}")
-        show_cols = [
-            "Source", "AD CODE", "_Date", "Product Derived",
-            "Format Derived", "Creative Name Derived", "Asset ID",
-        ]
-        frame = diagnostic[[column for column in show_cols if column in diagnostic.columns]].copy()
-        frame = frame.rename(
-            columns={
-                "_Date": "Live Date",
-                "Product Derived": "Product",
-                "Format Derived": "Format",
-                "Creative Name Derived": "Creative Name",
-            }
-        )
-        st.dataframe(frame.sort_values("Live Date", ascending=False), use_container_width=True, hide_index=True, height=320)
-    except Exception as exc:
-        st.error(f"Diagnostic build failed: {exc}")
-
-st.markdown("---")
-st.header("5. Quick row sample")
-tab_name = st.text_input("Tab name to sample", placeholder="e.g. Meta Ads")
-rows = st.number_input("Rows to show", min_value=1, max_value=50, value=5)
-if tab_name and st.button("Fetch sample"):
-    try:
-        ws = _client().open(st.secrets["spreadsheet_name"]).worksheet(tab_name)
-        data = ws.get_all_values()
-        if data:
-            df = pd.DataFrame(data[1:], columns=data[0]) if len(data) > 1 else pd.DataFrame(data)
-            st.dataframe(df.head(int(rows)), use_container_width=True, hide_index=True)
-        else:
-            st.info("Tab is empty.")
-    except Exception as exc:
-        st.error(f"Failed: {exc}")

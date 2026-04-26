@@ -1,9 +1,11 @@
 import re
+from urllib.parse import urlparse
 
 import gspread
 from google.oauth2.service_account import Credentials
 import pandas as pd
 import streamlit as st
+
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -11,7 +13,7 @@ SCOPES = [
 ]
 
 SHEET_ASSETS = "Master_Asset_Registry"
-SHEET_INHOUSE = "Inhouse_Live_Assets"
+SHEET_INHOUSE = "Inhouse_Live_Assets"  # Legacy tab. Kept untouched; no app flow writes here.
 SHEET_EXPERIMENTS = "Experiment_Log"
 SHEET_SOURCES = "Source_Story_Library"
 SHEET_WEEKLY = "Weekly_Volume"
@@ -37,6 +39,14 @@ ASSET_HEADERS = [
     "CTR (L7)", "CPC (L7)", "ATC Rate (L7)", "CVR (L7)", "AOV (L7)",
     "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
 ]
+
+ASSET_EXTRA_HEADERS = [
+    "Format", "Video Subtype", "Static Subtype",
+    "Preview Asset Link", "Source Folder Link", "Thumbnail Link", "Reference Image Link",
+    "Taxonomy Review Status",
+]
+
+MASTER_HEADERS = ASSET_HEADERS + ASSET_EXTRA_HEADERS
 
 EXPERIMENT_HEADERS = [
     "Experiment ID", "Product", "Core Message", "Belief", "Cohort",
@@ -77,63 +87,41 @@ SOURCE_HEADERS = [
     "Unused Angles Remaining", "Best Asset ID", "Notes",
 ]
 
-AD_CODE_RE = re.compile(r"\bAD\s*[-_]?\s*(\d+)\b", re.IGNORECASE)
-META_AD_CODE_COL_INDEX = 37  # Column AL in 0-based indexing
+PERFORMANCE_COLUMNS = [
+    "ROAS", "Amount Spent", "Revenue", "Avg Cost Per Reach",
+    "CTR", "CPC", "ATC Rate", "CVR", "AOV", "Hook Rate", "Hold Rate", "CAC",
+    "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "Avg Cost Per Reach (L30)",
+    "CTR (L30)", "CPC (L30)", "ATC Rate (L30)", "CVR (L30)", "AOV (L30)",
+    "Hook Rate (L30)", "Hold Rate (L30)", "CAC (L30)",
+    "ROAS (L7)", "Amount Spent (L7)", "Revenue (L7)", "Avg Cost Per Reach (L7)",
+    "CTR (L7)", "CPC (L7)", "ATC Rate (L7)", "CVR (L7)", "AOV (L7)",
+    "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
+]
 
-# Live-date patterns found INSIDE ad-name strings. Your team's naming
-# convention puts the launch date between pipes, e.g.:
-#   "AD 098 | Static | Rapid Clear Facewash | 31/10/25 | Visible Reduction"
-# We match DD/MM/YY, DD/MM/YYYY, DD-MM-YY, DD-MM-YYYY (and the month/day
-# flipped forms as a fallback).
+AD_CODE_RE = re.compile(r"\bAD\s*[-_]?\s*0*(\d+)\b", re.IGNORECASE)
+META_AD_CODE_COL_INDEX = 37  # Column AL, zero-based.
 _ADNAME_DATE_RE = re.compile(r"\b(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{2,4})\b")
+_LIKELY_INHOUSE_RE = re.compile(r"\b(in\s*house|in-house|inhouse)\b", re.IGNORECASE)
 
 
-def extract_date_from_name(value) -> pd.Timestamp:
-    """Pull the first DD/MM/YY (or similar) date out of an ad-name string.
-    Returns NaT if nothing matches or the parsed values aren't a valid date."""
-    text = str(value or "")
-    if not text.strip():
-        return pd.NaT
-    for match in _ADNAME_DATE_RE.finditer(text):
-        a, b, c = match.groups()
-        a, b, c = int(a), int(b), int(c)
-        if c < 100:
-            c += 2000
-        # Assume DD/MM/YY (team convention). If day > 12 it can't be month-first,
-        # so we're safe. If both <= 12, trust DD/MM as stated.
-        day, month, year = a, b, c
-        # Reject nonsense
-        if not (2020 <= year <= 2030):
-            continue
-        if not (1 <= month <= 12):
-            # try swapping if the "day" is actually a valid month
-            if 1 <= a <= 12 and 1 <= b <= 31:
-                day, month = b, a
-            else:
-                continue
-        if not (1 <= day <= 31):
-            continue
-        try:
-            return pd.Timestamp(year=year, month=month, day=day)
-        except (ValueError, OverflowError):
-            continue
-    return pd.NaT
+@st.cache_resource
+def _credentials():
+    return Credentials.from_service_account_info(
+        dict(st.secrets["gcp_service_account"]),
+        scopes=SCOPES,
+    )
 
 
 @st.cache_resource
 def _client():
-    creds = Credentials.from_service_account_info(
-        dict(st.secrets["gcp_service_account"]),
-        scopes=SCOPES,
-    )
-    return gspread.authorize(creds)
+    return gspread.authorize(_credentials())
 
 
 def _ws(sheet_name: str):
     return _client().open(st.secrets["spreadsheet_name"]).worksheet(sheet_name)
 
 
-@st.cache_data(ttl=120, show_spinner=False)
+@st.cache_data(ttl=600, show_spinner=False)
 def _sheet_values(sheet_name: str):
     return _ws(sheet_name).get_all_values()
 
@@ -144,79 +132,6 @@ def _clear_sheet_cache():
 
 def _clean_header(value) -> str:
     return re.sub(r"\s+", " ", str(value or "").replace("|", " ")).strip()
-
-
-def normalize_ad_code(value) -> str:
-    raw = str(value or "").strip()
-    if not raw or raw.lower() in {"nan", "none"}:
-        return ""
-    match = AD_CODE_RE.search(raw)
-    if match:
-        return f"AD {int(match.group(1))}"
-    digits = re.fullmatch(r"\d+", raw.replace(",", ""))
-    if digits:
-        return f"AD {int(raw.replace(',', ''))}"
-    return re.sub(r"\s+", " ", raw).upper()
-
-
-def parse_mixed_dates(series: pd.Series) -> pd.Series:
-    if series is None or len(series) == 0:
-        return pd.Series(dtype="datetime64[ns]")
-    cleaned = series.astype(str).str.strip().replace({"": pd.NA, "nan": pd.NA, "None": pd.NA})
-    parsed_dayfirst = pd.to_datetime(cleaned, errors="coerce", dayfirst=True)
-    parsed_monthfirst = pd.to_datetime(cleaned, errors="coerce", dayfirst=False)
-    parsed = parsed_dayfirst.where(parsed_dayfirst.notna(), parsed_monthfirst)
-    remaining = cleaned[parsed.isna()].dropna()
-    if not remaining.empty:
-        # Handle strings that include trailing time fragments or timezone-ish text.
-        trimmed = (
-            remaining
-            .str.replace(r"\s+\d{1,2}:\d{2}(:\d{2})?(\s*[APMapm]{2})?$", "", regex=True)
-            .str.replace(r"T\d{2}:\d{2}(:\d{2})?.*$", "", regex=True)
-            .str.replace(r"\s+UTC.*$", "", regex=True)
-            .str.strip()
-        )
-        reparsed_dayfirst = pd.to_datetime(trimmed, errors="coerce", dayfirst=True)
-        reparsed_monthfirst = pd.to_datetime(trimmed, errors="coerce", dayfirst=False)
-        reparsed = reparsed_dayfirst.where(reparsed_dayfirst.notna(), reparsed_monthfirst)
-        parsed.loc[reparsed.index] = reparsed
-
-        remaining = cleaned[parsed.isna()].dropna()
-
-    if not remaining.empty:
-        serial_mask = remaining.str.fullmatch(r"\d+(\.\d+)?")
-        if serial_mask.any():
-            serial_values = pd.to_numeric(remaining[serial_mask], errors="coerce")
-            serial_values = serial_values[(serial_values >= 30000) & (serial_values <= 70000)]
-            if not serial_values.empty:
-                serial_dates = pd.to_datetime(
-                    serial_values,
-                    unit="D",
-                    origin="1899-12-30",
-                    errors="coerce",
-                )
-                parsed.loc[serial_dates.index] = serial_dates
-    return parsed
-
-
-def first_present_column(df: pd.DataFrame, *candidates: str):
-    for candidate in candidates:
-        if candidate and candidate in df.columns:
-            return candidate
-    return None
-
-
-def infer_format(value: str) -> str:
-    text = str(value or "").strip().lower()
-    if not text:
-        return ""
-    video_words = ("video", "reel", "testimonial", "founder", "skit", "ugc", "event")
-    static_words = ("static", "carousel", "gif", "image", "banner", "card")
-    if any(word in text for word in video_words):
-        return "Video"
-    if any(word in text for word in static_words):
-        return "Static"
-    return ""
 
 
 def _dedupe_headers(headers: list[str]) -> list[str]:
@@ -230,29 +145,169 @@ def _dedupe_headers(headers: list[str]) -> list[str]:
     return deduped
 
 
+def _records_from_values(values: list[list[str]], fallback_columns: list[str]) -> pd.DataFrame:
+    if not values:
+        return pd.DataFrame(columns=fallback_columns)
+    headers = [_clean_header(value) for value in values[0]]
+    if not any(headers):
+        return pd.DataFrame(columns=fallback_columns)
+    headers = _dedupe_headers(headers)
+    rows = values[1:] if len(values) > 1 else []
+    if not rows:
+        return pd.DataFrame(columns=headers)
+    width = len(headers)
+    padded = [row + [""] * (width - len(row)) if len(row) < width else row[:width] for row in rows]
+    return pd.DataFrame(padded, columns=headers)
+
+
+def _ensure_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    out = df.copy()
+    for column in columns:
+        if column not in out.columns:
+            out[column] = ""
+    return out
+
+
+def _truthy(value) -> bool:
+    return str(value or "").strip().lower() not in {"", "nan", "none", "nat"}
+
+
+def first_present_column(df: pd.DataFrame, *candidates: str):
+    lower_map = {str(column).strip().lower(): column for column in df.columns}
+    for candidate in candidates:
+        if not candidate:
+            continue
+        direct = str(candidate).strip()
+        if direct in df.columns:
+            return direct
+        lowered = direct.lower()
+        if lowered in lower_map:
+            return lower_map[lowered]
+    return None
+
+
+def normalize_ad_code(value) -> str:
+    raw = str(value or "").strip()
+    if not raw or raw.lower() in {"nan", "none", "nat"}:
+        return ""
+    match = AD_CODE_RE.search(raw)
+    if match:
+        return f"AD {int(match.group(1))}"
+    digits = re.fullmatch(r"\d+(\.0+)?", raw.replace(",", ""))
+    if digits:
+        return f"AD {int(float(raw.replace(',', '')))}"
+    return re.sub(r"\s+", " ", raw).upper()
+
+
+def parse_mixed_dates(series: pd.Series) -> pd.Series:
+    if series is None or len(series) == 0:
+        return pd.Series(dtype="datetime64[ns]")
+    cleaned = series.astype(str).str.strip().replace({"": pd.NA, "nan": pd.NA, "None": pd.NA, "NaT": pd.NA})
+    parsed = pd.Series(pd.NaT, index=series.index, dtype="datetime64[ns]")
+
+    # ISO-style dates from our own app must be parsed month-safe before
+    # dayfirst parsing, otherwise pandas can read 2026-04-10 as 4 Oct 2026.
+    iso_mask = cleaned.str.match(r"^\d{4}[-/]\d{1,2}[-/]\d{1,2}$", na=False)
+    if iso_mask.any():
+        parsed.loc[iso_mask] = pd.to_datetime(cleaned[iso_mask], errors="coerce", dayfirst=False)
+
+    remaining_idx = cleaned[parsed.isna()].dropna().index
+    if len(remaining_idx) > 0:
+        parsed_dayfirst = pd.to_datetime(cleaned.loc[remaining_idx], errors="coerce", dayfirst=True)
+        parsed.loc[remaining_idx] = parsed_dayfirst
+
+    remaining = cleaned[parsed.isna()].dropna()
+    if not remaining.empty:
+        trimmed = (
+            remaining
+            .str.replace(r"\s+\d{1,2}:\d{2}(:\d{2})?(\s*[APMapm]{2})?$", "", regex=True)
+            .str.replace(r"T\d{2}:\d{2}(:\d{2})?.*$", "", regex=True)
+            .str.replace(r"\s+UTC.*$", "", regex=True)
+            .str.strip()
+        )
+        reparsed_dayfirst = pd.to_datetime(trimmed, errors="coerce", dayfirst=True)
+        parsed.loc[reparsed_dayfirst.index] = reparsed_dayfirst
+
+    remaining = cleaned[parsed.isna()].dropna()
+    if not remaining.empty:
+        serial_mask = remaining.str.fullmatch(r"\d+(\.\d+)?")
+        if serial_mask.any():
+            serial_values = pd.to_numeric(remaining[serial_mask], errors="coerce")
+            serial_values = serial_values[(serial_values >= 30000) & (serial_values <= 70000)]
+            if not serial_values.empty:
+                serial_dates = pd.to_datetime(serial_values, unit="D", origin="1899-12-30", errors="coerce")
+                parsed.loc[serial_dates.index] = serial_dates
+    return parsed
+
+
+def extract_date_from_name(value) -> pd.Timestamp:
+    text = str(value or "")
+    if not text.strip():
+        return pd.NaT
+    for match in _ADNAME_DATE_RE.finditer(text):
+        day, month, year = [int(part) for part in match.groups()]
+        if year < 100:
+            year += 2000
+        if not (2020 <= year <= 2035):
+            continue
+        if not (1 <= month <= 12):
+            if 1 <= day <= 12 and 1 <= month <= 31:
+                day, month = month, day
+            else:
+                continue
+        try:
+            return pd.Timestamp(year=year, month=month, day=day)
+        except (ValueError, OverflowError):
+            continue
+    return pd.NaT
+
+
+def infer_format(value: str) -> str:
+    text = str(value or "").strip().lower()
+    if not text:
+        return ""
+    video_words = ("video", "reel", "testimonial", "founder", "skit", "ugc", "event", "creator")
+    static_words = ("static", "carousel", "gif", "image", "banner", "card", "1x1", "9x16", "4x5")
+    if any(word in text for word in video_words):
+        return "Video"
+    if any(word in text for word in static_words):
+        return "Static"
+    return ""
+
+
+def infer_static_subtype(value: str) -> str:
+    text = str(value or "").lower()
+    if "carousel" in text:
+        return "SS2 - Carousel"
+    if "review" in text or "dm" in text or "screenshot" in text:
+        return "SS4 - Proof Screenshot"
+    if "comparison" in text or " vs " in text:
+        return "SS5 - Comparison"
+    if "ingredient" in text:
+        return "SS9 - Ingredient Focus"
+    if "data" in text or "stat" in text or "%" in text:
+        return "SS10 - Data / Stats Card"
+    if "ai" in text:
+        return "SS11 - AI-Generated Static"
+    return "SS1 - Single Image"
+
+
 def _detect_ad_code_index(rows: list[list[str]], headers: list[str]):
     best_idx = None
     best_score = 0
     width = max((len(r) for r in rows), default=len(headers))
-
     for idx in range(width):
         header = headers[idx] if idx < len(headers) else ""
-        values = [
-            row[idx].strip() for row in rows[:80]
-            if idx < len(row) and str(row[idx]).strip()
-        ]
-        match_count = sum(1 for value in values if AD_CODE_RE.search(value))
+        values = [row[idx].strip() for row in rows[:120] if idx < len(row) and str(row[idx]).strip()]
+        score = sum(1 for value in values if AD_CODE_RE.search(value))
         if "ad code" in header.lower():
-            match_count += 100
-        if match_count > best_score:
+            score += 100
+        if score > best_score:
             best_idx = idx
-            best_score = match_count
-
+            best_score = score
     if best_idx is not None and best_score > 0:
         return best_idx
-
-    # Fallback to the legacy guessed column if detection finds nothing.
-    return 37 if len(headers) > 37 else None
+    return META_AD_CODE_COL_INDEX if len(headers) > META_AD_CODE_COL_INDEX else None
 
 
 def _drop_truly_blank_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -270,57 +325,60 @@ def _drop_truly_blank_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df[keep]
 
 
-def _records_from_values(values: list[list[str]], fallback_columns: list[str]) -> pd.DataFrame:
-    if not values:
-        return pd.DataFrame(columns=fallback_columns)
-    headers = [_clean_header(value) for value in values[0]]
-    if not any(headers):
-        return pd.DataFrame(columns=fallback_columns)
-    headers = _dedupe_headers(headers)
-    rows = values[1:] if len(values) > 1 else []
-    return pd.DataFrame(rows, columns=headers) if rows else pd.DataFrame(columns=headers)
+def _combine_text(row: pd.Series, columns: list[str]) -> str:
+    return " ".join(str(row.get(column, "")) for column in columns if column in row.index)
+
+
+def _coalesce(row: pd.Series, *columns: str) -> str:
+    for column in columns:
+        if column in row.index and _truthy(row.get(column)):
+            return str(row.get(column)).strip()
+    return ""
+
+
+def _first_non_empty(*values) -> str:
+    for value in values:
+        if _truthy(value):
+            return str(value).strip()
+    return ""
+
+
+def _add_metric_fields(target: dict, *rows: pd.Series):
+    for metric in PERFORMANCE_COLUMNS:
+        for row in rows:
+            if row is not None and metric in row.index and _truthy(row.get(metric)):
+                target[metric] = row.get(metric)
+                break
+        target.setdefault(metric, "")
 
 
 def load_assets() -> pd.DataFrame:
     try:
         values = _sheet_values(SHEET_ASSETS)
-        return _records_from_values(values, ASSET_HEADERS)
+        df = _records_from_values(values, MASTER_HEADERS)
+        df = _ensure_columns(df, MASTER_HEADERS)
+        if "Meta Ad ID" in df.columns:
+            df["Meta Ad ID"] = df["Meta Ad ID"].map(normalize_ad_code)
+        if "Format" in df.columns:
+            missing = df["Format"].astype(str).str.strip() == ""
+            if "Creative Type" in df.columns:
+                df.loc[missing, "Format"] = df.loc[missing, "Creative Type"].map(infer_format)
+        return df
     except Exception as exc:
-        st.error(f"Could not load assets: {exc}")
-        return pd.DataFrame(columns=ASSET_HEADERS)
+        st.error(f"Could not load Master_Asset_Registry: {exc}")
+        return pd.DataFrame(columns=MASTER_HEADERS)
 
 
 def load_inhouse_live() -> pd.DataFrame:
+    """Legacy reader retained only for old diagnostics. New app logic uses Master_Asset_Registry."""
     try:
         values = _sheet_values(SHEET_INHOUSE)
         df = _records_from_values(values, INHOUSE_LIVE_HEADERS)
         if "AD CODE" in df.columns:
             df["AD CODE"] = df["AD CODE"].map(normalize_ad_code)
         return df
-    except Exception as exc:
-        st.error(f"Could not load inhouse live assets: {exc}")
+    except Exception:
         return pd.DataFrame(columns=INHOUSE_LIVE_HEADERS)
-
-
-def save_inhouse_live(data: dict):
-    row = [data.get(header, "") for header in INHOUSE_LIVE_HEADERS]
-    _ws(SHEET_INHOUSE).append_row(row, value_input_option="USER_ENTERED")
-    _clear_sheet_cache()
-
-
-def ensure_inhouse_sheet():
-    spreadsheet = _client().open(st.secrets["spreadsheet_name"])
-    existing = {ws.title for ws in spreadsheet.worksheets()}
-    if SHEET_INHOUSE in existing:
-        return False
-    ws = spreadsheet.add_worksheet(
-        title=SHEET_INHOUSE,
-        rows=2000,
-        cols=len(INHOUSE_LIVE_HEADERS) + 2,
-    )
-    ws.append_row(INHOUSE_LIVE_HEADERS)
-    _clear_sheet_cache()
-    return True
 
 
 def load_meta_ads() -> pd.DataFrame:
@@ -329,16 +387,20 @@ def load_meta_ads() -> pd.DataFrame:
         if len(values) < 3:
             return pd.DataFrame()
 
-        header_row_idx = 1 if len(values) > 1 else 0
+        header_row_idx = 1
         raw_headers = [_clean_header(value) for value in values[header_row_idx]]
         rows = values[header_row_idx + 1:]
 
-        ad_code_idx = META_AD_CODE_COL_INDEX if len(raw_headers) > META_AD_CODE_COL_INDEX else _detect_ad_code_index(rows, raw_headers)
-        if ad_code_idx is not None and ad_code_idx < len(raw_headers):
+        ad_code_idx = _detect_ad_code_index(rows, raw_headers)
+        if ad_code_idx is not None:
+            while len(raw_headers) <= ad_code_idx:
+                raw_headers.append("")
             raw_headers[ad_code_idx] = "AD CODE"
 
         headers = _dedupe_headers(raw_headers)
-        df = pd.DataFrame(rows, columns=headers)
+        width = len(headers)
+        padded = [row + [""] * (width - len(row)) if len(row) < width else row[:width] for row in rows]
+        df = pd.DataFrame(padded, columns=headers)
         df = _drop_truly_blank_columns(df)
         if "AD CODE" in df.columns:
             df["AD CODE"] = df["AD CODE"].map(normalize_ad_code)
@@ -361,267 +423,31 @@ def load_influencer_ads() -> pd.DataFrame:
             if row1_count > row0_count:
                 header_row_idx = 1
 
-        headers = [_clean_header(value) for value in values[header_row_idx]]
+        headers = _dedupe_headers([_clean_header(value) for value in values[header_row_idx]])
         rows = values[header_row_idx + 1:]
-        headers = _dedupe_headers(headers)
-        df = pd.DataFrame(rows, columns=headers)
+        width = len(headers)
+        padded = [row + [""] * (width - len(row)) if len(row) < width else row[:width] for row in rows]
+        df = pd.DataFrame(padded, columns=headers)
         df = df.loc[:, [column for column in df.columns if column.strip()]]
-        perf_ad_col = first_present_column(df, "Perf AD Code", "Perf Ad Code", "Perf AD code", "Perf Ad code")
-        if perf_ad_col and perf_ad_col != "Perf AD Code":
-            df = df.rename(columns={perf_ad_col: "Perf AD Code"})
-            perf_ad_col = "Perf AD Code"
-        if perf_ad_col:
-            df[perf_ad_col] = df[perf_ad_col].map(normalize_ad_code)
+
+        perf_col = first_present_column(df, "Perf AD Code", "Perf Ad Code", "Perf AD code", "Perf Ad code")
+        if perf_col and perf_col != "Perf AD Code":
+            df = df.rename(columns={perf_col: "Perf AD Code"})
+            perf_col = "Perf AD Code"
+        if perf_col:
+            df[perf_col] = df[perf_col].map(normalize_ad_code)
 
         ad_col = first_present_column(df, "Ad Code", "AD CODE", "Ad code", "AdCode")
         if ad_col and ad_col != "Ad Code":
             df = df.rename(columns={ad_col: "Ad Code"})
             ad_col = "Ad Code"
         if ad_col:
-            df[ad_col] = df[ad_col].map(normalize_ad_code)
+            # This may be a platform ad-rights code, not always AD ###. Keep normalized only when applicable.
+            df[ad_col] = df[ad_col].map(lambda value: normalize_ad_code(value) if AD_CODE_RE.search(str(value or "")) else str(value or "").strip())
         return df
     except Exception as exc:
         st.warning(f"Could not load Live Entries 2026 sheet: {exc}")
         return pd.DataFrame()
-
-
-def classify_meta_ads(meta_df: pd.DataFrame, inhouse_df: pd.DataFrame, influencer_df: pd.DataFrame) -> pd.DataFrame:
-    if meta_df.empty:
-        return meta_df.copy()
-
-    out = meta_df.copy()
-    if "AD CODE" in out.columns:
-        out["AD CODE"] = out["AD CODE"].map(normalize_ad_code)
-    else:
-        out["AD CODE"] = ""
-
-    inhouse_codes = set()
-    if not inhouse_df.empty and "AD CODE" in inhouse_df.columns:
-        inhouse_codes = {
-            normalize_ad_code(value)
-            for value in inhouse_df["AD CODE"].tolist()
-            if normalize_ad_code(value)
-        }
-
-    influencer_codes = set()
-    influencer_col = first_present_column(
-        influencer_df,
-        "Perf AD Code", "Perf Ad Code", "Perf AD code", "Perf Ad code",
-        "Ad Code", "AD CODE", "Ad code", "AdCode",
-    )
-    if not influencer_df.empty and influencer_col:
-        influencer_codes = {
-            normalize_ad_code(value)
-            for value in influencer_df[influencer_col].tolist()
-            if normalize_ad_code(value)
-        }
-
-    def _classify(code: str) -> str:
-        normalized = normalize_ad_code(code)
-        if not normalized:
-            return "Unclassified"
-        if normalized in influencer_codes:
-            return "Influencer"
-        if normalized in inhouse_codes:
-            return "Inhouse"
-        return "Porcellia"
-
-    out["Source"] = out["AD CODE"].map(_classify)
-    return out
-
-
-def build_classified_meta_view(meta_df: pd.DataFrame | None = None,
-                               inhouse_df: pd.DataFrame | None = None,
-                               influencer_df: pd.DataFrame | None = None) -> pd.DataFrame:
-    meta = load_meta_ads() if meta_df is None else meta_df.copy()
-    inhouse = load_inhouse_live() if inhouse_df is None else inhouse_df.copy()
-    influencer = load_influencer_ads() if influencer_df is None else influencer_df.copy()
-
-    if meta.empty:
-        return pd.DataFrame()
-
-    tagged = classify_meta_ads(meta, inhouse, influencer)
-    tagged["AD CODE"] = tagged["AD CODE"].map(normalize_ad_code)
-
-    date_col = first_present_column(tagged, "Date [Ad Taken Live]", "Date [Ad Taken Live] ")
-    product_col = first_present_column(tagged, "Product")
-    creative_type_col = first_present_column(tagged, "Creative Type")
-    creative_name_col = first_present_column(tagged, "Creative Name")
-    fb_ad_name_col = first_present_column(tagged, "FB Ad Name")
-    funnel_col = first_present_column(tagged, "Funnel Level")
-    bucket_col = first_present_column(tagged, "Content Bucket")
-    angle_col = first_present_column(tagged, "Marketing Angle")
-    status_col = first_present_column(tagged, "Status")
-    folder_col = first_present_column(tagged, "Creative Folder")
-    ad_name_tss_col = first_present_column(tagged, "Ad Name (TSS)")
-    ad_name_porcellia_col = first_present_column(tagged, "Ad Name (Porcellia)")
-
-    tagged["_Date"] = parse_mixed_dates(tagged[date_col]) if date_col else pd.NaT
-
-    # Fallback: many rows have no usable value in "Date [Ad Taken Live]", but the
-    # team's ad-naming convention embeds the launch date as DD/MM/YY inside the
-    # FB Ad Name / Ad Name (TSS) / Ad Name (Porcellia) strings. Harvest it.
-    fallback_name_cols = [c for c in [
-        fb_ad_name_col, ad_name_tss_col, ad_name_porcellia_col, creative_name_col,
-    ] if c]
-    for name_col in fallback_name_cols:
-        missing_mask = tagged["_Date"].isna()
-        if not missing_mask.any():
-            break
-        extracted = tagged.loc[missing_mask, name_col].map(extract_date_from_name)
-        tagged.loc[missing_mask, "_Date"] = extracted
-
-    tagged["Meta Product"] = tagged[product_col] if product_col else ""
-    tagged["Meta Creative Type"] = tagged[creative_type_col] if creative_type_col else ""
-    tagged["Meta Creative Name"] = tagged[creative_name_col] if creative_name_col else ""
-    tagged["Meta Funnel Level"] = tagged[funnel_col] if funnel_col else ""
-    tagged["Meta Content Bucket"] = tagged[bucket_col] if bucket_col else ""
-    tagged["Meta Marketing Angle"] = tagged[angle_col] if angle_col else ""
-    tagged["Meta Status"] = tagged[status_col] if status_col else ""
-    tagged["Meta Creative Folder"] = tagged[folder_col] if folder_col else ""
-    tagged["Meta FB Ad Name"] = tagged[fb_ad_name_col] if fb_ad_name_col else ""
-    tagged["Meta Ad Name (TSS)"] = tagged[ad_name_tss_col] if ad_name_tss_col else ""
-    tagged["Meta Ad Name (Porcellia)"] = tagged[ad_name_porcellia_col] if ad_name_porcellia_col else ""
-
-    if not inhouse.empty and "AD CODE" in inhouse.columns:
-        inhouse = inhouse.copy()
-        inhouse["AD CODE"] = inhouse["AD CODE"].map(normalize_ad_code)
-        inhouse = inhouse[inhouse["AD CODE"].astype(str).str.strip() != ""]
-        inhouse = inhouse.drop_duplicates(subset=["AD CODE"], keep="first")
-        if not inhouse.empty:
-            join_cols = [column for column in [
-                "AD CODE", "Asset ID", "Published Date", "Product", "Format",
-                "Video Subtype", "Static Subtype", "Cohort", "Belief",
-                "Marketing Angle", "Situational Driver", "Funnel Stage",
-                "Influence Mode", "Creator Archetype", "Creator / Consumer Name",
-                "Drive Link", "Reference Image Link",
-            ] if column in inhouse.columns]
-            tagged = tagged.merge(
-                inhouse[join_cols],
-                on="AD CODE",
-                how="left",
-                suffixes=("", "_inhouse"),
-            )
-
-    tagged["Format Derived"] = ""
-    if "Format" in tagged.columns:
-        tagged["Format Derived"] = tagged["Format"].fillna("")
-    if creative_type_col:
-        missing_mask = tagged["Format Derived"].astype(str).str.strip() == ""
-        tagged.loc[missing_mask, "Format Derived"] = tagged.loc[missing_mask, creative_type_col].map(infer_format)
-
-    tagged["Product Derived"] = ""
-    if "Product" in tagged.columns:
-        tagged["Product Derived"] = tagged["Product"].fillna("")
-    if product_col:
-        missing_mask = tagged["Product Derived"].astype(str).str.strip() == ""
-        tagged.loc[missing_mask, "Product Derived"] = tagged.loc[missing_mask, product_col]
-
-    tagged["Marketing Angle Derived"] = ""
-    if "Marketing Angle" in tagged.columns:
-        tagged["Marketing Angle Derived"] = tagged["Marketing Angle"].fillna("")
-    if angle_col:
-        missing_mask = tagged["Marketing Angle Derived"].astype(str).str.strip() == ""
-        tagged.loc[missing_mask, "Marketing Angle Derived"] = tagged.loc[missing_mask, angle_col]
-
-    tagged["Creative Name Derived"] = tagged["Meta Creative Name"].fillna("")
-    for candidate in ["Meta FB Ad Name", "Meta Ad Name (TSS)", "Meta Ad Name (Porcellia)"]:
-        missing_mask = tagged["Creative Name Derived"].astype(str).str.strip() == ""
-        tagged.loc[missing_mask, "Creative Name Derived"] = tagged.loc[missing_mask, candidate]
-
-    return tagged
-
-
-def backlog_tag_candidates() -> pd.DataFrame:
-    classified = build_classified_meta_view()
-    if classified.empty:
-        return classified
-
-    candidates = classified.copy()
-    candidates = candidates[candidates["AD CODE"].astype(str).str.strip() != ""]
-    candidates = candidates[candidates["_Date"].notna()]
-    candidates = candidates[candidates["Source"].isin(["Porcellia", "Unclassified"])]
-    return candidates
-
-
-def unimported_meta_candidates() -> pd.DataFrame:
-    return backlog_tag_candidates()
-
-
-def migrate_master_to_inhouse() -> tuple[int, int, list[str]]:
-    ensure_inhouse_sheet()
-    src = load_assets()
-    if src.empty:
-        return 0, 0, []
-
-    dst_ws = _ws(SHEET_INHOUSE)
-    migrated = 0
-    skipped = 0
-    errors: list[str] = []
-
-    for _, row in src.iterrows():
-        try:
-            creative_type = str(row.get("Creative Type", "")).strip()
-            if creative_type in {"Consumer Testimonial", "Brand-Led", "Founder-Led", "Skit", "Event Coverage", "AI-Video"}:
-                fmt = "Video"
-                video_subtype = creative_type
-                static_subtype = ""
-            elif creative_type in {"Static", "Carousel", "GIF", "AI-Static"}:
-                fmt = "Static"
-                video_subtype = ""
-                static_subtype = creative_type
-            else:
-                fmt = ""
-                video_subtype = creative_type
-                static_subtype = ""
-
-            new_row = {
-                "Asset ID": row.get("Asset ID", ""),
-                "AD CODE": normalize_ad_code(row.get("Meta Ad ID", "")),
-                "Published Date": row.get("Published Date", ""),
-                "Parent Asset ID": row.get("Parent Asset ID", ""),
-                "Variant #": row.get("Variant #", ""),
-                "What's Different": row.get("What's Different", ""),
-                "A/B Pair ID": row.get("A/B Pair ID", ""),
-                "Product": row.get("Product", ""),
-                "Bucket": row.get("Bucket", ""),
-                "Format": fmt,
-                "Video Subtype": video_subtype,
-                "Static Subtype": static_subtype,
-                "Cohort": row.get("Cohort", ""),
-                "Belief": row.get("Belief", ""),
-                "Marketing Angle": row.get("Marketing Angle", ""),
-                "Situational Driver": row.get("Situational Driver", ""),
-                "Funnel Stage": row.get("Funnel Stage", ""),
-                "Influence Mode": row.get("Influence Mode", ""),
-                "CTA Style": row.get("CTA Style", ""),
-                "Hook Type": row.get("Hook Type", ""),
-                "Emotional Arc": row.get("Emotional Arc", ""),
-                "Creator Archetype": row.get("Creator Archetype", ""),
-                "Visual Style": row.get("Visual Style", ""),
-                "Creator / Consumer Name": row.get("Creator / Consumer Name", ""),
-                "Source Interview ID": row.get("Source Interview ID", ""),
-                "Experiment ID": row.get("Experiment ID", ""),
-                "Campaign Name": row.get("Campaign Name", ""),
-                "Ad Set Name": row.get("Ad Set Name", ""),
-                "Drive Link": row.get("Drive Link", ""),
-                "Brief Link": row.get("Brief Link", ""),
-                "Reference Image Link": "",
-                "Notes": row.get("Notes", ""),
-            }
-
-            for column in INHOUSE_LIVE_HEADERS:
-                if column not in new_row and column in src.columns:
-                    new_row[column] = row.get(column, "")
-
-            values = [new_row.get(header, "") for header in INHOUSE_LIVE_HEADERS]
-            dst_ws.append_row(values, value_input_option="USER_ENTERED")
-            migrated += 1
-        except Exception as exc:
-            errors.append(f"{row.get('Asset ID', '?')}: {exc}")
-            skipped += 1
-
-    return migrated, skipped, errors
 
 
 def load_experiments() -> pd.DataFrame:
@@ -642,8 +468,33 @@ def load_sources() -> pd.DataFrame:
         return pd.DataFrame(columns=SOURCE_HEADERS)
 
 
+def _current_headers(sheet_name: str, fallback: list[str]) -> list[str]:
+    values = _sheet_values(sheet_name)
+    if values and values[0]:
+        return [_clean_header(value) for value in values[0]]
+    return fallback
+
+
+def ensure_master_asset_schema() -> list[str]:
+    ws = _ws(SHEET_ASSETS)
+    headers = [_clean_header(value) for value in ws.row_values(1)]
+    if not headers:
+        ws.append_row(MASTER_HEADERS)
+        _clear_sheet_cache()
+        return MASTER_HEADERS
+
+    missing = [header for header in ASSET_EXTRA_HEADERS if header not in headers]
+    if missing:
+        for offset, header in enumerate(missing, start=1):
+            ws.update_cell(1, len(headers) + offset, header)
+        headers = headers + missing
+        _clear_sheet_cache()
+    return headers
+
+
 def save_asset(data: dict):
-    row = [data.get(header, "") for header in ASSET_HEADERS]
+    headers = ensure_master_asset_schema()
+    row = [data.get(header, "") for header in headers]
     _ws(SHEET_ASSETS).append_row(row, value_input_option="USER_ENTERED")
     _clear_sheet_cache()
 
@@ -664,9 +515,401 @@ def update_asset(asset_id: str, field: str, value):
     ws = _ws(SHEET_ASSETS)
     cell = ws.find(asset_id)
     if cell:
-        col = ASSET_HEADERS.index(field) + 1
-        ws.update_cell(cell.row, col, value)
+        headers = ensure_master_asset_schema()
+        if field not in headers:
+            return
+        ws.update_cell(cell.row, headers.index(field) + 1, value)
         _clear_sheet_cache()
+
+
+def update_experiment(experiment_id: str, updates: dict):
+    ws = _ws(SHEET_EXPERIMENTS)
+    cell = ws.find(experiment_id)
+    if not cell:
+        return False
+    for field, value in updates.items():
+        if field in EXPERIMENT_HEADERS:
+            ws.update_cell(cell.row, EXPERIMENT_HEADERS.index(field) + 1, value)
+    _clear_sheet_cache()
+    return True
+
+
+def classify_meta_ads(meta_df: pd.DataFrame, assets_df: pd.DataFrame, influencer_df: pd.DataFrame) -> pd.DataFrame:
+    if meta_df.empty:
+        return meta_df.copy()
+
+    out = meta_df.copy()
+    if "AD CODE" not in out.columns:
+        out["AD CODE"] = ""
+    out["AD CODE"] = out["AD CODE"].map(normalize_ad_code)
+
+    inhouse_codes = set()
+    if not assets_df.empty and "Meta Ad ID" in assets_df.columns:
+        inhouse_codes = {normalize_ad_code(value) for value in assets_df["Meta Ad ID"].tolist() if normalize_ad_code(value)}
+
+    influencer_codes = set()
+    if not influencer_df.empty and "Perf AD Code" in influencer_df.columns:
+        influencer_codes = {normalize_ad_code(value) for value in influencer_df["Perf AD Code"].tolist() if normalize_ad_code(value)}
+
+    likely_mask = out.apply(_is_likely_inhouse_meta_row, axis=1)
+
+    def _classify(row: pd.Series) -> str:
+        code = normalize_ad_code(row.get("AD CODE"))
+        if not code:
+            return "Unclassified"
+        if code in influencer_codes:
+            return "Influencer"
+        if code in inhouse_codes:
+            return "Inhouse"
+        if bool(likely_mask.loc[row.name]):
+            return "Needs Logging"
+        return "Porcellia"
+
+    out["Source"] = out.apply(_classify, axis=1)
+    return out
+
+
+def _meta_live_date(meta: pd.DataFrame) -> pd.Series:
+    if meta.empty:
+        return pd.Series(dtype="datetime64[ns]")
+    date_col = first_present_column(meta, "Date [Ad Taken Live]", "Date [Ad Taken Live] ")
+    parsed = parse_mixed_dates(meta[date_col]) if date_col else pd.Series(pd.NaT, index=meta.index)
+    fallback_cols = [
+        first_present_column(meta, "FB Ad Name"),
+        first_present_column(meta, "Ad Name (TSS)"),
+        first_present_column(meta, "Ad Name (Porcellia)"),
+        first_present_column(meta, "Creative Name"),
+    ]
+    for column in [c for c in fallback_cols if c]:
+        missing = parsed.isna()
+        if not missing.any():
+            break
+        parsed.loc[missing] = meta.loc[missing, column].map(extract_date_from_name)
+    return parsed
+
+
+def _is_likely_inhouse_meta_row(row: pd.Series) -> bool:
+    columns = [
+        "Creative Name", "FB Ad Name", "Comment", "Creative Folder Link", "Creative Folder",
+        "Ad Name (TSS)", "Ad Name (Porcellia)", "Growth SPOC/Project Manager", "Creative Strategist",
+    ]
+    text = _combine_text(row, columns)
+    return bool(_LIKELY_INHOUSE_RE.search(text))
+
+
+def _normalized_master_row(asset: pd.Series, meta_row: pd.Series | None) -> dict:
+    creative_type = _coalesce(asset, "Creative Type")
+    fmt = _first_non_empty(asset.get("Format", ""), infer_format(creative_type))
+    static_subtype = _coalesce(asset, "Static Subtype")
+    video_subtype = _coalesce(asset, "Video Subtype")
+    if not video_subtype and fmt == "Video":
+        video_subtype = creative_type
+    if not static_subtype and fmt == "Static":
+        static_subtype = creative_type if creative_type and creative_type != "Static" else infer_static_subtype(asset.get("Drive Link", ""))
+
+    meta_date = meta_row.get("_Meta Live Date") if meta_row is not None and "_Meta Live Date" in meta_row.index else pd.NaT
+    master_date = parse_mixed_dates(pd.Series([asset.get("Published Date", "")])).iloc[0]
+    live_date = meta_date if pd.notna(meta_date) else master_date
+
+    row = {
+        "Source": "Inhouse",
+        "Record Type": "Performance Live",
+        "Asset ID": asset.get("Asset ID", ""),
+        "AD CODE": normalize_ad_code(asset.get("Meta Ad ID", "")),
+        "Perf AD Code": normalize_ad_code(asset.get("Meta Ad ID", "")),
+        "Live Date": live_date,
+        "Perf Live Date": meta_date,
+        "Creator Live Date": pd.NaT,
+        "Creative Name": _first_non_empty(
+            asset.get("Creator / Consumer Name", ""),
+            asset.get("Asset ID", ""),
+            meta_row.get("Creative Name", "") if meta_row is not None else "",
+        ),
+        "Product": _first_non_empty(asset.get("Product", ""), meta_row.get("Product", "") if meta_row is not None else ""),
+        "Format": fmt,
+        "Creative Type": creative_type,
+        "Video Subtype": video_subtype,
+        "Static Subtype": static_subtype,
+        "Bucket": asset.get("Bucket", ""),
+        "Funnel Stage": _first_non_empty(asset.get("Funnel Stage", ""), meta_row.get("Funnel Level", "") if meta_row is not None else ""),
+        "Content Bucket": meta_row.get("Content Bucket", "") if meta_row is not None else "",
+        "Marketing Angle": _first_non_empty(asset.get("Marketing Angle", ""), meta_row.get("Marketing Angle", "") if meta_row is not None else ""),
+        "Belief": asset.get("Belief", ""),
+        "Cohort": asset.get("Cohort", ""),
+        "Situational Driver": asset.get("Situational Driver", ""),
+        "Hook Type": asset.get("Hook Type", ""),
+        "Emotional Arc": asset.get("Emotional Arc", ""),
+        "Creator Archetype": asset.get("Creator Archetype", ""),
+        "Influence Mode": asset.get("Influence Mode", ""),
+        "Visual Style": asset.get("Visual Style", ""),
+        "CTA Style": asset.get("CTA Style", ""),
+        "Creator / Consumer Name": asset.get("Creator / Consumer Name", ""),
+        "Creator": asset.get("Creator / Consumer Name", ""),
+        "Source Interview ID": asset.get("Source Interview ID", ""),
+        "Experiment ID": asset.get("Experiment ID", ""),
+        "Drive Link": _first_non_empty(asset.get("Drive Link", ""), asset.get("Preview Asset Link", ""), meta_row.get("Creative Folder Link", "") if meta_row is not None else ""),
+        "Preview Asset Link": _first_non_empty(asset.get("Preview Asset Link", ""), asset.get("Drive Link", "")),
+        "Source Folder Link": _first_non_empty(asset.get("Source Folder Link", ""), meta_row.get("Creative Folder Link", "") if meta_row is not None else ""),
+        "Thumbnail Link": asset.get("Thumbnail Link", ""),
+        "Brief Link": asset.get("Brief Link", ""),
+        "Reference Image Link": asset.get("Reference Image Link", ""),
+        "Landing Page URL": meta_row.get("Landing Page URL", "") if meta_row is not None else "",
+        "Instagram / Live Link": "",
+        "Campaign Name": _first_non_empty(asset.get("Campaign Name", ""), meta_row.get("FB Ad Name", "") if meta_row is not None else ""),
+        "Ad Set Name": asset.get("Ad Set Name", ""),
+        "Status": _first_non_empty(asset.get("Status", ""), meta_row.get("Status", "") if meta_row is not None else ""),
+        "Notes": asset.get("Notes", ""),
+        "Needs Attention": "",
+    }
+    _add_metric_fields(row, asset, meta_row)
+    return row
+
+
+def _normalized_influencer_row(influencer: pd.Series, meta_row: pd.Series | None) -> dict:
+    creator_date = parse_mixed_dates(pd.Series([influencer.get("Date", "")])).iloc[0]
+    ad_started = parse_mixed_dates(pd.Series([influencer.get("Ad Started On", "")])).iloc[0]
+    meta_date = meta_row.get("_Meta Live Date") if meta_row is not None and "_Meta Live Date" in meta_row.index else pd.NaT
+    perf_live_date = meta_date if pd.notna(meta_date) else ad_started
+    perf_code = normalize_ad_code(influencer.get("Perf AD Code", ""))
+    internal_code = influencer.get("Ad Code", "")
+
+    row = {
+        "Source": "Influencer",
+        "Record Type": "Creator Live" if not perf_code else "Creator + Perf Live",
+        "Asset ID": "",
+        "AD CODE": perf_code or str(internal_code or "").strip(),
+        "Perf AD Code": perf_code,
+        "Influencer Ad Code": internal_code,
+        "Live Date": creator_date,
+        "Creator Live Date": creator_date,
+        "Perf Live Date": perf_live_date,
+        "Creative Name": _first_non_empty(influencer.get("Creator", ""), meta_row.get("Creative Name", "") if meta_row is not None else ""),
+        "Product": _first_non_empty(influencer.get("Product", ""), influencer.get("Product ", ""), meta_row.get("Product", "") if meta_row is not None else ""),
+        "Format": "Video",
+        "Creative Type": _first_non_empty(meta_row.get("Creative Type", "") if meta_row is not None else "", "Influencer Video"),
+        "Video Subtype": "Influencer Video",
+        "Static Subtype": "",
+        "Bucket": "Performance" if perf_code else "Influencer Content",
+        "Funnel Stage": meta_row.get("Funnel Level", "") if meta_row is not None else "",
+        "Content Bucket": meta_row.get("Content Bucket", "") if meta_row is not None else "",
+        "Marketing Angle": meta_row.get("Marketing Angle", "") if meta_row is not None else "",
+        "Belief": "",
+        "Cohort": "",
+        "Situational Driver": "",
+        "Hook Type": "",
+        "Emotional Arc": "",
+        "Creator Archetype": "Influencer",
+        "Influence Mode": "",
+        "Visual Style": "",
+        "CTA Style": "",
+        "Creator / Consumer Name": influencer.get("Creator", ""),
+        "Creator": influencer.get("Creator", ""),
+        "Agency": influencer.get("Agency", ""),
+        "POC": influencer.get("POC", ""),
+        "Followers": influencer.get("Followers", ""),
+        "Platform": influencer.get("Platform", ""),
+        "Language": influencer.get("Language", ""),
+        "Instagram / Live Link": influencer.get("Live Link", ""),
+        "Drive Link": influencer.get("Live Link", ""),
+        "Preview Asset Link": influencer.get("Live Link", ""),
+        "Source Folder Link": "",
+        "Thumbnail Link": "",
+        "Brief Link": "",
+        "Reference Image Link": "",
+        "Landing Page URL": meta_row.get("Landing Page URL", "") if meta_row is not None else "",
+        "Campaign Name": meta_row.get("FB Ad Name", "") if meta_row is not None else "",
+        "Ad Set Name": "",
+        "Status": "Perf live" if perf_code else "Creator live, no Perf AD Code",
+        "Notes": influencer.get("Comments on the video", "") if "Comments on the video" in influencer.index else "",
+        "Needs Attention": "" if perf_code else "No Perf AD Code yet",
+        "Views": influencer.get("Views", ""),
+        "Likes": influencer.get("Likes", ""),
+        "Comments": influencer.get("Comments", ""),
+        "Shares": influencer.get("Shares", ""),
+        "Saves": influencer.get("Saves", ""),
+        "Total Engagement": influencer.get("Total Engagement", ""),
+        "Engagement Rate (%)": influencer.get("Engagement Rate (%)", ""),
+    }
+    _add_metric_fields(row, influencer, meta_row)
+    return row
+
+
+def _normalized_meta_row(meta: pd.Series, source: str) -> dict:
+    text_for_format = _combine_text(meta, ["Creative Type", "Visual format", "Creative Name", "FB Ad Name", "Ad Name (TSS)", "Ad Name (Porcellia)"])
+    row = {
+        "Source": source,
+        "Record Type": "Needs Inhouse Logging" if source == "Needs Logging" else "Performance Live",
+        "Asset ID": "",
+        "AD CODE": normalize_ad_code(meta.get("AD CODE", "")),
+        "Perf AD Code": normalize_ad_code(meta.get("AD CODE", "")),
+        "Live Date": meta.get("_Meta Live Date", pd.NaT),
+        "Perf Live Date": meta.get("_Meta Live Date", pd.NaT),
+        "Creator Live Date": pd.NaT,
+        "Creative Name": _coalesce(meta, "Creative Name", "FB Ad Name", "Ad Name (TSS)", "Ad Name (Porcellia)"),
+        "Product": _coalesce(meta, "Product"),
+        "Format": _first_non_empty(infer_format(meta.get("Creative Type", "")), infer_format(text_for_format)),
+        "Creative Type": _coalesce(meta, "Creative Type"),
+        "Video Subtype": "",
+        "Static Subtype": infer_static_subtype(text_for_format) if infer_format(text_for_format) == "Static" else "",
+        "Bucket": "Performance",
+        "Funnel Stage": _coalesce(meta, "Funnel Level"),
+        "Content Bucket": _coalesce(meta, "Content Bucket"),
+        "Marketing Angle": _coalesce(meta, "Marketing Angle"),
+        "Belief": "",
+        "Cohort": _coalesce(meta, "Persona"),
+        "Situational Driver": "",
+        "Hook Type": _coalesce(meta, "Creative Hook"),
+        "Emotional Arc": "",
+        "Creator Archetype": "",
+        "Influence Mode": "",
+        "Visual Style": _coalesce(meta, "Visual format"),
+        "CTA Style": "",
+        "Creator / Consumer Name": _coalesce(meta, "Creator"),
+        "Creator": _coalesce(meta, "Creator"),
+        "Drive Link": _coalesce(meta, "Creative Folder Link", "Creative Folder", "1:1 Creative Link", "4:5 Creative Link", "9:16 Creative Link"),
+        "Preview Asset Link": _coalesce(meta, "1:1 Creative Link", "4:5 Creative Link", "9:16 Creative Link", "Creative Folder Link", "Creative Folder"),
+        "Source Folder Link": _coalesce(meta, "Creative Folder Link", "Creative Folder"),
+        "Thumbnail Link": "",
+        "Brief Link": _coalesce(meta, "Asana Link"),
+        "Reference Image Link": "",
+        "Landing Page URL": _coalesce(meta, "Landing Page URL"),
+        "Instagram / Live Link": "",
+        "Campaign Name": _coalesce(meta, "FB Ad Name", "Ad Name (TSS)", "Ad Name (Porcellia)"),
+        "Ad Set Name": "",
+        "Status": _coalesce(meta, "Status"),
+        "Notes": _coalesce(meta, "Comment", "Comments"),
+        "Needs Attention": "Likely in-house row missing from Master_Asset_Registry" if source == "Needs Logging" else "",
+    }
+    _add_metric_fields(row, meta)
+    return row
+
+
+def build_creative_ops_view(meta_df: pd.DataFrame | None = None,
+                            assets_df: pd.DataFrame | None = None,
+                            influencer_df: pd.DataFrame | None = None) -> pd.DataFrame:
+    meta = load_meta_ads() if meta_df is None else meta_df.copy()
+    assets = load_assets() if assets_df is None else assets_df.copy()
+    influencers = load_influencer_ads() if influencer_df is None else influencer_df.copy()
+
+    if not meta.empty:
+        if "AD CODE" not in meta.columns:
+            meta["AD CODE"] = ""
+        meta["AD CODE"] = meta["AD CODE"].map(normalize_ad_code)
+        meta["_Meta Live Date"] = _meta_live_date(meta)
+
+    if not assets.empty:
+        assets = _ensure_columns(assets, MASTER_HEADERS)
+        assets["Meta Ad ID"] = assets["Meta Ad ID"].map(normalize_ad_code)
+
+    if not influencers.empty:
+        if "Perf AD Code" not in influencers.columns:
+            influencers["Perf AD Code"] = ""
+        influencers["Perf AD Code"] = influencers["Perf AD Code"].map(normalize_ad_code)
+
+    meta_by_code = {}
+    if not meta.empty and "AD CODE" in meta.columns:
+        meta_valid = meta[meta["AD CODE"].astype(str).str.strip() != ""].copy()
+        meta_by_code = {
+            code: row for code, row in meta_valid.drop_duplicates("AD CODE", keep="last").set_index("AD CODE").iterrows()
+        }
+
+    master_codes = set()
+    rows: list[dict] = []
+
+    if not assets.empty:
+        for _, asset in assets.iterrows():
+            code = normalize_ad_code(asset.get("Meta Ad ID", ""))
+            if not code:
+                continue
+            master_codes.add(code)
+            rows.append(_normalized_master_row(asset, meta_by_code.get(code)))
+
+    influencer_perf_codes = set()
+    if not influencers.empty:
+        for _, influencer in influencers.iterrows():
+            perf_code = normalize_ad_code(influencer.get("Perf AD Code", ""))
+            if perf_code:
+                influencer_perf_codes.add(perf_code)
+            # Keep creator-live rows even when Perf AD Code is blank.
+            if _truthy(influencer.get("Date")) or perf_code:
+                rows.append(_normalized_influencer_row(influencer, meta_by_code.get(perf_code)))
+
+    if not meta.empty:
+        classified = classify_meta_ads(meta, assets, influencers)
+        for _, meta_row in classified.iterrows():
+            code = normalize_ad_code(meta_row.get("AD CODE", ""))
+            if not code or code in master_codes or code in influencer_perf_codes:
+                continue
+            source = meta_row.get("Source", "Porcellia")
+            if source in {"Porcellia", "Needs Logging", "Unclassified"}:
+                rows.append(_normalized_meta_row(meta_row, source))
+
+    out = pd.DataFrame(rows)
+    if out.empty:
+        return pd.DataFrame()
+
+    out["AD CODE Normalized"] = out["AD CODE"].map(normalize_ad_code)
+    out["_Date"] = parse_mixed_dates(out["Live Date"]) if "Live Date" in out.columns else pd.NaT
+    out["Date"] = out["_Date"]
+    out["Product Derived"] = out["Product"].fillna("") if "Product" in out.columns else ""
+    out["Format Derived"] = out["Format"].fillna("") if "Format" in out.columns else ""
+    out["Marketing Angle Derived"] = out["Marketing Angle"].fillna("") if "Marketing Angle" in out.columns else ""
+    out["Creative Name Derived"] = out["Creative Name"].fillna("") if "Creative Name" in out.columns else ""
+    return out
+
+
+def build_classified_meta_view(meta_df: pd.DataFrame | None = None,
+                               inhouse_df: pd.DataFrame | None = None,
+                               influencer_df: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Backward-compatible name now returns the full Creative Ops view."""
+    return build_creative_ops_view(meta_df=meta_df, assets_df=inhouse_df, influencer_df=influencer_df)
+
+
+def backlog_tag_candidates() -> pd.DataFrame:
+    view = build_creative_ops_view()
+    if view.empty or "Source" not in view.columns:
+        return view
+    return view[view["Source"].isin(["Needs Logging"])].copy()
+
+
+def unimported_meta_candidates() -> pd.DataFrame:
+    return backlog_tag_candidates()
+
+
+def save_inhouse_live(data: dict):
+    """Legacy writer redirected to Master to avoid creating a second source of truth."""
+    mapped = {header: data.get(header, "") for header in MASTER_HEADERS}
+    mapped.update({
+        "Meta Ad ID": data.get("AD CODE", data.get("Meta Ad ID", "")),
+        "Creative Type": data.get("Video Subtype") or data.get("Static Subtype") or data.get("Creative Type", ""),
+        "Channel": "In-house",
+        "Status": data.get("Status", "Published"),
+        "Preview Asset Link": data.get("Reference Image Link", data.get("Preview Asset Link", "")),
+    })
+    save_asset(mapped)
+
+
+def ensure_inhouse_sheet():
+    return False
+
+
+def migrate_master_to_inhouse() -> tuple[int, int, list[str]]:
+    return 0, 0, ["Disabled: Master_Asset_Registry is now the primary in-house source."]
+
+
+def folder_id_from_url(url: str) -> str:
+    text = str(url or "").strip()
+    if not text:
+        return ""
+    match = re.search(r"/folders/([a-zA-Z0-9_-]+)", text)
+    if match:
+        return match.group(1)
+    parsed = urlparse(text)
+    if parsed.path:
+        parts = [part for part in parsed.path.split("/") if part]
+        if parts:
+            return parts[-1]
+    return text
 
 
 _PRODUCT_CODE = {
@@ -680,7 +923,7 @@ _PRODUCT_CODE = {
 
 _VIDEO_TYPES = {
     "Consumer Testimonial", "Brand-Led", "Founder-Led",
-    "Skit", "Event Coverage", "AI-Video",
+    "Skit", "Event Coverage", "AI-Video", "Influencer Video",
 }
 
 
@@ -690,24 +933,24 @@ def next_asset_id(product: str, creative_type_or_format: str, existing: list) ->
     creative_prefix = "V" if value == "Video" or value in _VIDEO_TYPES else "S"
     prefix = f"{prefix_product}-{creative_prefix}-"
     nums = [
-        int(item.split("-")[-1]) for item in existing
-        if item.startswith(prefix) and item.split("-")[-1].isdigit()
+        int(str(item).split("-")[-1]) for item in existing
+        if str(item).startswith(prefix) and str(item).split("-")[-1].isdigit()
     ]
     return f"{prefix}{str(max(nums, default=0) + 1).zfill(3)}"
 
 
 def next_experiment_id(existing: list) -> str:
     nums = [
-        int(item.split("-")[-1]) for item in existing
-        if item.startswith("EXP-") and item.split("-")[-1].isdigit()
+        int(str(item).split("-")[-1]) for item in existing
+        if str(item).startswith("EXP-") and str(item).split("-")[-1].isdigit()
     ]
     return f"EXP-{str(max(nums, default=0) + 1).zfill(3)}"
 
 
 def next_source_id(existing: list) -> str:
     nums = [
-        int(item.split("-")[-1]) for item in existing
-        if item.startswith("SRC-") and item.split("-")[-1].isdigit()
+        int(str(item).split("-")[-1]) for item in existing
+        if str(item).startswith("SRC-") and str(item).split("-")[-1].isdigit()
     ]
     return f"SRC-{str(max(nums, default=0) + 1).zfill(3)}"
 
@@ -715,10 +958,8 @@ def next_source_id(existing: list) -> str:
 def initialise_sheets():
     spreadsheet = _client().open(st.secrets["spreadsheet_name"])
     existing = {ws.title for ws in spreadsheet.worksheets()}
-
     to_create = {
-        SHEET_ASSETS: ASSET_HEADERS,
-        SHEET_INHOUSE: INHOUSE_LIVE_HEADERS,
+        SHEET_ASSETS: MASTER_HEADERS,
         SHEET_EXPERIMENTS: EXPERIMENT_HEADERS,
         SHEET_SOURCES: SOURCE_HEADERS,
         SHEET_WEEKLY: [
@@ -726,10 +967,11 @@ def initialise_sheets():
             "RCF", "CPGS", "BRGM", "Diversity Score", "Notes",
         ],
     }
-
     for name, headers in to_create.items():
         if name not in existing:
             ws = spreadsheet.add_worksheet(title=name, rows=2000, cols=len(headers) + 5)
             ws.append_row(headers)
+    if SHEET_ASSETS in existing:
+        ensure_master_asset_schema()
     _clear_sheet_cache()
     return True

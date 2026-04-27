@@ -24,7 +24,7 @@ from utils.sheets import (
     next_asset_id,
     normalize_ad_code,
     refresh_sheet_cache,
-    save_asset,
+    upsert_asset_by_ad_code,
 )
 from utils.taxonomy import (
     CTA_STYLES,
@@ -336,9 +336,6 @@ with tab_drive:
         with right:
             assets = load_assets()
             existing_ids = assets["Asset ID"].dropna().astype(str).tolist() if not assets.empty and "Asset ID" in assets.columns else []
-            existing_codes = set()
-            if not assets.empty and "Meta Ad ID" in assets.columns:
-                existing_codes = {normalize_ad_code(v) for v in assets["Meta Ad ID"].tolist() if normalize_ad_code(v)}
 
             with st.form("approve_drive_static"):
                 default_product = picked.get("Product") if picked.get("Product") in PRODUCTS else PRODUCTS[0]
@@ -375,44 +372,44 @@ with tab_drive:
                     height=80,
                 )
 
-                submitted = st.form_submit_button("Approve and save to Master_Asset_Registry", type="primary", use_container_width=True)
+                submitted = st.form_submit_button("Approve and save/update Master_Asset_Registry", type="primary", use_container_width=True)
                 if submitted:
                     normalized_code = normalize_ad_code(ad_code)
-                    if normalized_code and normalized_code in existing_codes:
-                        st.error(f"{normalized_code} already exists in Master_Asset_Registry.")
-                    else:
-                        asset_id = next_asset_id(product, "Static", existing_ids)
-                        row = {
-                            "Asset ID": asset_id,
-                            "Variant #": "A",
-                            "Status": "Backlog Review" if not normalized_code else "Published",
-                            "Created Date": datetime.now().strftime("%Y-%m-%d"),
-                            "Published Date": "",
-                            "Product": product,
-                            "Bucket": "Performance",
-                            "Channel": "In-house",
-                            "Creative Type": subtype,
-                            "Format": "Static",
-                            "Static Subtype": subtype,
-                            "Cohort": cohort,
-                            "Belief": belief,
-                            "Marketing Angle": angle,
-                            "Situational Driver": driver,
-                            "Funnel Stage": funnel,
-                            "Influence Mode": influence,
-                            "Visual Style": visual,
-                            "CTA Style": cta,
-                            "Creator / Consumer Name": creative_name,
-                            "Meta Ad ID": normalized_code,
-                            "Drive Link": picked["Drive Link"],
-                            "Preview Asset Link": picked["Drive Link"],
-                            "Source Folder Link": picked["Folder Path"],
-                            "Thumbnail Link": picked.get("Thumbnail Link", ""),
-                            "Notes": notes,
-                            "Taxonomy Review Status": "Tagged",
-                        }
-                        try:
-                            save_asset(row)
-                            st.success(f"Saved {asset_id} to Master_Asset_Registry.")
-                        except Exception as exc:
-                            st.error(f"Save failed: {exc}")
+                    asset_id = next_asset_id(product, "Static", existing_ids)
+                    row = {
+                        "Asset ID": asset_id,
+                        "Variant #": "A",
+                        "Status": "Backlog Review" if not normalized_code else "Published",
+                        "Created Date": datetime.now().strftime("%Y-%m-%d"),
+                        "Published Date": "",
+                        "Product": product,
+                        "Bucket": "Performance",
+                        "Channel": "In-house",
+                        "Creative Type": subtype,
+                        "Format": "Static",
+                        "Static Subtype": subtype,
+                        "Cohort": cohort,
+                        "Belief": belief,
+                        "Marketing Angle": angle,
+                        "Situational Driver": driver,
+                        "Funnel Stage": funnel,
+                        "Influence Mode": influence,
+                        "Visual Style": visual,
+                        "CTA Style": cta,
+                        "Creator / Consumer Name": creative_name,
+                        "Meta Ad ID": normalized_code,
+                        "Drive Link": picked["Drive Link"],
+                        "Preview Asset Link": picked["Drive Link"],
+                        "Source Folder Link": picked["Folder Path"],
+                        "Thumbnail Link": picked.get("Thumbnail Link", ""),
+                        "Notes": notes,
+                        "Taxonomy Review Status": "Tagged",
+                    }
+                    try:
+                        action, saved_asset_id = upsert_asset_by_ad_code(row)
+                        if action == "updated":
+                            st.success(f"Updated existing Master row for {normalized_code}. Filled the approved taxonomy and preview fields.")
+                        else:
+                            st.success(f"Saved {saved_asset_id} to Master_Asset_Registry.")
+                    except Exception as exc:
+                        st.error(f"Save/update failed: {exc}")

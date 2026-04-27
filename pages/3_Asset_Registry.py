@@ -147,6 +147,8 @@ if filtered.empty:
     st.warning("No assets match these filters.")
     st.stop()
 
+filtered["_Preview"] = filtered.apply(_thumb, axis=1)
+
 m1, m2, m3, m4, m5 = st.columns(5)
 m1.metric("Assets", len(filtered))
 m2.metric("Videos", int((filtered["Format"] == "Video").sum()) if "Format" in filtered.columns else 0)
@@ -161,16 +163,26 @@ left, right = st.columns([0.95, 1.35])
 with left:
     st.subheader("In-house assets")
     table_cols = [
-        "Asset ID", "Meta Ad ID", "Published Date", "Product", "Format", "Creative Type",
+        "_Preview", "Asset ID", "Meta Ad ID", "Published Date", "Product", "Format", "Creative Type",
         "Creator / Consumer Name", "Marketing Angle", "Cohort", "ROAS", "CTR", "Drive Link",
     ]
     table = filtered[[c for c in table_cols if c in filtered.columns]].copy()
     if "_Published Date" in filtered.columns:
         table["_sort"] = filtered["_Published Date"]
         table = table.sort_values("_sort", ascending=False).drop(columns="_sort")
-    st.dataframe(table, use_container_width=True, hide_index=True, height=520)
+    table = table.rename(columns={"_Preview": "Preview"})
+    st.dataframe(
+        table,
+        use_container_width=True,
+        hide_index=True,
+        height=520,
+        column_config={
+            "Preview": st.column_config.ImageColumn("Preview", width="small"),
+            "Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open"),
+        },
+    )
 
-    csv = filtered.drop(columns=["_Published Date"], errors="ignore").to_csv(index=False).encode("utf-8")
+    csv = filtered.drop(columns=["_Published Date", "_Preview"], errors="ignore").to_csv(index=False).encode("utf-8")
     st.download_button("Download filtered CSV", data=csv, file_name="master_asset_registry_filtered.csv", mime="text/csv")
 
 with right:

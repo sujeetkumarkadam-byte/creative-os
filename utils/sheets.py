@@ -2,6 +2,7 @@ import re
 from urllib.parse import urlparse
 
 import gspread
+from gspread.utils import rowcol_to_a1
 from google.oauth2.service_account import Credentials
 import pandas as pd
 import streamlit as st
@@ -604,6 +605,56 @@ def save_asset(data: dict):
     row = [data.get(header, "") for header in headers]
     _ws(SHEET_ASSETS).append_row(row, value_input_option="USER_ENTERED")
     _clear_sheet_cache()
+
+
+def upsert_asset_by_ad_code(data: dict) -> tuple[str, str]:
+    """Append a Master asset, or update the existing row when Meta Ad ID already exists."""
+    headers = ensure_master_asset_schema()
+    ad_code = normalize_ad_code(data.get("Meta Ad ID") or data.get("AD CODE"))
+    if not ad_code:
+        save_asset(data)
+        return "created", str(data.get("Asset ID", ""))
+
+    ws = _ws(SHEET_ASSETS)
+    values = ws.get_all_values()
+    meta_idx = headers.index("Meta Ad ID") if "Meta Ad ID" in headers else None
+
+    row_number = None
+    existing_row = []
+    if meta_idx is not None:
+        for idx, raw_row in enumerate(values[1:], start=2):
+            cell_value = raw_row[meta_idx] if len(raw_row) > meta_idx else ""
+            if normalize_ad_code(cell_value) == ad_code:
+                row_number = idx
+                existing_row = raw_row
+                break
+
+    if row_number is None:
+        row = [data.get(header, "") for header in headers]
+        ws.append_row(row, value_input_option="USER_ENTERED")
+        _clear_sheet_cache()
+        return "created", str(data.get("Asset ID", ""))
+
+    padded_existing = existing_row + [""] * (len(headers) - len(existing_row))
+    merged = padded_existing[:len(headers)]
+    existing_asset_id = merged[headers.index("Asset ID")] if "Asset ID" in headers else ""
+
+    for col_idx, header in enumerate(headers):
+        incoming = data.get(header, "")
+        if header == "Asset ID" and existing_asset_id:
+            continue
+        if header == "Created Date" and str(merged[col_idx]).strip():
+            continue
+        if header == "Meta Ad ID":
+            merged[col_idx] = ad_code
+            continue
+        if _truthy(incoming):
+            merged[col_idx] = incoming
+
+    end_cell = rowcol_to_a1(row_number, len(headers))
+    ws.update([merged], f"A{row_number}:{end_cell}", value_input_option="USER_ENTERED")
+    _clear_sheet_cache()
+    return "updated", str(existing_asset_id or data.get("Asset ID", ""))
 
 
 def _product_from_meta(value: str) -> str:

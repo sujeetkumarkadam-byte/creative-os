@@ -83,6 +83,93 @@ def _thumb(row: pd.Series) -> str:
     return ""
 
 
+NUMERIC_SORT_COLUMNS = {
+    "ROAS", "Amount Spent", "Revenue", "Avg Cost Per Reach", "CTR", "CPC",
+    "ATC Rate", "CVR", "AOV", "Hook Rate", "Hold Rate", "CAC",
+    "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "Avg Cost Per Reach (L30)",
+    "CTR (L30)", "CPC (L30)", "ATC Rate (L30)", "CVR (L30)", "AOV (L30)",
+    "Hook Rate (L30)", "Hold Rate (L30)", "CAC (L30)",
+    "ROAS (L7)", "Amount Spent (L7)", "Revenue (L7)", "Avg Cost Per Reach (L7)",
+    "CTR (L7)", "CPC (L7)", "ATC Rate (L7)", "CVR (L7)", "AOV (L7)",
+    "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
+}
+
+
+def _row_key(row: pd.Series) -> str:
+    return "|".join(
+        str(row.get(field, ""))
+        for field in ["Asset ID", "Meta Ad ID", "Creator / Consumer Name", "Product", "Published Date"]
+    )
+
+
+def _number(value):
+    text = str(value or "").strip()
+    if not text or text.lower() in {"nan", "nat", "none", "#div/0!"}:
+        return pd.NA
+    cleaned = re.sub(r"[₹,%\s]", "", text.replace(",", ""))
+    cleaned = re.sub(r"[^0-9.\-]", "", cleaned)
+    if cleaned in {"", ".", "-", "-."}:
+        return pd.NA
+    return pd.to_numeric(cleaned, errors="coerce")
+
+
+def _sort_dataframe(data: pd.DataFrame, sort_by: str, descending: bool) -> pd.DataFrame:
+    if data.empty or sort_by not in data.columns:
+        return data
+    sortable = data.copy()
+    if sort_by in NUMERIC_SORT_COLUMNS:
+        sortable["_sort_key"] = sortable[sort_by].map(_number)
+    elif sort_by in {"Published Date", "Created Date"}:
+        sortable["_sort_key"] = pd.to_datetime(sortable[sort_by], errors="coerce", dayfirst=True)
+    else:
+        sortable["_sort_key"] = sortable[sort_by].astype(str).str.lower()
+    return sortable.sort_values("_sort_key", ascending=not descending, na_position="last").drop(columns="_sort_key")
+
+
+def _table_controls(data: pd.DataFrame, key: str) -> pd.DataFrame:
+    if data.empty:
+        return data
+    working = data.copy()
+    with st.expander("Search, filter, and sort this table", expanded=True):
+        search_value = st.text_input("Search table", key=f"{key}_search", placeholder="name, AD CODE, asset ID, angle, consumer...")
+        if search_value.strip():
+            term = search_value.strip().lower()
+            search_cols = [
+                "Asset ID", "Meta Ad ID", "Creator / Consumer Name", "Marketing Angle", "Belief",
+                "Cohort", "Notes", "Drive Link", "Experiment ID", "Source Interview ID",
+                "Product", "Format", "Creative Type", "Status",
+            ]
+            mask = pd.Series(False, index=working.index)
+            for column in [c for c in search_cols if c in working.columns]:
+                mask = mask | working[column].astype(str).str.lower().str.contains(term, na=False)
+            working = working[mask]
+
+        filter_cols = st.columns(3)
+        for idx, column in enumerate([c for c in ["Product", "Format", "Status", "Marketing Angle", "Cohort", "Creative Type"] if c in working.columns]):
+            options = sorted(v for v in working[column].dropna().astype(str).unique() if v.strip())
+            if not options:
+                continue
+            selected = filter_cols[idx % 3].multiselect(column, options, key=f"{key}_filter_{column}", placeholder=f"All {column}")
+            if selected:
+                working = working[working[column].astype(str).isin(selected)]
+
+        sort_options = [c for c in working.columns if not str(c).startswith("_")]
+        fallback = "Published Date" if "Published Date" in sort_options else (sort_options[0] if sort_options else "")
+        if sort_options:
+            s1, s2 = st.columns([0.7, 0.3])
+            sort_by = s1.selectbox("Sort by", sort_options, index=sort_options.index(fallback), key=f"{key}_sort_by")
+            descending = s2.toggle("Descending", value=True, key=f"{key}_sort_desc")
+            working = _sort_dataframe(working, sort_by, descending)
+    return working
+
+
+def _numeric_display(data: pd.DataFrame) -> pd.DataFrame:
+    output = data.copy()
+    for column in [c for c in output.columns if c in NUMERIC_SORT_COLUMNS]:
+        output[column] = output[column].map(_number).astype("Float64")
+    return output
+
+
 assets = load_assets()
 if assets.empty:
     st.info("No in-house assets are logged in Master_Asset_Registry yet.")
@@ -137,6 +224,7 @@ if search.strip():
     cols = [
         "Asset ID", "Meta Ad ID", "Creator / Consumer Name", "Marketing Angle",
         "Belief", "Cohort", "Notes", "Drive Link", "Experiment ID", "Source Interview ID",
+        "Product", "Format", "Creative Type", "Static Subtype", "Video Subtype", "Status",
     ]
     mask = pd.Series(False, index=filtered.index)
     for col in [c for c in cols if c in filtered.columns]:
@@ -148,6 +236,7 @@ if filtered.empty:
     st.stop()
 
 filtered["_Preview"] = filtered.apply(_thumb, axis=1)
+filtered["_Row Key"] = filtered.apply(_row_key, axis=1)
 
 m1, m2, m3, m4, m5 = st.columns(5)
 m1.metric("Assets", len(filtered))
@@ -164,35 +253,48 @@ with left:
     st.subheader("In-house assets")
     table_cols = [
         "_Preview", "Asset ID", "Meta Ad ID", "Published Date", "Product", "Format", "Creative Type",
-        "Creator / Consumer Name", "Marketing Angle", "Cohort", "ROAS", "CTR", "Drive Link",
+        "Creator / Consumer Name", "Marketing Angle", "Cohort", "ROAS", "Amount Spent", "Revenue",
+        "CTR", "Drive Link", "_Row Key",
     ]
     table = filtered[[c for c in table_cols if c in filtered.columns]].copy()
-    if "_Published Date" in filtered.columns:
-        table["_sort"] = filtered["_Published Date"]
-        table = table.sort_values("_sort", ascending=False).drop(columns="_sort")
+    table = _table_controls(table, key="asset_registry")
+    if table.empty:
+        st.warning("No rows match the table search/filters.")
+        st.stop()
+
     table = table.rename(columns={"_Preview": "Preview"})
-    st.dataframe(
-        table,
+    table_display = _numeric_display(table.drop(columns=["_Row Key"], errors="ignore"))
+    table_event = st.dataframe(
+        table_display,
         use_container_width=True,
         hide_index=True,
         height=520,
+        on_select="rerun",
+        selection_mode="single-row",
+        key="asset_registry_table",
         column_config={
             "Preview": st.column_config.ImageColumn("Preview", width="small"),
             "Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open"),
         },
     )
+    if table_event.selection.rows:
+        selected_pos = table_event.selection.rows[0]
+        st.session_state["asset_registry_selected_row_key"] = str(table.iloc[selected_pos]["_Row Key"])
+    elif "asset_registry_selected_row_key" not in st.session_state:
+        st.session_state["asset_registry_selected_row_key"] = str(table.iloc[0]["_Row Key"])
 
-    csv = filtered.drop(columns=["_Published Date", "_Preview"], errors="ignore").to_csv(index=False).encode("utf-8")
+    csv = filtered.drop(columns=["_Published Date", "_Preview", "_Row Key"], errors="ignore").to_csv(index=False).encode("utf-8")
     st.download_button("Download filtered CSV", data=csv, file_name="master_asset_registry_filtered.csv", mime="text/csv")
 
 with right:
     st.subheader("Creative detail")
-    labels = filtered.apply(
-        lambda row: f"{_safe(row.get('Asset ID'))} | {_safe(row.get('Meta Ad ID'))} | {_safe(row.get('Creator / Consumer Name'), _safe(row.get('Marketing Angle')))}",
-        axis=1,
-    ).tolist()
-    selected = st.selectbox("Pick an asset", labels)
-    row = filtered.iloc[labels.index(selected)]
+    st.caption("Select a row in the table to open its full asset view here.")
+    table_keys = set(table["_Row Key"].astype(str)) if "table" in locals() and "_Row Key" in table.columns else set()
+    selected_key = st.session_state.get("asset_registry_selected_row_key")
+    if selected_key not in table_keys and table_keys:
+        selected_key = str(table.iloc[0]["_Row Key"])
+        st.session_state["asset_registry_selected_row_key"] = selected_key
+    row = filtered[filtered["_Row Key"].astype(str) == selected_key].iloc[0]
 
     preview = _thumb(row)
     if preview:

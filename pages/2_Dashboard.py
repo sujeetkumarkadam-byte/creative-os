@@ -99,6 +99,104 @@ def _link(label: str, url: str):
         st.markdown(f"[{label}]({url})")
 
 
+NUMERIC_SORT_COLUMNS = {
+    "ROAS", "Amount Spent", "Revenue", "Avg Cost Per Reach", "CTR", "CPC",
+    "ATC Rate", "CVR", "AOV", "Hook Rate", "Hold Rate", "CAC",
+    "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "Avg Cost Per Reach (L30)",
+    "CTR (L30)", "CPC (L30)", "ATC Rate (L30)", "CVR (L30)", "AOV (L30)",
+    "Hook Rate (L30)", "Hold Rate (L30)", "CAC (L30)",
+    "ROAS (L7)", "Amount Spent (L7)", "Revenue (L7)", "Avg Cost Per Reach (L7)",
+    "CTR (L7)", "CPC (L7)", "ATC Rate (L7)", "CVR (L7)", "AOV (L7)",
+    "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
+    "Views", "Likes", "Comments", "Shares", "Saves", "Total Engagement",
+    "Engagement Rate (%)", "Followers", "Creatives", "Filled", "Total", "Coverage",
+}
+
+
+def _row_key(row: pd.Series) -> str:
+    parts = [
+        row.get("Source", ""),
+        row.get("AD CODE", ""),
+        row.get("Perf AD Code", ""),
+        row.get("Asset ID", ""),
+        row.get("Creative Name", ""),
+        _fmt_date(row.get("_Date", "")),
+    ]
+    return "|".join(str(part) for part in parts)
+
+
+def _number(value):
+    text = str(value or "").strip()
+    if not text or text.lower() in {"nan", "nat", "none", "#div/0!"}:
+        return pd.NA
+    cleaned = re.sub(r"[₹,%\s]", "", text.replace(",", ""))
+    cleaned = re.sub(r"[^0-9.\-]", "", cleaned)
+    if cleaned in {"", ".", "-", "-."}:
+        return pd.NA
+    return pd.to_numeric(cleaned, errors="coerce")
+
+
+def _sort_dataframe(data: pd.DataFrame, sort_by: str, descending: bool) -> pd.DataFrame:
+    if data.empty or sort_by not in data.columns:
+        return data
+    sortable = data.copy()
+    if sort_by in NUMERIC_SORT_COLUMNS:
+        sortable["_sort_key"] = sortable[sort_by].map(_number)
+    elif sort_by in {"_Date", "Live Date", "Date", "Published Date"}:
+        sortable["_sort_key"] = pd.to_datetime(sortable[sort_by], errors="coerce", dayfirst=True)
+    else:
+        sortable["_sort_key"] = sortable[sort_by].astype(str).str.lower()
+    return sortable.sort_values("_sort_key", ascending=not descending, na_position="last").drop(columns="_sort_key")
+
+
+def _table_controls(
+    data: pd.DataFrame,
+    key: str,
+    search_columns: list[str],
+    filter_columns: list[str],
+    default_sort: str,
+    expanded: bool = False,
+) -> pd.DataFrame:
+    if data.empty:
+        return data
+
+    working = data.copy()
+    with st.expander("Search, filter, and sort this table", expanded=expanded):
+        search_value = st.text_input("Search", key=f"{key}_search", placeholder="name, AD CODE, creator, angle, product...")
+        if search_value.strip():
+            term = search_value.strip().lower()
+            mask = pd.Series(False, index=working.index)
+            for column in [c for c in search_columns if c in working.columns]:
+                mask = mask | working[column].astype(str).str.lower().str.contains(term, na=False)
+            working = working[mask]
+
+        filter_cols = st.columns(3)
+        for idx, column in enumerate([c for c in filter_columns if c in working.columns]):
+            options = sorted(v for v in working[column].dropna().astype(str).unique() if v.strip())
+            if not options:
+                continue
+            selected = filter_cols[idx % 3].multiselect(column, options, key=f"{key}_filter_{column}", placeholder=f"All {column}")
+            if selected:
+                working = working[working[column].astype(str).isin(selected)]
+
+        sort_options = [c for c in working.columns if not str(c).startswith("_")]
+        fallback_sort = default_sort if default_sort in sort_options else (sort_options[0] if sort_options else "")
+        if sort_options:
+            s1, s2 = st.columns([0.7, 0.3])
+            sort_by = s1.selectbox("Sort by", sort_options, index=sort_options.index(fallback_sort), key=f"{key}_sort_by")
+            descending = s2.toggle("Descending", value=True, key=f"{key}_sort_desc")
+            working = _sort_dataframe(working, sort_by, descending)
+
+    return working
+
+
+def _numeric_display(data: pd.DataFrame) -> pd.DataFrame:
+    output = data.copy()
+    for column in [c for c in output.columns if c in NUMERIC_SORT_COLUMNS]:
+        output[column] = output[column].map(_number).astype("Float64")
+    return output
+
+
 st.title("Dashboard")
 st.caption(
     "One Creative Ops view across Inhouse, Influencer, and Porcellia. "
@@ -267,17 +365,41 @@ with tab_overview:
 
 with tab_assets:
     st.subheader("Creative gallery")
-    st.caption("Use this as the working review surface: pick a date range, filter, then inspect the exact creatives.")
+    st.caption("Use the table controls below to narrow the list. Select a row in the table and it will pin into this detail view.")
 
     sort_cols = ["_Date", "Source", "Creative Name"]
     gallery = filtered.sort_values([c for c in sort_cols if c in filtered.columns], ascending=[False, True, True]).copy()
-    labels = gallery.apply(
-        lambda row: f"{_safe_text(row.get('AD CODE'))} | {_safe_text(row.get('Source'))} | {_safe_text(row.get('Creative Name'))}",
-        axis=1,
-    ).tolist()
+    gallery["_Row Key"] = gallery.apply(_row_key, axis=1)
+    gallery["_Preview"] = gallery.apply(_thumbnail_url, axis=1)
 
-    selected = st.selectbox("Open creative detail", labels)
-    picked = gallery.iloc[labels.index(selected)]
+    gallery_table = gallery.rename(columns={"_Date": "Live Date"}).copy()
+    table_cols = [
+        "_Preview", "Source", "Record Type", "AD CODE", "Perf AD Code", "Live Date", "Creative Name", "Product",
+        "Format", "Marketing Angle", "Cohort", "Belief", "Funnel Stage", "Creator", "ROAS", "Amount Spent", "Revenue", "CTR",
+        "Drive Link", "Instagram / Live Link", "_Row Key",
+    ]
+    gallery_table = gallery_table[[c for c in table_cols if c in gallery_table.columns]]
+    gallery_table = _table_controls(
+        gallery_table,
+        key="dashboard_deep_dive",
+        search_columns=[
+            "AD CODE", "Perf AD Code", "Asset ID", "Creative Name", "Creator", "Creator / Consumer Name",
+            "Marketing Angle", "Cohort", "Belief", "Product", "Format", "Source", "Drive Link", "Instagram / Live Link",
+        ],
+        filter_columns=["Source", "Record Type", "Product", "Format", "Marketing Angle", "Cohort", "Belief", "Funnel Stage", "Creator"],
+        default_sort="Live Date",
+        expanded=True,
+    )
+
+    if gallery_table.empty:
+        st.warning("No creatives match the Creative Deep Dive table filters.")
+        st.stop()
+
+    selected_key = st.session_state.get("dashboard_selected_row_key")
+    if selected_key not in set(gallery_table["_Row Key"].astype(str)):
+        selected_key = str(gallery_table.iloc[0]["_Row Key"])
+        st.session_state["dashboard_selected_row_key"] = selected_key
+    picked = gallery[gallery["_Row Key"].astype(str) == selected_key].iloc[0]
 
     hero, detail = st.columns([0.9, 1.35])
     with hero:
@@ -356,14 +478,29 @@ with tab_assets:
                 st.dataframe(perf_table, use_container_width=True, hide_index=True)
 
     st.markdown("---")
-    table_cols = [
-        "Source", "Record Type", "AD CODE", "Perf AD Code", "_Date", "Creative Name", "Product",
-        "Format", "Marketing Angle", "Creator", "ROAS", "Amount Spent", "Revenue", "CTR",
-        "Drive Link", "Instagram / Live Link",
-    ]
-    table = gallery[[c for c in table_cols if c in gallery.columns]].copy()
-    table = table.rename(columns={"_Date": "Live Date"})
-    st.dataframe(table, use_container_width=True, hide_index=True, height=360)
+    st.markdown("**Filtered creative table**")
+    table_display = gallery_table.drop(columns=["_Row Key"], errors="ignore").rename(columns={"_Preview": "Preview"})
+    table_display = _numeric_display(table_display)
+    table_event = st.dataframe(
+        table_display,
+        use_container_width=True,
+        hide_index=True,
+        height=420,
+        on_select="rerun",
+        selection_mode="single-row",
+        key="dashboard_deep_dive_table",
+        column_config={
+            "Preview": st.column_config.ImageColumn("Preview", width="small"),
+            "Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open"),
+            "Instagram / Live Link": st.column_config.LinkColumn("Instagram", display_text="Open"),
+        },
+    )
+    if table_event.selection.rows:
+        selected_pos = table_event.selection.rows[0]
+        new_key = str(gallery_table.iloc[selected_pos]["_Row Key"])
+        if st.session_state.get("dashboard_selected_row_key") != new_key:
+            st.session_state["dashboard_selected_row_key"] = new_key
+            st.rerun()
 
 with tab_quality:
     st.subheader("Quality and taxonomy coverage")
@@ -398,11 +535,46 @@ with tab_quality:
     needs = filtered[filtered["Source"] == "Needs Logging"].copy()
     if not needs.empty:
         st.warning(f"{len(needs)} likely in-house rows are live in Meta Ads but missing from Master_Asset_Registry.")
+        needs_table = needs[["AD CODE", "_Date", "Creative Name", "Product", "Format", "Drive Link", "Needs Attention"]].rename(columns={"_Date": "Live Date"})
+        needs_table = _table_controls(
+            needs_table,
+            key="quality_needs_logging",
+            search_columns=["AD CODE", "Creative Name", "Product", "Format", "Drive Link", "Needs Attention"],
+            filter_columns=["Product", "Format"],
+            default_sort="Live Date",
+        )
         st.dataframe(
-            needs[["AD CODE", "_Date", "Creative Name", "Product", "Format", "Drive Link", "Needs Attention"]]
-            .rename(columns={"_Date": "Live Date"}),
+            needs_table,
             use_container_width=True,
             hide_index=True,
+            column_config={"Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open")},
+        )
+
+    if not inhouse.empty:
+        st.markdown("---")
+        st.markdown("**In-house taxonomy table**")
+        taxonomy_cols = [
+            "_Date", "AD CODE", "Creative Name", "Product", "Format", "Creative Type",
+            "Marketing Angle", "Belief", "Cohort", "Situational Driver", "Funnel Stage",
+            "ROAS", "Amount Spent", "CTR", "Drive Link",
+        ]
+        taxonomy_table = inhouse[[c for c in taxonomy_cols if c in inhouse.columns]].rename(columns={"_Date": "Live Date"})
+        taxonomy_table = _table_controls(
+            taxonomy_table,
+            key="quality_taxonomy_table",
+            search_columns=[
+                "AD CODE", "Creative Name", "Product", "Format", "Creative Type",
+                "Marketing Angle", "Belief", "Cohort", "Situational Driver", "Funnel Stage", "Drive Link",
+            ],
+            filter_columns=["Product", "Format", "Marketing Angle", "Belief", "Cohort", "Funnel Stage"],
+            default_sort="Live Date",
+        )
+        st.dataframe(
+            _numeric_display(taxonomy_table),
+            use_container_width=True,
+            hide_index=True,
+            height=420,
+            column_config={"Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open")},
         )
 
 with tab_audit:
@@ -416,8 +588,29 @@ with tab_audit:
 
     audit_cols = [
         "Source", "Record Type", "AD CODE", "Perf AD Code", "_Date", "Creative Name", "Product",
-        "Format", "Asset ID", "Creator", "Needs Attention", "Drive Link", "Instagram / Live Link",
+        "Format", "Asset ID", "Creator", "Marketing Angle", "ROAS", "Amount Spent", "Revenue", "CTR",
+        "Needs Attention", "Drive Link", "Instagram / Live Link",
     ]
     audit = filtered[[c for c in audit_cols if c in filtered.columns]].copy()
     audit = audit.rename(columns={"_Date": "Live Date"})
-    st.dataframe(audit.sort_values("Live Date", ascending=False), use_container_width=True, hide_index=True, height=520)
+    audit = _table_controls(
+        audit,
+        key="dashboard_data_audit",
+        search_columns=[
+            "Source", "Record Type", "AD CODE", "Perf AD Code", "Creative Name", "Product",
+            "Format", "Asset ID", "Creator", "Marketing Angle", "Needs Attention", "Drive Link", "Instagram / Live Link",
+        ],
+        filter_columns=["Source", "Record Type", "Product", "Format", "Marketing Angle"],
+        default_sort="Live Date",
+        expanded=True,
+    )
+    st.dataframe(
+        _numeric_display(audit),
+        use_container_width=True,
+        hide_index=True,
+        height=520,
+        column_config={
+            "Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open"),
+            "Instagram / Live Link": st.column_config.LinkColumn("Instagram", display_text="Open"),
+        },
+    )

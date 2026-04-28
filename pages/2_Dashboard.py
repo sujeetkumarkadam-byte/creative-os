@@ -136,16 +136,39 @@ def _number(value):
     return pd.to_numeric(cleaned, errors="coerce")
 
 
+def _dedupe_columns(data: pd.DataFrame) -> pd.DataFrame:
+    """Keep the first copy of any duplicate display column name."""
+    if data.columns.duplicated().any():
+        return data.loc[:, ~data.columns.duplicated()].copy()
+    return data
+
+
+def _series(data: pd.DataFrame, column: str) -> pd.Series:
+    values = data.loc[:, column]
+    if isinstance(values, pd.DataFrame):
+        return values.iloc[:, 0]
+    return values
+
+
+def _with_live_date(data: pd.DataFrame) -> pd.DataFrame:
+    output = data.copy()
+    if "_Date" in output.columns:
+        output = output.drop(columns=["Live Date"], errors="ignore")
+        output = output.rename(columns={"_Date": "Live Date"})
+    return _dedupe_columns(output)
+
+
 def _sort_dataframe(data: pd.DataFrame, sort_by: str, descending: bool) -> pd.DataFrame:
     if data.empty or sort_by not in data.columns:
         return data
-    sortable = data.copy()
+    sortable = _dedupe_columns(data.copy())
+    sort_values = _series(sortable, sort_by)
     if sort_by in NUMERIC_SORT_COLUMNS:
-        sortable["_sort_key"] = sortable[sort_by].map(_number)
+        sortable["_sort_key"] = sort_values.map(_number)
     elif sort_by in {"_Date", "Live Date", "Date", "Published Date"}:
-        sortable["_sort_key"] = pd.to_datetime(sortable[sort_by], errors="coerce", dayfirst=True)
+        sortable["_sort_key"] = pd.to_datetime(sort_values, errors="coerce", dayfirst=True)
     else:
-        sortable["_sort_key"] = sortable[sort_by].astype(str).str.lower()
+        sortable["_sort_key"] = sort_values.astype(str).str.lower()
     return sortable.sort_values("_sort_key", ascending=not descending, na_position="last").drop(columns="_sort_key")
 
 
@@ -372,7 +395,7 @@ with tab_assets:
     gallery["_Row Key"] = gallery.apply(_row_key, axis=1)
     gallery["_Preview"] = gallery.apply(_thumbnail_url, axis=1)
 
-    gallery_table = gallery.rename(columns={"_Date": "Live Date"}).copy()
+    gallery_table = _with_live_date(gallery)
     table_cols = [
         "_Preview", "Source", "Record Type", "AD CODE", "Perf AD Code", "Live Date", "Creative Name", "Product",
         "Format", "Marketing Angle", "Cohort", "Belief", "Funnel Stage", "Creator", "ROAS", "Amount Spent", "Revenue", "CTR",
@@ -535,7 +558,7 @@ with tab_quality:
     needs = filtered[filtered["Source"] == "Needs Logging"].copy()
     if not needs.empty:
         st.warning(f"{len(needs)} likely in-house rows are live in Meta Ads but missing from Master_Asset_Registry.")
-        needs_table = needs[["AD CODE", "_Date", "Creative Name", "Product", "Format", "Drive Link", "Needs Attention"]].rename(columns={"_Date": "Live Date"})
+        needs_table = _with_live_date(needs[["AD CODE", "_Date", "Creative Name", "Product", "Format", "Drive Link", "Needs Attention"]])
         needs_table = _table_controls(
             needs_table,
             key="quality_needs_logging",
@@ -558,7 +581,7 @@ with tab_quality:
             "Marketing Angle", "Belief", "Cohort", "Situational Driver", "Funnel Stage",
             "ROAS", "Amount Spent", "CTR", "Drive Link",
         ]
-        taxonomy_table = inhouse[[c for c in taxonomy_cols if c in inhouse.columns]].rename(columns={"_Date": "Live Date"})
+        taxonomy_table = _with_live_date(inhouse[[c for c in taxonomy_cols if c in inhouse.columns]])
         taxonomy_table = _table_controls(
             taxonomy_table,
             key="quality_taxonomy_table",
@@ -591,8 +614,7 @@ with tab_audit:
         "Format", "Asset ID", "Creator", "Marketing Angle", "ROAS", "Amount Spent", "Revenue", "CTR",
         "Needs Attention", "Drive Link", "Instagram / Live Link",
     ]
-    audit = filtered[[c for c in audit_cols if c in filtered.columns]].copy()
-    audit = audit.rename(columns={"_Date": "Live Date"})
+    audit = _with_live_date(filtered[[c for c in audit_cols if c in filtered.columns]])
     audit = _table_controls(
         audit,
         key="dashboard_data_audit",

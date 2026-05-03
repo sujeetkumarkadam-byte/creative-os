@@ -7,6 +7,8 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 import streamlit as st
 
+from utils.taxonomy import canonical_product, product_code
+
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -54,6 +56,10 @@ ASSET_HEADERS = [
 
 ASSET_EXTRA_HEADERS = [
     "Format", "Video Subtype", "Static Subtype",
+    "Visual Hook Type", "Content Hook Type",
+    "Visual Treatment", "Static Message Type",
+    "CTA Format", "CTA Message Type",
+    "AI-Generated", "Taxonomy Confidence", "Claim Codes", "Secondary Product",
     "Preview Asset Link", "Source Folder Link", "Thumbnail Link", "Reference Image Link",
     "Taxonomy Review Status",
 ]
@@ -67,6 +73,9 @@ EXPERIMENT_HEADERS = [
     "Start Date", "Review Date", "Status", "Result", "Next Action", "Notes",
     "Marketing Angle", "Situational Driver", "AI Tool Used",
     "Reference Image Link", "Promoted To Asset ID",
+    "Static Subtype", "Visual Hook Type", "Content Hook Type",
+    "Visual Treatment", "Static Message Type", "CTA Format", "CTA Message Type",
+    "AI-Generated", "Taxonomy Confidence", "Primary Proof Needed",
 ]
 
 INHOUSE_LIVE_HEADERS = [
@@ -75,8 +84,11 @@ INHOUSE_LIVE_HEADERS = [
     "Product", "Bucket", "Format", "Video Subtype", "Static Subtype",
     "Cohort", "Belief", "Marketing Angle", "Situational Driver",
     "Funnel Stage", "Influence Mode", "CTA Style",
-    "Hook Type", "Emotional Arc", "Creator Archetype",
-    "Visual Style",
+    "Hook Type", "Visual Hook Type", "Content Hook Type",
+    "CTA Format", "CTA Message Type", "Static Message Type",
+    "AI-Generated", "Taxonomy Confidence", "Claim Codes",
+    "Emotional Arc", "Creator Archetype",
+    "Visual Style", "Visual Treatment",
     "Creator / Consumer Name", "Source Interview ID", "Experiment ID",
     "Campaign Name", "Ad Set Name", "Drive Link", "Brief Link",
     "Reference Image Link", "Notes",
@@ -345,12 +357,14 @@ def infer_static_subtype(value: str) -> str:
         return "SS4 - Proof Screenshot"
     if "comparison" in text or " vs " in text:
         return "SS5 - Comparison"
+    if "meme" in text or "topical" in text:
+        return "SS6 - Meme / Topical"
+    if "offer" in text or "b2g" in text or "buy " in text or "free mini" in text or "discount" in text:
+        return "SS9 - Offer / Promotional"
     if "ingredient" in text:
-        return "SS9 - Ingredient Focus"
-    if "data" in text or "stat" in text or "%" in text:
-        return "SS10 - Data / Stats Card"
-    if "ai" in text:
-        return "SS11 - AI-Generated Static"
+        return "SS8 - Ingredient Focus"
+    if "data" in text or "stats" in text or "%" in text or "proof" in text or "clinical" in text:
+        return "SS7 - Educational / Data"
     return "SS1 - Single Image"
 
 
@@ -425,6 +439,8 @@ def load_assets() -> pd.DataFrame:
         df = _ensure_columns(df, MASTER_HEADERS)
         if "Meta Ad ID" in df.columns:
             df["Meta Ad ID"] = df["Meta Ad ID"].map(normalize_ad_code)
+        if "Product" in df.columns:
+            df["Product"] = df["Product"].map(canonical_product)
         if "Format" in df.columns:
             missing = df["Format"].astype(str).str.strip() == ""
             if "Creative Type" in df.columns:
@@ -470,6 +486,8 @@ def load_meta_ads() -> pd.DataFrame:
         df = _drop_truly_blank_columns(df)
         if "AD CODE" in df.columns:
             df["AD CODE"] = df["AD CODE"].map(normalize_ad_code)
+        if "Product" in df.columns:
+            df["Product"] = df["Product"].map(canonical_product)
         return df
     except Exception as exc:
         st.warning(f"Could not load Meta Ads sheet: {exc}")
@@ -510,6 +528,9 @@ def load_influencer_ads() -> pd.DataFrame:
         if ad_col:
             # This may be a platform ad-rights code, not always AD ###. Keep normalized only when applicable.
             df[ad_col] = df[ad_col].map(lambda value: normalize_ad_code(value) if AD_CODE_RE.search(str(value or "")) else str(value or "").strip())
+        product_col = first_present_column(df, "Product", "Product ")
+        if product_col:
+            df[product_col] = df[product_col].map(canonical_product)
         return df
     except Exception as exc:
         st.warning(f"Could not load Live Entries 2026 sheet: {exc}")
@@ -578,6 +599,26 @@ def ensure_master_asset_schema() -> list[str]:
         return MASTER_HEADERS
 
     missing = [header for header in ASSET_EXTRA_HEADERS if header not in headers]
+    if missing:
+        needed_cols = len(headers) + len(missing)
+        if ws.col_count < needed_cols:
+            ws.add_cols(needed_cols - ws.col_count)
+        for offset, header in enumerate(missing, start=1):
+            ws.update_cell(1, len(headers) + offset, header)
+        headers = headers + missing
+        _clear_sheet_cache()
+    return headers
+
+
+def ensure_experiment_schema() -> list[str]:
+    ws = _ws(SHEET_EXPERIMENTS)
+    headers = [_clean_header(value) for value in ws.row_values(1)]
+    if not headers:
+        ws.append_row(EXPERIMENT_HEADERS)
+        _clear_sheet_cache()
+        return EXPERIMENT_HEADERS
+
+    missing = [header for header in EXPERIMENT_HEADERS if header not in headers]
     if missing:
         needed_cols = len(headers) + len(missing)
         if ws.col_count < needed_cols:
@@ -660,30 +701,50 @@ def upsert_asset_by_ad_code(data: dict) -> tuple[str, str]:
 def _product_from_meta(value: str) -> str:
     text = str(value or "").strip()
     lowered = text.lower()
+    if not text:
+        return "RCF"
+    if "emergency" in lowered:
+        return "Emergency Acne Kit"
+    if "combo" in lowered or "kit" in lowered or " + " in lowered:
+        return "Acne Kits"
     if "sunscreen" in lowered or "cpgs" in lowered:
-        return "Clear Protect Gel Sunscreen"
+        return "Clear Protect Sunscreen"
     if "lpp" in lowered or "liquid pimple" in lowered:
         return "Liquid Pimple Patch"
     if "emc" in lowered or "melting cleanser" in lowered:
         return "Effortless Melting Cleanser"
     if "sfar" in lowered or "spot fade" in lowered or "serum" in lowered:
-        return "Spot Fade Serum"
+        return "SpotFade Serum"
+    if "barrier repair" in lowered or "brgm" in lowered:
+        return "Barrier Repair Moisturiser"
+    if "barrier soothing" in lowered:
+        return "Barrier Soothing Cleanser"
+    if "ultra smooth" in lowered:
+        return "Ultra Smooth Cleanser"
+    if "mini" in lowered or "bundle" in lowered:
+        return "Minis"
     if "rcf" in lowered or "rapid clear" in lowered or "acne combo" in lowered:
         return "RCF"
-    return text
+    return canonical_product(text)
 
 
 def _video_subtype_from_meta(row: pd.Series) -> str:
     text = _combine_text(row, ["Creative Name", "Content Bucket", "Creative Type"]).lower()
     if "founder" in text:
-        return "Founder-Led"
+        return "VS2 - Founder-Led"
+    if "expert" in text or "dermat" in text:
+        return "VS3 - Expert / Dermat"
     if "testimonial" in text or "social proof" in text:
-        return "Consumer Testimonial"
+        return "VS1 - Consumer Testimonial"
+    if "ugc" in text or "creator" in text:
+        return "VS4 - Creator / UGC"
+    if "demo" in text:
+        return "VS5 - Product Demo"
     if "skit" in text:
-        return "Skit"
+        return "VS6 - Skit / Scenario"
     if "ai" in text:
-        return "AI-Video"
-    return "Brand-Led"
+        return "VS7 - AI Video"
+    return "VS1 - Consumer Testimonial"
 
 
 def _creator_from_inhouse_name(name: str) -> str:
@@ -727,6 +788,17 @@ def _master_row_from_meta_inhouse(meta_row: pd.Series, existing_ids: list[str]) 
         "Static Subtype": infer_static_subtype(_combine_text(meta_row, ["Creative Name", "Creative Type", "Content Bucket"])) if fmt == "Static" else "",
         "Marketing Angle": _coalesce(meta_row, "Marketing Angle"),
         "Funnel Stage": _coalesce(meta_row, "Funnel Level"),
+        "Content Hook Type": _coalesce(meta_row, "Content Hook Type", "Creative Hook"),
+        "Hook Type": _coalesce(meta_row, "Content Hook Type", "Creative Hook"),
+        "Visual Hook Type": _coalesce(meta_row, "Visual Hook Type"),
+        "Visual Treatment": _coalesce(meta_row, "Visual Treatment", "Visual format"),
+        "Visual Style": _coalesce(meta_row, "Visual Treatment", "Visual format"),
+        "CTA Format": _coalesce(meta_row, "CTA Format"),
+        "CTA Message Type": _coalesce(meta_row, "CTA Message Type"),
+        "CTA Style": _coalesce(meta_row, "CTA Message Type"),
+        "Static Message Type": _coalesce(meta_row, "Static Message Type"),
+        "AI-Generated": "Yes" if fmt == "Static" and "ai" in creative_name.lower() else "",
+        "Taxonomy Confidence": "Needs Review",
         "Creator / Consumer Name": _creator_from_inhouse_name(creative_name),
         "Meta Ad ID": normalize_ad_code(meta_row.get("AD CODE", "")),
         "Campaign Name": _coalesce(meta_row, "FB Ad Name", "Ad Name (TSS)"),
@@ -795,7 +867,8 @@ def import_meta_inhouse_to_master() -> tuple[int, list[str]]:
 
 
 def save_experiment(data: dict):
-    row = [data.get(header, "") for header in EXPERIMENT_HEADERS]
+    headers = ensure_experiment_schema()
+    row = [data.get(header, "") for header in headers]
     _ws(SHEET_EXPERIMENTS).append_row(row, value_input_option="USER_ENTERED")
     _clear_sheet_cache()
 
@@ -822,9 +895,10 @@ def update_experiment(experiment_id: str, updates: dict):
     cell = ws.find(experiment_id)
     if not cell:
         return False
+    headers = ensure_experiment_schema()
     for field, value in updates.items():
-        if field in EXPERIMENT_HEADERS:
-            ws.update_cell(cell.row, EXPERIMENT_HEADERS.index(field) + 1, value)
+        if field in headers:
+            ws.update_cell(cell.row, headers.index(field) + 1, value)
     _clear_sheet_cache()
     return True
 
@@ -945,11 +1019,21 @@ def _normalized_master_row(asset: pd.Series, meta_row: pd.Series | None) -> dict
         "Cohort": asset.get("Cohort", ""),
         "Situational Driver": asset.get("Situational Driver", ""),
         "Hook Type": asset.get("Hook Type", ""),
+        "Visual Hook Type": _first_non_empty(asset.get("Visual Hook Type", ""), asset.get("Hook Type", "")),
+        "Content Hook Type": _first_non_empty(asset.get("Content Hook Type", ""), asset.get("Hook Type", "")),
         "Emotional Arc": asset.get("Emotional Arc", ""),
         "Creator Archetype": asset.get("Creator Archetype", ""),
         "Influence Mode": asset.get("Influence Mode", ""),
         "Visual Style": asset.get("Visual Style", ""),
+        "Visual Treatment": _first_non_empty(asset.get("Visual Treatment", ""), asset.get("Visual Style", "")),
         "CTA Style": asset.get("CTA Style", ""),
+        "CTA Format": asset.get("CTA Format", ""),
+        "CTA Message Type": _first_non_empty(asset.get("CTA Message Type", ""), asset.get("CTA Style", "")),
+        "Static Message Type": asset.get("Static Message Type", ""),
+        "AI-Generated": asset.get("AI-Generated", ""),
+        "Taxonomy Confidence": asset.get("Taxonomy Confidence", ""),
+        "Claim Codes": asset.get("Claim Codes", ""),
+        "Secondary Product": asset.get("Secondary Product", ""),
         "Creator / Consumer Name": asset.get("Creator / Consumer Name", ""),
         "Creator": asset.get("Creator / Consumer Name", ""),
         "Source Interview ID": asset.get("Source Interview ID", ""),
@@ -1004,11 +1088,21 @@ def _normalized_influencer_row(influencer: pd.Series, meta_row: pd.Series | None
         "Cohort": "",
         "Situational Driver": "",
         "Hook Type": "",
+        "Visual Hook Type": "",
+        "Content Hook Type": "",
         "Emotional Arc": "",
-        "Creator Archetype": "Influencer",
+        "Creator Archetype": "IC - Influencer / Creator",
         "Influence Mode": "",
         "Visual Style": "",
+        "Visual Treatment": "",
         "CTA Style": "",
+        "CTA Format": "",
+        "CTA Message Type": "",
+        "Static Message Type": "",
+        "AI-Generated": "",
+        "Taxonomy Confidence": "",
+        "Claim Codes": "",
+        "Secondary Product": "",
         "Creator / Consumer Name": influencer.get("Creator", ""),
         "Creator": influencer.get("Creator", ""),
         "Agency": influencer.get("Agency", ""),
@@ -1066,11 +1160,21 @@ def _normalized_meta_row(meta: pd.Series, source: str) -> dict:
         "Cohort": _coalesce(meta, "Persona"),
         "Situational Driver": "",
         "Hook Type": _coalesce(meta, "Creative Hook"),
+        "Visual Hook Type": _coalesce(meta, "Visual Hook Type"),
+        "Content Hook Type": _coalesce(meta, "Content Hook Type", "Creative Hook"),
         "Emotional Arc": "",
         "Creator Archetype": "",
         "Influence Mode": "",
         "Visual Style": _coalesce(meta, "Visual format"),
+        "Visual Treatment": _coalesce(meta, "Visual Treatment", "Visual format"),
         "CTA Style": "",
+        "CTA Format": _coalesce(meta, "CTA Format"),
+        "CTA Message Type": _coalesce(meta, "CTA Message Type"),
+        "Static Message Type": _coalesce(meta, "Static Message Type"),
+        "AI-Generated": _coalesce(meta, "AI-Generated"),
+        "Taxonomy Confidence": "",
+        "Claim Codes": _coalesce(meta, "Claim Codes"),
+        "Secondary Product": "",
         "Creator / Consumer Name": _coalesce(meta, "Creator"),
         "Creator": _coalesce(meta, "Creator"),
         "Drive Link": _coalesce(meta, "Creative Folder Link", "Creative Folder", "1:1 Creative Link", "4:5 Creative Link", "9:16 Creative Link"),
@@ -1255,21 +1359,35 @@ def folder_id_from_url(url: str) -> str:
 
 _PRODUCT_CODE = {
     "RCF": "RCF",
+    "Rapid Clear Facewash": "RCF",
+    "Rapid Clear Face Wash": "RCF",
     "Clear Protect Gel Sunscreen": "CPGS",
+    "Clear Protect Sunscreen": "CPG",
     "Barrier Repair Gel Moisturiser": "BRGM",
+    "Barrier Repair Moisturiser": "BRGM",
     "Liquid Pimple Patch": "LPP",
     "Effortless Melting Cleanser": "EMC",
-    "Spot Fade Serum": "SFS",
+    "Spot Fade Serum": "SFARS",
+    "SpotFade Serum": "SFARS",
+    "Acne Kits": "KIT",
+    "Emergency Acne Kit": "EAK",
+    "Minis": "MIN",
+    "Barrier Soothing Cleanser": "BSC",
+    "Ultra Smooth Cleanser": "USC",
 }
 
 _VIDEO_TYPES = {
     "Consumer Testimonial", "Brand-Led", "Founder-Led",
     "Skit", "Event Coverage", "AI-Video", "Influencer Video",
+    "VS1 - Consumer Testimonial", "VS2 - Founder-Led", "VS3 - Expert / Dermat",
+    "VS4 - Creator / UGC", "VS5 - Product Demo", "VS6 - Skit / Scenario",
+    "VS7 - AI Video", "VS8 - Event Coverage",
 }
 
 
 def next_asset_id(product: str, creative_type_or_format: str, existing: list) -> str:
-    prefix_product = _PRODUCT_CODE.get(product, "TSS")
+    product = canonical_product(product)
+    prefix_product = _PRODUCT_CODE.get(product, product_code(product) or "TSS")
     value = (creative_type_or_format or "").strip()
     creative_prefix = "V" if value == "Video" or value in _VIDEO_TYPES else "S"
     prefix = f"{prefix_product}-{creative_prefix}-"
@@ -1315,5 +1433,7 @@ def initialise_sheets():
             ws.append_row(headers)
     if SHEET_ASSETS in existing:
         ensure_master_asset_schema()
+    if SHEET_EXPERIMENTS in existing:
+        ensure_experiment_schema()
     _clear_sheet_cache()
     return True

@@ -4,6 +4,9 @@ from datetime import datetime
 from utils.sheets import load_experiments, save_experiment, next_experiment_id, _ws, EXPERIMENT_HEADERS
 from utils.taxonomy import (
     PRODUCTS, FUNNEL_STAGES, EXPERIMENT_STATUSES,
+    STATIC_SUBTYPES, VISUAL_HOOK_TYPES, CONTENT_HOOK_TYPES,
+    VISUAL_TREATMENTS, STATIC_MESSAGE_TYPES, CTA_FORMATS, CTA_MESSAGE_TYPES,
+    AI_GENERATED_OPTIONS, TAXONOMY_CONFIDENCE,
     get_cohorts, get_angles, get_drivers, get_beliefs,
 )
 
@@ -33,6 +36,24 @@ with st.expander("➕ Create new Stage-1 brief", expanded=True):
         belief = t1.selectbox("Belief *", beliefs)
         angle  = t2.selectbox("Marketing Angle *", angles)
         driver = t2.selectbox("Situational Driver", drivers)
+
+        st.markdown("#### Static execution plan")
+        s1, s2, s3 = st.columns(3)
+        static_subtype = s1.selectbox("Static Subtype", STATIC_SUBTYPES)
+        visual_hook = s1.selectbox("Visual Hook Type", VISUAL_HOOK_TYPES)
+        content_hook = s2.selectbox("Content Hook / Headline Type", CONTENT_HOOK_TYPES)
+        visual_treatment = s2.selectbox("Visual Treatment", VISUAL_TREATMENTS)
+        static_message = s3.selectbox("Static Message Type", STATIC_MESSAGE_TYPES)
+        cta_format = s3.selectbox("CTA Format", CTA_FORMATS)
+
+        s4, s5, s6 = st.columns(3)
+        cta_message = s4.selectbox("CTA Message Type", CTA_MESSAGE_TYPES)
+        ai_generated = s5.selectbox("AI-Generated?", AI_GENERATED_OPTIONS)
+        taxonomy_confidence = s6.selectbox("Taxonomy Confidence", TAXONOMY_CONFIDENCE, index=1)
+        primary_proof = st.text_input(
+            "Primary Proof Needed",
+            placeholder="e.g. RCF-CLM-04, review screenshot, product demo, before/after",
+        )
 
         core_msg = st.text_input(
             "Core Message (1-line) *",
@@ -69,6 +90,16 @@ with st.expander("➕ Create new Stage-1 brief", expanded=True):
                     "Funnel Stage": funnel,
                     "Marketing Angle": angle,
                     "Situational Driver": driver,
+                    "Static Subtype": static_subtype,
+                    "Visual Hook Type": visual_hook,
+                    "Content Hook Type": content_hook,
+                    "Visual Treatment": visual_treatment,
+                    "Static Message Type": static_message,
+                    "CTA Format": cta_format,
+                    "CTA Message Type": cta_message,
+                    "AI-Generated": ai_generated,
+                    "Taxonomy Confidence": taxonomy_confidence,
+                    "Primary Proof Needed": primary_proof,
                     "Hypothesis": hypothesis,
                     "AI Tool Used": ai_tool,
                     "Reference Image Link": ref_link,
@@ -105,6 +136,7 @@ if status_filter and "Status" in filtered.columns:
 
 show_cols = [
     "Experiment ID", "Product", "Cohort", "Belief", "Marketing Angle",
+    "Static Subtype", "Content Hook Type", "Static Message Type",
     "Core Message", "Status", "Promoted To Asset ID", "Start Date",
 ]
 available = [c for c in show_cols if c in filtered.columns]

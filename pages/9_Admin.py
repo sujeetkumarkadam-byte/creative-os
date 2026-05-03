@@ -27,16 +27,22 @@ from utils.sheets import (
     upsert_asset_by_ad_code,
 )
 from utils.taxonomy import (
-    CTA_STYLES,
+    CTA_FORMATS,
+    CTA_MESSAGE_TYPES,
+    CONTENT_HOOK_TYPES,
     FUNNEL_STAGES,
     INFLUENCE_MODES,
     PRODUCTS,
     STATIC_SUBTYPES,
-    VISUAL_STYLES,
+    STATIC_MESSAGE_TYPES,
+    TAXONOMY_CONFIDENCE,
+    VISUAL_HOOK_TYPES,
+    VISUAL_TREATMENTS,
     get_angles,
     get_beliefs,
     get_cohorts,
     get_drivers,
+    product_label,
 )
 
 
@@ -86,13 +92,25 @@ def _infer_product(path: str, filename: str) -> str:
     if re.search(r"\brcf\b|rapid clear", text):
         return "RCF"
     if re.search(r"\bss\b|sunscreen|clear protect|cpgs", text):
-        return "Clear Protect Gel Sunscreen"
+        return "Clear Protect Sunscreen"
     if re.search(r"\bsfs\b|spot fade", text):
-        return "Spot Fade Serum"
+        return "SpotFade Serum"
     if re.search(r"\blpp\b|liquid pimple", text):
         return "Liquid Pimple Patch"
     if re.search(r"\bemc\b|melting cleanser", text):
         return "Effortless Melting Cleanser"
+    if re.search(r"\bbrgm\b|barrier repair", text):
+        return "Barrier Repair Moisturiser"
+    if re.search(r"emergency acne|\beak\b", text):
+        return "Emergency Acne Kit"
+    if re.search(r"combo|kit|clear repair|clear protect", text):
+        return "Acne Kits"
+    if re.search(r"mini|bundle", text):
+        return "Minis"
+    if re.search(r"barrier soothing|\bbsc\b", text):
+        return "Barrier Soothing Cleanser"
+    if re.search(r"ultra smooth|\busc\b|\busdc\b", text):
+        return "Ultra Smooth Cleanser"
     return PRODUCTS[0]
 
 
@@ -105,10 +123,14 @@ def _infer_static_subtype(name: str, path: str) -> str:
         ("review", "SS4"),
         ("testimonial", "SS4"),
         ("comparison", "SS5"),
-        ("ingredient", "SS9"),
-        ("stat", "SS10"),
-        ("proof", "SS10"),
-        ("ai", "SS11"),
+        ("meme", "SS6"),
+        ("offer", "SS9"),
+        ("discount", "SS9"),
+        ("b2g", "SS9"),
+        ("ingredient", "SS8"),
+        ("stats", "SS7"),
+        ("clinical", "SS7"),
+        ("proof", "SS7"),
     ]
     code = next((result for needle, result in checks if needle in text), "SS1")
     return next((item for item in STATIC_SUBTYPES if item.startswith(code)), STATIC_SUBTYPES[0])
@@ -338,7 +360,7 @@ with tab_drive:
             existing_ids = assets["Asset ID"].dropna().astype(str).tolist() if not assets.empty and "Asset ID" in assets.columns else []
 
             with st.form("approve_drive_static"):
-                default_product = picked.get("Product") if picked.get("Product") in PRODUCTS else PRODUCTS[0]
+                default_product = product_label(picked.get("Product"))
                 product = st.selectbox("Product", PRODUCTS, index=PRODUCTS.index(default_product))
                 subtype = st.selectbox(
                     "Static subtype",
@@ -361,8 +383,15 @@ with tab_drive:
                 c3, c4 = st.columns(2)
                 funnel = c3.selectbox("Funnel stage", FUNNEL_STAGES)
                 influence = c3.selectbox("Influence mode", INFLUENCE_MODES)
-                visual = c4.selectbox("Visual style", [v for v in VISUAL_STYLES if not v.startswith("N/A")])
-                cta = c4.selectbox("CTA style", CTA_STYLES)
+                visual_hook = c4.selectbox("Visual hook type", VISUAL_HOOK_TYPES)
+                content_hook = c4.selectbox("Content hook type", CONTENT_HOOK_TYPES)
+
+                c5, c6 = st.columns(2)
+                visual = c5.selectbox("Visual treatment", VISUAL_TREATMENTS)
+                static_message = c5.selectbox("Static message type", STATIC_MESSAGE_TYPES)
+                cta_format = c6.selectbox("CTA format", CTA_FORMATS)
+                cta_message = c6.selectbox("CTA message type", CTA_MESSAGE_TYPES)
+                taxonomy_confidence = st.selectbox("Taxonomy confidence", TAXONOMY_CONFIDENCE, index=2)
 
                 ad_code = st.text_input("AD CODE if already live", placeholder="Optional, e.g. AD 512")
                 creative_name = st.text_input("Creative name", value=picked["File Name"])
@@ -392,10 +421,19 @@ with tab_drive:
                         "Belief": belief,
                         "Marketing Angle": angle,
                         "Situational Driver": driver,
+                        "Hook Type": content_hook,
+                        "Visual Hook Type": visual_hook,
+                        "Content Hook Type": content_hook,
                         "Funnel Stage": funnel,
                         "Influence Mode": influence,
                         "Visual Style": visual,
-                        "CTA Style": cta,
+                        "Visual Treatment": visual,
+                        "Static Message Type": static_message,
+                        "CTA Style": cta_message,
+                        "CTA Format": cta_format,
+                        "CTA Message Type": cta_message,
+                        "AI-Generated": "Yes" if "ai" in f"{picked.get('Folder Path', '')} {picked.get('File Name', '')}".lower() else "",
+                        "Taxonomy Confidence": taxonomy_confidence,
                         "Creator / Consumer Name": creative_name,
                         "Meta Ad ID": normalized_code,
                         "Drive Link": picked["Drive Link"],

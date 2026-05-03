@@ -136,7 +136,8 @@ def _table_controls(data: pd.DataFrame, key: str) -> pd.DataFrame:
             term = search_value.strip().lower()
             search_cols = [
                 "Asset ID", "Meta Ad ID", "Creator / Consumer Name", "Marketing Angle", "Belief",
-                "Cohort", "Notes", "Drive Link", "Experiment ID", "Source Interview ID",
+                "Cohort", "Visual Hook Type", "Content Hook Type", "Static Message Type",
+                "CTA Message Type", "Notes", "Drive Link", "Experiment ID", "Source Interview ID",
                 "Product", "Format", "Creative Type", "Status",
             ]
             mask = pd.Series(False, index=working.index)
@@ -145,7 +146,7 @@ def _table_controls(data: pd.DataFrame, key: str) -> pd.DataFrame:
             working = working[mask]
 
         filter_cols = st.columns(3)
-        for idx, column in enumerate([c for c in ["Product", "Format", "Status", "Marketing Angle", "Cohort", "Creative Type"] if c in working.columns]):
+        for idx, column in enumerate([c for c in ["Product", "Format", "Status", "Marketing Angle", "Cohort", "Content Hook Type", "Static Message Type", "Creative Type"] if c in working.columns]):
             options = sorted(v for v in working[column].dropna().astype(str).unique() if v.strip())
             if not options:
                 continue
@@ -223,7 +224,8 @@ if search.strip():
     term = search.strip().lower()
     cols = [
         "Asset ID", "Meta Ad ID", "Creator / Consumer Name", "Marketing Angle",
-        "Belief", "Cohort", "Notes", "Drive Link", "Experiment ID", "Source Interview ID",
+        "Belief", "Cohort", "Visual Hook Type", "Content Hook Type", "Static Message Type",
+        "CTA Message Type", "Notes", "Drive Link", "Experiment ID", "Source Interview ID",
         "Product", "Format", "Creative Type", "Static Subtype", "Video Subtype", "Status",
     ]
     mask = pd.Series(False, index=filtered.index)
@@ -253,7 +255,7 @@ with left:
     st.subheader("In-house assets")
     table_cols = [
         "_Preview", "Asset ID", "Meta Ad ID", "Published Date", "Product", "Format", "Creative Type",
-        "Creator / Consumer Name", "Marketing Angle", "Cohort", "ROAS", "Amount Spent", "Revenue",
+        "Creator / Consumer Name", "Marketing Angle", "Cohort", "Content Hook Type", "ROAS", "Amount Spent", "Revenue",
         "CTR", "Drive Link", "_Row Key",
     ]
     table = filtered[[c for c in table_cols if c in filtered.columns]].copy()
@@ -336,8 +338,10 @@ with right:
     with tab_taxonomy:
         fields = [
             "Marketing Angle", "Belief", "Cohort", "Situational Driver", "Funnel Stage",
-            "Hook Type", "Emotional Arc", "Creator Archetype", "Influence Mode",
-            "Visual Style", "CTA Style", "Video Subtype", "Static Subtype",
+            "Visual Hook Type", "Content Hook Type", "Emotional Arc", "Creator Archetype", "Influence Mode",
+            "Visual Treatment", "Static Message Type", "CTA Format", "CTA Message Type",
+            "AI-Generated", "Taxonomy Confidence", "Claim Codes",
+            "Visual Style", "CTA Style", "Hook Type", "Video Subtype", "Static Subtype",
             "Taxonomy Review Status",
         ]
         for field in fields:

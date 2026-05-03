@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from utils.sheets import load_sources, save_source, next_source_id
-from utils.taxonomy import PRODUCTS, SOURCE_TYPES, STORY_STRENGTHS, get_cohorts, BELIEFS
+from utils.taxonomy import PRODUCTS, SOURCE_TYPES, STORY_STRENGTHS, get_cohorts, get_beliefs
 
 st.set_page_config(page_title="Source Library — Creative OS", layout="wide")
 st.title("Source Story Library")
@@ -22,7 +22,7 @@ with st.expander("➕ Log new source interview / review", expanded=False):
         name_code  = st.text_input("Consumer Name / Code *",
                                    placeholder="e.g. Priya S. or Anon-047")
         cohort     = st.selectbox("Cohort Match *", get_cohorts(product))
-        beliefs    = st.multiselect("Beliefs Supported", BELIEFS)
+        beliefs    = st.multiselect("Beliefs Supported", get_beliefs(product))
 
         s4, s5 = st.columns(2)
         recording = s4.text_input("Recording Link",  placeholder="Drive / Zoom / Meet link")

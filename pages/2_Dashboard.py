@@ -311,7 +311,8 @@ if search.strip():
     term = search.strip().lower()
     search_cols = [
         "AD CODE", "Perf AD Code", "Asset ID", "Creative Name", "Creator", "Creator / Consumer Name",
-        "Marketing Angle", "Cohort", "Belief", "Drive Link", "Instagram / Live Link",
+        "Marketing Angle", "Cohort", "Belief", "Visual Hook Type", "Content Hook Type",
+        "Static Message Type", "CTA Message Type", "Drive Link", "Instagram / Live Link",
     ]
     mask = pd.Series(False, index=filtered.index)
     for column in [c for c in search_cols if c in filtered.columns]:
@@ -398,7 +399,8 @@ with tab_assets:
     gallery_table = _with_live_date(gallery)
     table_cols = [
         "_Preview", "Source", "Record Type", "AD CODE", "Perf AD Code", "Live Date", "Creative Name", "Product",
-        "Format", "Marketing Angle", "Cohort", "Belief", "Funnel Stage", "Creator", "ROAS", "Amount Spent", "Revenue", "CTR",
+        "Format", "Marketing Angle", "Cohort", "Belief", "Content Hook Type", "Static Message Type",
+        "Funnel Stage", "Creator", "ROAS", "Amount Spent", "Revenue", "CTR",
         "Drive Link", "Instagram / Live Link", "_Row Key",
     ]
     gallery_table = gallery_table[[c for c in table_cols if c in gallery_table.columns]]
@@ -407,9 +409,10 @@ with tab_assets:
         key="dashboard_deep_dive",
         search_columns=[
             "AD CODE", "Perf AD Code", "Asset ID", "Creative Name", "Creator", "Creator / Consumer Name",
-            "Marketing Angle", "Cohort", "Belief", "Product", "Format", "Source", "Drive Link", "Instagram / Live Link",
+            "Marketing Angle", "Cohort", "Belief", "Visual Hook Type", "Content Hook Type",
+            "Static Message Type", "CTA Message Type", "Product", "Format", "Source", "Drive Link", "Instagram / Live Link",
         ],
-        filter_columns=["Source", "Record Type", "Product", "Format", "Marketing Angle", "Cohort", "Belief", "Funnel Stage", "Creator"],
+        filter_columns=["Source", "Record Type", "Product", "Format", "Marketing Angle", "Cohort", "Belief", "Funnel Stage", "Content Hook Type", "Static Message Type", "Creator"],
         default_sort="Live Date",
         expanded=True,
     )
@@ -467,8 +470,10 @@ with tab_assets:
             taxonomy_fields = [
                 "Creative Type", "Video Subtype", "Static Subtype", "Content Bucket",
                 "Marketing Angle", "Belief", "Cohort", "Situational Driver",
-                "Funnel Stage", "Creator Archetype", "Influence Mode", "Visual Style",
-                "CTA Style", "Hook Type", "Emotional Arc", "Source Interview ID", "Experiment ID",
+                "Funnel Stage", "Visual Hook Type", "Content Hook Type", "Emotional Arc",
+                "Creator Archetype", "Influence Mode", "Visual Treatment", "Static Message Type",
+                "CTA Format", "CTA Message Type", "AI-Generated", "Taxonomy Confidence",
+                "Claim Codes", "Visual Style", "CTA Style", "Hook Type", "Source Interview ID", "Experiment ID",
             ]
             cols = st.columns(2)
             for idx, field in enumerate(taxonomy_fields):
@@ -531,7 +536,7 @@ with tab_quality:
     if inhouse.empty:
         st.info("No in-house creatives in this filter window.")
     else:
-        required = ["Marketing Angle", "Belief", "Cohort", "Funnel Stage", "Drive Link"]
+        required = ["Marketing Angle", "Belief", "Cohort", "Funnel Stage", "Content Hook Type", "Drive Link"]
         coverage = []
         for field in required:
             if field in inhouse.columns:
@@ -579,6 +584,7 @@ with tab_quality:
         taxonomy_cols = [
             "_Date", "AD CODE", "Creative Name", "Product", "Format", "Creative Type",
             "Marketing Angle", "Belief", "Cohort", "Situational Driver", "Funnel Stage",
+            "Visual Hook Type", "Content Hook Type", "Static Message Type", "CTA Message Type",
             "ROAS", "Amount Spent", "CTR", "Drive Link",
         ]
         taxonomy_table = _with_live_date(inhouse[[c for c in taxonomy_cols if c in inhouse.columns]])
@@ -587,9 +593,10 @@ with tab_quality:
             key="quality_taxonomy_table",
             search_columns=[
                 "AD CODE", "Creative Name", "Product", "Format", "Creative Type",
-                "Marketing Angle", "Belief", "Cohort", "Situational Driver", "Funnel Stage", "Drive Link",
+                "Marketing Angle", "Belief", "Cohort", "Situational Driver", "Funnel Stage",
+                "Visual Hook Type", "Content Hook Type", "Static Message Type", "CTA Message Type", "Drive Link",
             ],
-            filter_columns=["Product", "Format", "Marketing Angle", "Belief", "Cohort", "Funnel Stage"],
+            filter_columns=["Product", "Format", "Marketing Angle", "Belief", "Cohort", "Funnel Stage", "Content Hook Type", "Static Message Type"],
             default_sort="Live Date",
         )
         st.dataframe(
@@ -611,7 +618,7 @@ with tab_audit:
 
     audit_cols = [
         "Source", "Record Type", "AD CODE", "Perf AD Code", "_Date", "Creative Name", "Product",
-        "Format", "Asset ID", "Creator", "Marketing Angle", "ROAS", "Amount Spent", "Revenue", "CTR",
+        "Format", "Asset ID", "Creator", "Marketing Angle", "Content Hook Type", "ROAS", "Amount Spent", "Revenue", "CTR",
         "Needs Attention", "Drive Link", "Instagram / Live Link",
     ]
     audit = _with_live_date(filtered[[c for c in audit_cols if c in filtered.columns]])
@@ -620,9 +627,10 @@ with tab_audit:
         key="dashboard_data_audit",
         search_columns=[
             "Source", "Record Type", "AD CODE", "Perf AD Code", "Creative Name", "Product",
-            "Format", "Asset ID", "Creator", "Marketing Angle", "Needs Attention", "Drive Link", "Instagram / Live Link",
+            "Format", "Asset ID", "Creator", "Marketing Angle", "Content Hook Type", "Static Message Type",
+            "Needs Attention", "Drive Link", "Instagram / Live Link",
         ],
-        filter_columns=["Source", "Record Type", "Product", "Format", "Marketing Angle"],
+        filter_columns=["Source", "Record Type", "Product", "Format", "Marketing Angle", "Content Hook Type", "Static Message Type"],
         default_sort="Live Date",
         expanded=True,
     )

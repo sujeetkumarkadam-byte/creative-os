@@ -1,9 +1,10 @@
 import streamlit as st
 from utils.taxonomy import (
     PRODUCTS, FORMATS, VIDEO_SUBTYPES, STATIC_SUBTYPES,
-    HOOK_TYPES, EMOTIONAL_ARCS, FUNNEL_STAGES,
-    ARCHETYPES, INFLUENCE_MODES, VISUAL_STYLES, CTA_STYLES,
-    get_cohorts, get_angles, get_drivers, get_beliefs,
+    VISUAL_HOOK_TYPES, CONTENT_HOOK_TYPES, EMOTIONAL_ARCS, FUNNEL_STAGES,
+    ARCHETYPES, INFLUENCE_MODES, VISUAL_TREATMENTS, CTA_FORMATS,
+    CTA_MESSAGE_TYPES, STATIC_MESSAGE_TYPES,
+    get_cohorts, get_angles, get_drivers, get_beliefs, get_claims,
     code_of, label_of, define,
 )
 
@@ -65,6 +66,12 @@ render_section(
     "The life moment or trigger that brought the consumer to the product today.",
 )
 
+render_section(
+    "Product Claims / Proof",
+    get_claims(product),
+    "Approved claim/proof codes. Use these carefully; claim context still matters.",
+)
+
 # ── Universal sections ───────────────────────────────────────────────────────
 st.markdown("---")
 st.header("🌐 Universal (all products)")
@@ -88,9 +95,15 @@ render_section(
 )
 
 render_section(
-    "Hook Types (video)",
-    HOOK_TYPES,
-    "How the first 3 seconds of a video stop the scroll.",
+    "Visual Hook Types",
+    VISUAL_HOOK_TYPES,
+    "What is shown first in the first 1-3 seconds or first static impression.",
+)
+
+render_section(
+    "Content Hook Types",
+    CONTENT_HOOK_TYPES,
+    "What is said, written, or implied first. For statics, this is the headline hook.",
 )
 
 render_section(
@@ -118,15 +131,27 @@ render_section(
 )
 
 render_section(
-    "Visual Styles (statics)",
-    VISUAL_STYLES,
-    "The aesthetic treatment of a static. N/A for videos.",
+    "Visual Treatment (statics)",
+    VISUAL_TREATMENTS,
+    "The dominant visual treatment of a static.",
 )
 
 render_section(
-    "CTA Styles",
-    CTA_STYLES,
-    "How the creative asks the viewer to take action at the end.",
+    "CTA Format",
+    CTA_FORMATS,
+    "How the CTA is delivered.",
+)
+
+render_section(
+    "CTA Message Type",
+    CTA_MESSAGE_TYPES,
+    "What the CTA is saying.",
+)
+
+render_section(
+    "Static Message Type",
+    STATIC_MESSAGE_TYPES,
+    "Statics-only: what the body of the static is primarily communicating.",
 )
 
 st.markdown("---")

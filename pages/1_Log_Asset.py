@@ -14,10 +14,12 @@ from utils.sheets import (
 )
 from utils.taxonomy import (
     PRODUCTS, BUCKETS, FORMATS, VIDEO_SUBTYPES, STATIC_SUBTYPES,
-    HOOK_TYPES, EMOTIONAL_ARCS, FUNNEL_STAGES,
-    ARCHETYPES, INFLUENCE_MODES, VISUAL_STYLES, CTA_STYLES,
+    VISUAL_HOOK_TYPES, CONTENT_HOOK_TYPES, EMOTIONAL_ARCS, FUNNEL_STAGES,
+    ARCHETYPES, INFLUENCE_MODES, VISUAL_TREATMENTS, CTA_FORMATS,
+    CTA_MESSAGE_TYPES, STATIC_MESSAGE_TYPES, TAXONOMY_CONFIDENCE,
+    AI_GENERATED_OPTIONS,
     VARIANT_LETTERS,
-    get_cohorts, get_angles, get_drivers, get_beliefs,
+    get_cohorts, get_angles, get_drivers, get_beliefs, get_claims, product_label,
 )
 
 
@@ -103,7 +105,7 @@ with tab_video:
 
     with st.form("video_live_form", clear_on_submit=True):
         top1, top2, top3 = st.columns(3)
-        default_product = meta_hint.get("Product", "")
+        default_product = product_label(meta_hint.get("Product", ""))
         product = top1.selectbox("Product", PRODUCTS, index=_idx(PRODUCTS, default_product))
         video_subtype = top2.selectbox("Video subtype", VIDEO_SUBTYPES)
         bucket = top3.selectbox("Bucket", BUCKETS, index=_idx(BUCKETS, meta_hint.get("Bucket", "Performance")))
@@ -134,10 +136,15 @@ with tab_video:
         influence = tax3.selectbox("Influence mode", INFLUENCE_MODES)
 
         v1, v2, v3 = st.columns(3)
-        hook = v1.selectbox("Hook type", HOOK_TYPES)
+        visual_hook = v1.selectbox("Visual hook type", VISUAL_HOOK_TYPES)
+        content_hook = v1.selectbox("Content hook type", CONTENT_HOOK_TYPES)
         arc = v2.selectbox("Emotional arc", EMOTIONAL_ARCS)
-        archetype = v3.selectbox("Creator archetype", ARCHETYPES)
-        cta = st.selectbox("CTA style", CTA_STYLES)
+        archetype = v2.selectbox("Creator archetype", ARCHETYPES)
+        cta_format = v3.selectbox("CTA format", CTA_FORMATS)
+        cta_message = v3.selectbox("CTA message type", CTA_MESSAGE_TYPES)
+
+        claim_codes = st.multiselect("Approved claim codes used", get_claims(product), default=["None"])
+        taxonomy_confidence = st.selectbox("Taxonomy confidence", TAXONOMY_CONFIDENCE, index=0)
 
         st.markdown("#### Source and files")
         source1, source2 = st.columns(2)
@@ -183,13 +190,22 @@ with tab_video:
                     "Belief": belief,
                     "Marketing Angle": angle,
                     "Situational Driver": driver,
-                    "Hook Type": hook,
+                    "Hook Type": content_hook,
+                    "Visual Hook Type": visual_hook,
+                    "Content Hook Type": content_hook,
                     "Emotional Arc": arc,
                     "Funnel Stage": funnel,
                     "Creator Archetype": archetype,
                     "Influence Mode": influence,
                     "Visual Style": "N/A - video",
-                    "CTA Style": cta,
+                    "Visual Treatment": "",
+                    "CTA Style": cta_message,
+                    "CTA Format": cta_format,
+                    "CTA Message Type": cta_message,
+                    "Static Message Type": "",
+                    "AI-Generated": "",
+                    "Taxonomy Confidence": taxonomy_confidence,
+                    "Claim Codes": ", ".join([c for c in claim_codes if c != "None"]),
                     "Source Interview ID": source_id,
                     "Creator / Consumer Name": creator,
                     "Meta Ad ID": normalized_code,
@@ -231,6 +247,16 @@ with tab_static:
             "Marketing Angle": exp_row.get("Marketing Angle", ""),
             "Situational Driver": exp_row.get("Situational Driver", ""),
             "Funnel Stage": exp_row.get("Funnel Stage", ""),
+            "Static Subtype": exp_row.get("Static Subtype", ""),
+            "Visual Hook Type": exp_row.get("Visual Hook Type", ""),
+            "Content Hook Type": exp_row.get("Content Hook Type", ""),
+            "Visual Treatment": exp_row.get("Visual Treatment", ""),
+            "Static Message Type": exp_row.get("Static Message Type", ""),
+            "CTA Format": exp_row.get("CTA Format", ""),
+            "CTA Message Type": exp_row.get("CTA Message Type", ""),
+            "AI-Generated": exp_row.get("AI-Generated", ""),
+            "Taxonomy Confidence": exp_row.get("Taxonomy Confidence", ""),
+            "Primary Proof Needed": exp_row.get("Primary Proof Needed", ""),
             "Reference Image Link": exp_row.get("Reference Image Link", ""),
             "Notes": exp_row.get("Hypothesis", ""),
         }
@@ -241,10 +267,10 @@ with tab_static:
     meta_hint = _meta_prefill(ad_code_lookup, meta_df)
 
     with st.form("static_live_form", clear_on_submit=True):
-        default_product = prefill.get("Product") or meta_hint.get("Product", "")
+        default_product = product_label(prefill.get("Product") or meta_hint.get("Product", ""))
         top1, top2, top3 = st.columns(3)
         product = top1.selectbox("Product", PRODUCTS, index=_idx(PRODUCTS, default_product))
-        static_subtype = top2.selectbox("Static subtype", STATIC_SUBTYPES)
+        static_subtype = top2.selectbox("Static subtype", STATIC_SUBTYPES, index=_idx(STATIC_SUBTYPES, prefill.get("Static Subtype", "")))
         bucket = top3.selectbox("Bucket", BUCKETS, index=_idx(BUCKETS, meta_hint.get("Bucket", "Performance")))
 
         live1, live2, live3 = st.columns(3)
@@ -265,9 +291,18 @@ with tab_static:
         funnel = tax3.selectbox("Funnel stage", FUNNEL_STAGES, index=_idx(FUNNEL_STAGES, prefill.get("Funnel Stage", "") or meta_hint.get("Funnel Stage", "")))
         influence = tax3.selectbox("Influence mode", INFLUENCE_MODES)
 
-        vis1, vis2 = st.columns(2)
-        visual_style = vis1.selectbox("Visual style", [v for v in VISUAL_STYLES if not v.startswith("N/A")])
-        cta = vis2.selectbox("CTA style", CTA_STYLES)
+        vis1, vis2, vis3 = st.columns(3)
+        visual_hook = vis1.selectbox("Visual hook type", VISUAL_HOOK_TYPES, index=_idx(VISUAL_HOOK_TYPES, prefill.get("Visual Hook Type", "")))
+        content_hook = vis1.selectbox("Content hook / headline type", CONTENT_HOOK_TYPES, index=_idx(CONTENT_HOOK_TYPES, prefill.get("Content Hook Type", "")))
+        visual_treatment = vis2.selectbox("Visual treatment", VISUAL_TREATMENTS, index=_idx(VISUAL_TREATMENTS, prefill.get("Visual Treatment", "")))
+        static_message = vis2.selectbox("Static message type", STATIC_MESSAGE_TYPES, index=_idx(STATIC_MESSAGE_TYPES, prefill.get("Static Message Type", "")))
+        cta_format = vis3.selectbox("CTA format", CTA_FORMATS, index=_idx(CTA_FORMATS, prefill.get("CTA Format", "")))
+        cta_message = vis3.selectbox("CTA message type", CTA_MESSAGE_TYPES, index=_idx(CTA_MESSAGE_TYPES, prefill.get("CTA Message Type", "")))
+
+        extra1, extra2, extra3 = st.columns(3)
+        ai_generated = extra1.selectbox("AI-generated?", AI_GENERATED_OPTIONS, index=_idx(AI_GENERATED_OPTIONS, prefill.get("AI-Generated", "No")))
+        taxonomy_confidence = extra2.selectbox("Taxonomy confidence", TAXONOMY_CONFIDENCE, index=_idx(TAXONOMY_CONFIDENCE, prefill.get("Taxonomy Confidence", "Medium")))
+        claim_codes = extra3.multiselect("Approved claim codes used", get_claims(product), default=["None"])
 
         link1, link2, link3 = st.columns(3)
         drive_link = link1.text_input("Final static / Drive link", value=meta_hint.get("Drive Link", ""))
@@ -304,10 +339,20 @@ with tab_static:
                     "Belief": belief,
                     "Marketing Angle": angle,
                     "Situational Driver": driver,
+                    "Hook Type": content_hook,
+                    "Visual Hook Type": visual_hook,
+                    "Content Hook Type": content_hook,
                     "Funnel Stage": funnel,
                     "Influence Mode": influence,
-                    "Visual Style": visual_style,
-                    "CTA Style": cta,
+                    "Visual Style": visual_treatment,
+                    "Visual Treatment": visual_treatment,
+                    "CTA Style": cta_message,
+                    "CTA Format": cta_format,
+                    "CTA Message Type": cta_message,
+                    "Static Message Type": static_message,
+                    "AI-Generated": ai_generated,
+                    "Taxonomy Confidence": taxonomy_confidence,
+                    "Claim Codes": ", ".join([c for c in claim_codes if c != "None"]),
                     "Experiment ID": experiment_id if use_brief else "",
                     "Meta Ad ID": normalized_code,
                     "Campaign Name": campaign,

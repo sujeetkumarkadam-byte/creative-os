@@ -137,7 +137,7 @@ def _table_controls(data: pd.DataFrame, key: str) -> pd.DataFrame:
             search_cols = [
                 "Asset ID", "Meta Ad ID", "Creator / Consumer Name", "Marketing Angle", "Belief",
                 "Cohort", "Visual Hook Type", "Content Hook Type", "Static Message Type",
-                "CTA Message Type", "Notes", "Drive Link", "Experiment ID", "Source Interview ID",
+                "CTA Message Type", "Notes", "Drive Link", "Transcript Link", "Experiment ID", "Source Interview ID",
                 "Product", "Format", "Creative Type", "Status",
             ]
             mask = pd.Series(False, index=working.index)
@@ -225,7 +225,7 @@ if search.strip():
     cols = [
         "Asset ID", "Meta Ad ID", "Creator / Consumer Name", "Marketing Angle",
         "Belief", "Cohort", "Visual Hook Type", "Content Hook Type", "Static Message Type",
-        "CTA Message Type", "Notes", "Drive Link", "Experiment ID", "Source Interview ID",
+        "CTA Message Type", "Notes", "Drive Link", "Transcript Link", "Experiment ID", "Source Interview ID",
         "Product", "Format", "Creative Type", "Static Subtype", "Video Subtype", "Status",
     ]
     mask = pd.Series(False, index=filtered.index)
@@ -256,7 +256,7 @@ with left:
     table_cols = [
         "_Preview", "Asset ID", "Meta Ad ID", "Published Date", "Product", "Format", "Creative Type",
         "Creator / Consumer Name", "Marketing Angle", "Cohort", "Content Hook Type", "ROAS", "Amount Spent", "Revenue",
-        "CTR", "Drive Link", "_Row Key",
+        "CTR", "Drive Link", "Transcript Link", "_Row Key",
     ]
     table = filtered[[c for c in table_cols if c in filtered.columns]].copy()
     table = _table_controls(table, key="asset_registry")
@@ -277,6 +277,7 @@ with left:
         column_config={
             "Preview": st.column_config.ImageColumn("Preview", width="small"),
             "Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open"),
+            "Transcript Link": st.column_config.LinkColumn("Transcript", display_text="Open"),
         },
     )
     if table_event.selection.rows:
@@ -318,6 +319,7 @@ with right:
         ("Open creative", "Drive Link"),
         ("Open preview", "Preview Asset Link"),
         ("Open source folder", "Source Folder Link"),
+        ("Open transcript", "Transcript Link"),
         ("Open brief", "Brief Link"),
     ]
     links = [f"[{label}]({row.get(col)})" for label, col in link_cols if _safe(row.get(col), "")]
@@ -342,7 +344,7 @@ with right:
             "Visual Treatment", "Static Message Type", "CTA Format", "CTA Message Type",
             "AI-Generated", "Taxonomy Confidence", "Claim Codes",
             "Visual Style", "CTA Style", "Hook Type", "Video Subtype", "Static Subtype",
-            "Taxonomy Review Status",
+            "Transcript Notes", "Aspect Ratio Links", "Taxonomy Review Status",
         ]
         for field in fields:
             if field in row.index:

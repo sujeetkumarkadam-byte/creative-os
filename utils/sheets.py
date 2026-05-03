@@ -61,7 +61,7 @@ ASSET_EXTRA_HEADERS = [
     "CTA Format", "CTA Message Type",
     "AI-Generated", "Taxonomy Confidence", "Claim Codes", "Secondary Product",
     "Preview Asset Link", "Source Folder Link", "Thumbnail Link", "Reference Image Link",
-    "Taxonomy Review Status",
+    "Transcript Link", "Transcript Notes", "Aspect Ratio Links", "Taxonomy Review Status",
 ]
 
 MASTER_HEADERS = ASSET_HEADERS + ASSET_EXTRA_HEADERS
@@ -1044,6 +1044,9 @@ def _normalized_master_row(asset: pd.Series, meta_row: pd.Series | None) -> dict
         "Thumbnail Link": asset.get("Thumbnail Link", ""),
         "Brief Link": asset.get("Brief Link", ""),
         "Reference Image Link": asset.get("Reference Image Link", ""),
+        "Transcript Link": asset.get("Transcript Link", ""),
+        "Transcript Notes": asset.get("Transcript Notes", ""),
+        "Aspect Ratio Links": asset.get("Aspect Ratio Links", ""),
         "Landing Page URL": meta_row.get("Landing Page URL", "") if meta_row is not None else "",
         "Instagram / Live Link": "",
         "Campaign Name": _first_non_empty(asset.get("Campaign Name", ""), meta_row.get("FB Ad Name", "") if meta_row is not None else ""),

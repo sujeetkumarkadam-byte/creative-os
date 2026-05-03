@@ -16,31 +16,38 @@ from utils.sheets import (
     SHEET_PERFORMANCE,
     build_creative_ops_view,
     ensure_performance_import_sheet,
+    first_present_column,
     folder_id_from_url,
     load_assets,
+    load_meta_ads,
     load_performance_import,
     meta_inhouse_import_candidates,
     import_meta_inhouse_to_master,
     next_asset_id,
     normalize_ad_code,
+    parse_mixed_dates,
     refresh_sheet_cache,
     upsert_asset_by_ad_code,
 )
 from utils.taxonomy import (
+    ARCHETYPES,
     CTA_FORMATS,
     CTA_MESSAGE_TYPES,
     CONTENT_HOOK_TYPES,
+    EMOTIONAL_ARCS,
     FUNNEL_STAGES,
     INFLUENCE_MODES,
     PRODUCTS,
     STATIC_SUBTYPES,
     STATIC_MESSAGE_TYPES,
     TAXONOMY_CONFIDENCE,
+    VIDEO_SUBTYPES,
     VISUAL_HOOK_TYPES,
     VISUAL_TREATMENTS,
     get_angles,
     get_beliefs,
     get_cohorts,
+    get_claims,
     get_drivers,
     product_label,
 )
@@ -52,6 +59,8 @@ st.caption("Diagnostics, data audits, and one-off Drive backlog review. Nothing 
 
 
 DRIVE_ROOT_DEFAULT = "https://drive.google.com/drive/folders/1PYQyc6oSod-Z0NCPUf3caUMnkJartSq5?usp=drive_link"
+PERF_VIDEO_FOLDER_NAME = "Perf videos"
+VIDEO_EXTENSIONS = (".mp4", ".mov", ".m4v", ".webm", ".avi", ".mpeg", ".mpg")
 
 
 def _safe(value, fallback=""):
@@ -70,7 +79,7 @@ def _drive_list(folder_id: str) -> list[dict]:
     while True:
         params = {
             "q": f"'{folder_id}' in parents and trashed=false",
-            "fields": "nextPageToken, files(id,name,mimeType,webViewLink,thumbnailLink,createdTime,modifiedTime)",
+            "fields": "nextPageToken, files(id,name,mimeType,webViewLink,thumbnailLink,createdTime,modifiedTime,size,videoMediaMetadata)",
             "pageSize": 1000,
             "supportsAllDrives": "true",
             "includeItemsFromAllDrives": "true",
@@ -85,6 +94,186 @@ def _drive_list(folder_id: str) -> list[dict]:
         if not page_token:
             break
     return files
+
+
+def _drive_find_folders_by_name(folder_name: str) -> list[dict]:
+    session = _drive_session()
+    safe_name = str(folder_name or "").replace("\\", "\\\\").replace("'", "\\'")
+    params = {
+        "q": f"name = '{safe_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed=false",
+        "fields": "files(id,name,webViewLink,createdTime,modifiedTime)",
+        "pageSize": 20,
+        "supportsAllDrives": "true",
+        "includeItemsFromAllDrives": "true",
+    }
+    response = session.get("https://www.googleapis.com/drive/v3/files", params=params, timeout=30)
+    response.raise_for_status()
+    return response.json().get("files", [])
+
+
+def _is_video_file(item: dict) -> bool:
+    name = str(item.get("name", "")).lower()
+    mime = str(item.get("mimeType", "")).lower()
+    return mime.startswith("video/") or name.endswith(VIDEO_EXTENSIONS)
+
+
+def _extract_ad_code_from_text(*values) -> str:
+    for value in values:
+        normalized = normalize_ad_code(value)
+        if normalized.startswith("AD "):
+            return normalized
+    return ""
+
+
+def _clean_consumer_name(segment: str) -> str:
+    text = str(segment or "")
+    text = re.sub(r"(?i)^perf\s*videos?\s*[-_:]*", "", text)
+    text = re.sub(r"(?i)\bAD\s*[-_]?\s*0*\d+\b", "", text)
+    text = re.sub(r"[_\-]+", " ", text)
+    text = re.sub(r"\s+", " ", text).strip(" -_/")
+    return text.strip()
+
+
+def _aspect_ratio_guess(name: str) -> str:
+    text = str(name or "").lower()
+    if re.search(r"9\s*[:x]\s*16|916|vertical|reel", text):
+        return "9:16"
+    if re.search(r"4\s*[:x]\s*5|45", text):
+        return "4:5"
+    if re.search(r"1\s*[:x]\s*1|11|square", text):
+        return "1:1"
+    return ""
+
+
+def _scan_drive_videos(
+    folder_id: str,
+    path: str,
+    depth: int,
+    max_depth: int,
+    inherited_ad_code: str = "",
+    consumer_name: str = "",
+    folder_link: str = "",
+) -> list[dict]:
+    if depth > max_depth:
+        return []
+
+    output = []
+    for item in _drive_list(folder_id):
+        name = item.get("name", "")
+        mime = item.get("mimeType", "")
+        child_path = f"{path}/{name}" if path else name
+        item_ad_code = _extract_ad_code_from_text(name)
+        active_ad_code = item_ad_code or inherited_ad_code
+
+        if mime == "application/vnd.google-apps.folder":
+            child_consumer = consumer_name or _clean_consumer_name(name)
+            output.extend(_scan_drive_videos(
+                item["id"],
+                child_path,
+                depth + 1,
+                max_depth,
+                active_ad_code,
+                child_consumer,
+                item.get("webViewLink", "") or folder_link,
+            ))
+            continue
+
+        if not _is_video_file(item):
+            continue
+
+        ad_code = item_ad_code or active_ad_code
+        if not ad_code:
+            continue
+
+        output.append({
+            "AD CODE": ad_code,
+            "Consumer / Creator Name": consumer_name,
+            "Variation Name": _clean_consumer_name(path.split("/")[-1] if path else name) or name,
+            "Product": _infer_product(path, name),
+            "File Name": name,
+            "Folder Path": path,
+            "Representative Link": item.get("webViewLink", ""),
+            "Thumbnail Link": item.get("thumbnailLink", ""),
+            "Source Folder Link": folder_link,
+            "File ID": item.get("id", ""),
+            "Aspect Ratio": _aspect_ratio_guess(name),
+            "Created Time": item.get("createdTime", ""),
+            "Modified Time": item.get("modifiedTime", ""),
+        })
+    return output
+
+
+def _group_video_candidates(rows: list[dict]) -> pd.DataFrame:
+    if not rows:
+        return pd.DataFrame()
+
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return df
+
+    priority = {"9:16": 0, "1:1": 1, "4:5": 2, "": 3}
+    df["_priority"] = df["Aspect Ratio"].map(priority).fillna(9)
+    candidates = []
+    for ad_code, group in df.sort_values("_priority").groupby("AD CODE", sort=False):
+        picked = group.iloc[0].copy()
+        links = [
+            f"{row.get('Aspect Ratio') or 'video'}: {row.get('Representative Link')}"
+            for _, row in group.iterrows()
+            if _safe(row.get("Representative Link"))
+        ]
+        picked["Video Count"] = len(group)
+        picked["Aspect Ratio Links"] = "\n".join(links)
+        picked["All File Names"] = "\n".join(group["File Name"].astype(str).tolist())
+        picked["All Folder Paths"] = "\n".join(sorted(set(group["Folder Path"].astype(str).tolist())))
+        candidates.append(picked.drop(labels=["_priority"], errors="ignore").to_dict())
+    return pd.DataFrame(candidates)
+
+
+def _scan_drive_videos_cached(root_url_or_id: str, max_depth: int):
+    folder_id = folder_id_from_url(root_url_or_id) or str(root_url_or_id or "").strip()
+    if not folder_id:
+        return pd.DataFrame()
+    rows = _scan_drive_videos(folder_id, "", 0, max_depth)
+    return _group_video_candidates(rows)
+
+
+def _meta_row_by_ad_code(meta: pd.DataFrame, ad_code: str) -> pd.Series | None:
+    if meta.empty or "AD CODE" not in meta.columns:
+        return None
+    code = normalize_ad_code(ad_code)
+    matches = meta[meta["AD CODE"].map(normalize_ad_code) == code]
+    if matches.empty:
+        return None
+    return matches.iloc[-1]
+
+
+def _pick_from_row(row: pd.Series | None, *columns: str) -> str:
+    if row is None:
+        return ""
+    for column in columns:
+        if column in row.index and _safe(row.get(column)):
+            return str(row.get(column)).strip()
+    return ""
+
+
+def _published_date_from_meta(row: pd.Series | None) -> str:
+    if row is None:
+        return ""
+    date_col = first_present_column(pd.DataFrame([row]), "Date [Ad Taken Live]", "Date [Ad Taken Live] ")
+    if not date_col:
+        return ""
+    parsed = parse_mixed_dates(pd.Series([row.get(date_col, "")]))
+    if parsed.empty or pd.isna(parsed.iloc[0]):
+        return ""
+    return parsed.iloc[0].strftime("%Y-%m-%d")
+
+
+def _choice_index(options: list[str], *values) -> int:
+    for value in values:
+        safe_value = _safe(value)
+        if safe_value in options:
+            return options.index(safe_value)
+    return 0
 
 
 def _infer_product(path: str, filename: str) -> str:
@@ -184,7 +373,12 @@ def _scan_drive_cached(root_url: str, max_depth: int):
     return pd.DataFrame(rows)
 
 
-tab_diag, tab_audit, tab_drive = st.tabs(["Sheet Diagnostics", "Creative Ops Audit", "Drive Static Review"])
+tab_diag, tab_audit, tab_drive, tab_video = st.tabs([
+    "Sheet Diagnostics",
+    "Creative Ops Audit",
+    "Drive Static Review",
+    "Drive Video Review",
+])
 
 with tab_diag:
     st.header("Spreadsheet schema")
@@ -447,6 +641,254 @@ with tab_drive:
                         action, saved_asset_id = upsert_asset_by_ad_code(row)
                         if action == "updated":
                             st.success(f"Updated existing Master row for {normalized_code}. Filled the approved taxonomy and preview fields.")
+                        else:
+                            st.success(f"Saved {saved_asset_id} to Master_Asset_Registry.")
+                    except Exception as exc:
+                        st.error(f"Save/update failed: {exc}")
+
+with tab_video:
+    st.header("Drive video review queue")
+    st.caption(
+        "Scans the `Perf videos` Drive tree, detects AD CODEs from folder/file names, "
+        "groups 1:1 and 9:16 duplicates, and lets you update Master only after review."
+    )
+    st.info(
+        "No fake auto-tagging here: the app can save hard facts from Drive/Meta and your approved taxonomy. "
+        "If you paste a transcript or transcript link, it stores that context, but visual hook fields still need human review."
+    )
+
+    find_col, paste_col = st.columns([0.9, 1.1])
+    with find_col:
+        folder_name = st.text_input("Find Drive folder by exact name", value=PERF_VIDEO_FOLDER_NAME)
+        if st.button("Find Perf videos folder"):
+            try:
+                matches = _drive_find_folders_by_name(folder_name)
+                st.session_state.perf_video_folder_matches = matches
+                if not matches:
+                    st.warning("No matching folder found for the service account. Paste the folder URL/ID below if needed.")
+            except Exception as exc:
+                st.error(f"Folder search failed: {exc}")
+
+        matches = st.session_state.get("perf_video_folder_matches", [])
+        chosen_match = None
+        if matches:
+            labels = [f"{match.get('name')} | {match.get('id')}" for match in matches]
+            chosen_label = st.selectbox("Matching folders", labels)
+            chosen_match = matches[labels.index(chosen_label)]
+            st.markdown(f"[Open selected folder]({chosen_match.get('webViewLink', '')})")
+
+    with paste_col:
+        default_video_root = chosen_match.get("id", "") if chosen_match else ""
+        video_root = st.text_input(
+            "Or paste Perf videos folder URL / ID",
+            value=default_video_root,
+            placeholder="Google Drive folder URL or folder ID",
+        )
+        video_depth = st.slider("Video folder depth", min_value=1, max_value=7, value=5)
+        if st.button("Scan Perf videos", type="primary"):
+            try:
+                with st.spinner("Scanning Drive videos and grouping aspect-ratio duplicates..."):
+                    st.session_state.video_drive_candidates = _scan_drive_videos_cached(video_root, video_depth)
+            except Exception as exc:
+                st.error(f"Video Drive scan failed: {exc}")
+
+    video_candidates = st.session_state.get("video_drive_candidates")
+    if video_candidates is None:
+        st.info("Find or paste the `Perf videos` folder, then scan to build the review queue.")
+    elif video_candidates.empty:
+        st.warning("No AD CODE-tagged video files found. Check that AD CODE is at the start of the variation folder or video filename.")
+    else:
+        st.success(f"Found {len(video_candidates)} AD CODE video candidates.")
+        preview_cols = [
+            "AD CODE", "Consumer / Creator Name", "Variation Name", "Product",
+            "Video Count", "Aspect Ratio", "Representative Link", "Folder Path",
+        ]
+        st.dataframe(
+            video_candidates[[c for c in preview_cols if c in video_candidates.columns]],
+            use_container_width=True,
+            hide_index=True,
+            height=260,
+        )
+
+        assets = load_assets()
+        meta = load_meta_ads()
+        existing_ids = assets["Asset ID"].dropna().astype(str).tolist() if not assets.empty and "Asset ID" in assets.columns else []
+
+        review_labels = video_candidates.apply(
+            lambda row: f"{row.get('AD CODE')} | {row.get('Consumer / Creator Name') or 'Unknown'} | {row.get('Variation Name')}",
+            axis=1,
+        ).tolist()
+        selected_video = st.selectbox("Review video candidate", review_labels)
+        video_row = video_candidates.iloc[review_labels.index(selected_video)]
+        normalized_code = normalize_ad_code(video_row.get("AD CODE"))
+
+        existing_asset = None
+        if not assets.empty and "Meta Ad ID" in assets.columns:
+            matches = assets[assets["Meta Ad ID"].map(normalize_ad_code) == normalized_code]
+            if not matches.empty:
+                existing_asset = matches.iloc[-1]
+
+        meta_row = _meta_row_by_ad_code(meta, normalized_code)
+        if existing_asset is not None:
+            st.success(f"{normalized_code} already exists in Master. Approval will update that row, not create a duplicate.")
+        elif meta_row is not None:
+            st.info(f"{normalized_code} matched Meta Ads. Approval will create a new Master row.")
+        else:
+            st.warning(f"{normalized_code} was found in Drive but not matched in Meta Ads yet. You can still save it for review.")
+
+        left, right = st.columns([0.75, 1.25])
+        with left:
+            if _safe(video_row.get("Thumbnail Link")):
+                st.image(video_row["Thumbnail Link"], use_container_width=True)
+            st.markdown(f"**AD CODE:** {normalized_code}")
+            st.markdown(f"**Consumer:** {_safe(video_row.get('Consumer / Creator Name'), 'Unknown')}")
+            st.markdown(f"**Variation:** {_safe(video_row.get('Variation Name'), 'Unknown')}")
+            st.markdown(f"**Video files grouped:** {int(video_row.get('Video Count', 1))}")
+            if _safe(video_row.get("Representative Link")):
+                st.markdown(f"[Open representative video]({video_row.get('Representative Link')})")
+            if _safe(video_row.get("Source Folder Link")):
+                st.markdown(f"[Open source folder]({video_row.get('Source Folder Link')})")
+            if _safe(video_row.get("Aspect Ratio Links")):
+                st.text_area("Aspect-ratio links", value=video_row.get("Aspect Ratio Links"), height=110, disabled=True)
+
+        with right:
+            meta_product = product_label(_pick_from_row(meta_row, "Product"))
+            existing_product = product_label(existing_asset.get("Product")) if existing_asset is not None else ""
+            candidate_product = product_label(video_row.get("Product"))
+            default_product = existing_product or meta_product or candidate_product
+
+            with st.form("approve_drive_video"):
+                product = st.selectbox("Product", PRODUCTS, index=_choice_index(PRODUCTS, default_product))
+                video_subtype = st.selectbox(
+                    "Video subtype",
+                    VIDEO_SUBTYPES,
+                    index=_choice_index(VIDEO_SUBTYPES, existing_asset.get("Video Subtype") if existing_asset is not None else "", "VS1 - Consumer Testimonial"),
+                )
+
+                cohorts = get_cohorts(product)
+                beliefs = get_beliefs(product)
+                angles = get_angles(product)
+                drivers = get_drivers(product)
+                claims = get_claims(product)
+
+                c1, c2 = st.columns(2)
+                cohort = c1.selectbox("Cohort", cohorts, index=_choice_index(cohorts, existing_asset.get("Cohort") if existing_asset is not None else ""))
+                belief = c1.selectbox("Belief", beliefs, index=_choice_index(beliefs, existing_asset.get("Belief") if existing_asset is not None else ""))
+                angle = c2.selectbox(
+                    "Marketing angle",
+                    angles,
+                    index=_choice_index(angles, existing_asset.get("Marketing Angle") if existing_asset is not None else "", _pick_from_row(meta_row, "Marketing Angle")),
+                )
+                driver = c2.selectbox("Situational driver", drivers, index=_choice_index(drivers, existing_asset.get("Situational Driver") if existing_asset is not None else ""))
+
+                c3, c4 = st.columns(2)
+                visual_hook = c3.selectbox("Visual hook type", VISUAL_HOOK_TYPES, index=_choice_index(VISUAL_HOOK_TYPES, existing_asset.get("Visual Hook Type") if existing_asset is not None else ""))
+                content_hook = c3.selectbox("Content hook type", CONTENT_HOOK_TYPES, index=_choice_index(CONTENT_HOOK_TYPES, existing_asset.get("Content Hook Type") if existing_asset is not None else ""))
+                emotional_arc = c4.selectbox("Emotional arc", EMOTIONAL_ARCS, index=_choice_index(EMOTIONAL_ARCS, existing_asset.get("Emotional Arc") if existing_asset is not None else ""))
+                creator_arch = c4.selectbox("Creator archetype", ARCHETYPES, index=_choice_index(ARCHETYPES, existing_asset.get("Creator Archetype") if existing_asset is not None else "", "LEV - Lived Experience Validator"))
+
+                c5, c6 = st.columns(2)
+                funnel_default = _pick_from_row(meta_row, "Funnel Level") or (existing_asset.get("Funnel Stage") if existing_asset is not None else "")
+                funnel = c5.selectbox("Funnel stage", FUNNEL_STAGES, index=_choice_index(FUNNEL_STAGES, funnel_default))
+                influence = c5.selectbox("Influence mode", INFLUENCE_MODES, index=_choice_index(INFLUENCE_MODES, existing_asset.get("Influence Mode") if existing_asset is not None else ""))
+                cta_format = c6.selectbox("CTA format", CTA_FORMATS, index=_choice_index(CTA_FORMATS, existing_asset.get("CTA Format") if existing_asset is not None else ""))
+                cta_message = c6.selectbox("CTA message type", CTA_MESSAGE_TYPES, index=_choice_index(CTA_MESSAGE_TYPES, existing_asset.get("CTA Message Type") if existing_asset is not None else ""))
+
+                claim_codes = st.multiselect(
+                    "Approved claim codes used",
+                    claims,
+                    default=[value for value in str(existing_asset.get("Claim Codes", "") if existing_asset is not None else "").split(", ") if value in claims] or ["None"],
+                )
+                taxonomy_confidence = st.selectbox(
+                    "Taxonomy confidence",
+                    TAXONOMY_CONFIDENCE,
+                    index=_choice_index(TAXONOMY_CONFIDENCE, existing_asset.get("Taxonomy Confidence") if existing_asset is not None else "", "Needs Review"),
+                )
+
+                creative_name_default = (
+                    existing_asset.get("Creator / Consumer Name") if existing_asset is not None and _safe(existing_asset.get("Creator / Consumer Name")) else
+                    video_row.get("Consumer / Creator Name")
+                )
+                consumer_name = st.text_input("Creator / consumer name", value=_safe(creative_name_default))
+                source_story_id = st.text_input(
+                    "Source story / interview ID",
+                    value=_safe(existing_asset.get("Source Interview ID") if existing_asset is not None else ""),
+                    placeholder="Optional source story ID",
+                )
+                transcript_link = st.text_input(
+                    "Transcript link",
+                    value=_safe(existing_asset.get("Transcript Link") if existing_asset is not None else ""),
+                    placeholder="Optional Google Doc / transcript URL",
+                )
+                transcript_notes = st.text_area(
+                    "Transcript notes / proof lines",
+                    value=_safe(existing_asset.get("Transcript Notes") if existing_asset is not None else ""),
+                    placeholder="Paste transcript summary or key proof lines. Full transcription can live in a Doc link.",
+                    height=90,
+                )
+                notes = st.text_area(
+                    "Review notes",
+                    value=_safe(
+                        existing_asset.get("Notes") if existing_asset is not None else "",
+                        "Tagged from Drive video review queue. Transcript and visual hook require human approval.",
+                    ),
+                    height=80,
+                )
+
+                submitted = st.form_submit_button("Approve and save/update Master_Asset_Registry", type="primary", use_container_width=True)
+                if submitted:
+                    asset_id = existing_asset.get("Asset ID") if existing_asset is not None and _safe(existing_asset.get("Asset ID")) else next_asset_id(product, "Video", existing_ids)
+                    published_date = _safe(
+                        existing_asset.get("Published Date") if existing_asset is not None else "",
+                        _published_date_from_meta(meta_row),
+                    )
+                    campaign_name = _pick_from_row(meta_row, "FB Ad Name", "Ad Name (TSS)", "Ad Name (Porcellia)")
+                    row = {
+                        "Asset ID": asset_id,
+                        "Variant #": _safe(existing_asset.get("Variant #") if existing_asset is not None else "", "A"),
+                        "Status": "Published" if published_date else "Backlog Review",
+                        "Created Date": datetime.now().strftime("%Y-%m-%d"),
+                        "Published Date": published_date,
+                        "Product": product,
+                        "Bucket": "Performance",
+                        "Channel": "In-house",
+                        "Creative Type": video_subtype,
+                        "Format": "Video",
+                        "Video Subtype": video_subtype,
+                        "Cohort": cohort,
+                        "Belief": belief,
+                        "Marketing Angle": angle,
+                        "Situational Driver": driver,
+                        "Hook Type": content_hook,
+                        "Visual Hook Type": visual_hook,
+                        "Content Hook Type": content_hook,
+                        "Emotional Arc": emotional_arc,
+                        "Funnel Stage": funnel,
+                        "Creator Archetype": creator_arch,
+                        "Influence Mode": influence,
+                        "CTA Style": cta_message,
+                        "CTA Format": cta_format,
+                        "CTA Message Type": cta_message,
+                        "Taxonomy Confidence": taxonomy_confidence,
+                        "Claim Codes": ", ".join([claim for claim in claim_codes if claim != "None"]),
+                        "Creator / Consumer Name": consumer_name,
+                        "Source Interview ID": source_story_id,
+                        "Meta Ad ID": normalized_code,
+                        "Campaign Name": campaign_name,
+                        "Drive Link": video_row.get("Representative Link", ""),
+                        "Preview Asset Link": video_row.get("Representative Link", ""),
+                        "Source Folder Link": video_row.get("Source Folder Link", "") or video_row.get("Folder Path", ""),
+                        "Thumbnail Link": video_row.get("Thumbnail Link", ""),
+                        "Transcript Link": transcript_link,
+                        "Transcript Notes": transcript_notes,
+                        "Aspect Ratio Links": video_row.get("Aspect Ratio Links", ""),
+                        "Notes": notes,
+                        "Taxonomy Review Status": "Tagged" if taxonomy_confidence != "Needs Review" else "Needs Review",
+                    }
+                    try:
+                        action, saved_asset_id = upsert_asset_by_ad_code(row)
+                        if action == "updated":
+                            st.success(f"Updated existing Master row for {normalized_code}.")
                         else:
                             st.success(f"Saved {saved_asset_id} to Master_Asset_Registry.")
                     except Exception as exc:

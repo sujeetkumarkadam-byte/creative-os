@@ -401,7 +401,7 @@ with tab_assets:
         "_Preview", "Source", "Record Type", "AD CODE", "Perf AD Code", "Live Date", "Creative Name", "Product",
         "Format", "Marketing Angle", "Cohort", "Belief", "Content Hook Type", "Static Message Type",
         "Funnel Stage", "Creator", "ROAS", "Amount Spent", "Revenue", "CTR",
-        "Drive Link", "Instagram / Live Link", "_Row Key",
+        "Drive Link", "Transcript Link", "Instagram / Live Link", "_Row Key",
     ]
     gallery_table = gallery_table[[c for c in table_cols if c in gallery_table.columns]]
     gallery_table = _table_controls(
@@ -410,7 +410,7 @@ with tab_assets:
         search_columns=[
             "AD CODE", "Perf AD Code", "Asset ID", "Creative Name", "Creator", "Creator / Consumer Name",
             "Marketing Angle", "Cohort", "Belief", "Visual Hook Type", "Content Hook Type",
-            "Static Message Type", "CTA Message Type", "Product", "Format", "Source", "Drive Link", "Instagram / Live Link",
+            "Static Message Type", "CTA Message Type", "Product", "Format", "Source", "Drive Link", "Transcript Link", "Instagram / Live Link",
         ],
         filter_columns=["Source", "Record Type", "Product", "Format", "Marketing Angle", "Cohort", "Belief", "Funnel Stage", "Content Hook Type", "Static Message Type", "Creator"],
         default_sort="Live Date",
@@ -448,6 +448,7 @@ with tab_assets:
         st.write(f"**Perf AD Code:** {_safe_text(picked.get('Perf AD Code'))}")
         _link("Open Drive / Creative Link", picked.get("Drive Link", ""))
         _link("Open Source Folder", picked.get("Source Folder Link", ""))
+        _link("Open Transcript", picked.get("Transcript Link", ""))
         _link("Open Instagram / Live Link", picked.get("Instagram / Live Link", ""))
         _link("Open Brief / Asana", picked.get("Brief Link", ""))
         st.markdown("</div>", unsafe_allow_html=True)
@@ -474,6 +475,7 @@ with tab_assets:
                 "Creator Archetype", "Influence Mode", "Visual Treatment", "Static Message Type",
                 "CTA Format", "CTA Message Type", "AI-Generated", "Taxonomy Confidence",
                 "Claim Codes", "Visual Style", "CTA Style", "Hook Type", "Source Interview ID", "Experiment ID",
+                "Transcript Notes", "Aspect Ratio Links",
             ]
             cols = st.columns(2)
             for idx, field in enumerate(taxonomy_fields):
@@ -520,6 +522,7 @@ with tab_assets:
         column_config={
             "Preview": st.column_config.ImageColumn("Preview", width="small"),
             "Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open"),
+            "Transcript Link": st.column_config.LinkColumn("Transcript", display_text="Open"),
             "Instagram / Live Link": st.column_config.LinkColumn("Instagram", display_text="Open"),
         },
     )

@@ -62,6 +62,7 @@ ASSET_EXTRA_HEADERS = [
     "AI-Generated", "Taxonomy Confidence", "Claim Codes", "Secondary Product",
     "Preview Asset Link", "Source Folder Link", "Thumbnail Link", "Reference Image Link",
     "Transcript Link", "Transcript Notes", "Aspect Ratio Links", "Taxonomy Review Status",
+    "CPM", "CPR", "CPM (L30)", "CPR (L30)", "CPM (L7)", "CPR (L7)",
 ]
 
 MASTER_HEADERS = ASSET_HEADERS + ASSET_EXTRA_HEADERS
@@ -112,12 +113,12 @@ SOURCE_HEADERS = [
 ]
 
 PERFORMANCE_COLUMNS = [
-    "ROAS", "Amount Spent", "Revenue", "Avg Cost Per Reach",
+    "Amount Spent", "Revenue", "ROAS", "CPM", "CPR", "Avg Cost Per Reach",
     "CTR", "CPC", "ATC Rate", "CVR", "AOV", "Hook Rate", "Hold Rate", "CAC",
-    "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "Avg Cost Per Reach (L30)",
+    "Amount Spent (L30)", "Revenue (L30)", "ROAS (L30)", "CPM (L30)", "CPR (L30)", "Avg Cost Per Reach (L30)",
     "CTR (L30)", "CPC (L30)", "ATC Rate (L30)", "CVR (L30)", "AOV (L30)",
     "Hook Rate (L30)", "Hold Rate (L30)", "CAC (L30)",
-    "ROAS (L7)", "Amount Spent (L7)", "Revenue (L7)", "Avg Cost Per Reach (L7)",
+    "Amount Spent (L7)", "Revenue (L7)", "ROAS (L7)", "CPM (L7)", "CPR (L7)", "Avg Cost Per Reach (L7)",
     "CTR (L7)", "CPC (L7)", "ATC Rate (L7)", "CVR (L7)", "AOV (L7)",
     "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
 ]
@@ -129,6 +130,8 @@ PERFORMANCE_ALIASES = {
     "ROAS": ["ROAS", "Website ROAS", "Purchase ROAS"],
     "Amount Spent": ["Amount Spent", "Amount spent", "Spend", "Spent", "Amount Spent INR"],
     "Revenue": ["Revenue", "Purchase Conversion Value", "Conversion Value", "Sales"],
+    "CPM": ["CPM", "Cost Per 1,000 Impressions", "Cost per 1,000 impressions", "Cost per 1000 impressions"],
+    "CPR": ["CPR", "Cost Per Result", "Cost per result", "Cost per Result", "Avg Cost Per Reach", "Average Cost Per Reach"],
     "Avg Cost Per Reach": ["Avg Cost Per Reach", "Average Cost Per Reach", "CPM Reach"],
     "CTR": ["CTR", "CTR %", "Link CTR", "CTR (link click-through rate)"],
     "CPC": ["CPC", "Cost Per Click", "Cost per link click"],
@@ -138,6 +141,16 @@ PERFORMANCE_ALIASES = {
     "Hook Rate": ["Hook Rate", "Thumbstop Rate", "3 sec view rate"],
     "Hold Rate": ["Hold Rate", "Hold rate", "Average Watch Time Rate"],
     "CAC": ["CAC", "CPA", "Cost Per Purchase", "Cost per purchase"],
+    "Amount Spent (L30)": ["Amount Spent (L30)", "Amount spent (L30)", "Spend (L30)", "Spent (L30)"],
+    "Revenue (L30)": ["Revenue (L30)", "Purchase Conversion Value (L30)", "Sales (L30)"],
+    "ROAS (L30)": ["ROAS (L30)", "Website ROAS (L30)", "Purchase ROAS (L30)"],
+    "CPM (L30)": ["CPM (L30)", "Cost Per 1,000 Impressions (L30)", "Cost per 1000 impressions (L30)"],
+    "CPR (L30)": ["CPR (L30)", "Cost Per Result (L30)", "Cost per result (L30)"],
+    "Amount Spent (L7)": ["Amount Spent (L7)", "Amount spent (L7)", "Spend (L7)", "Spent (L7)"],
+    "Revenue (L7)": ["Revenue (L7)", "Purchase Conversion Value (L7)", "Sales (L7)"],
+    "ROAS (L7)": ["ROAS (L7)", "Website ROAS (L7)", "Purchase ROAS (L7)"],
+    "CPM (L7)": ["CPM (L7)", "Cost Per 1,000 Impressions (L7)", "Cost per 1000 impressions (L7)"],
+    "CPR (L7)": ["CPR (L7)", "Cost Per Result (L7)", "Cost per result (L7)"],
 }
 
 AD_CODE_RE = re.compile(r"\bAD\s*[-_]?\s*0*(\d+)\b", re.IGNORECASE)

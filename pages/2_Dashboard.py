@@ -99,13 +99,34 @@ def _link(label: str, url: str):
         st.markdown(f"[{label}]({url})")
 
 
+PERFORMANCE_STAT_ORDER = [
+    ("Amount spent", "Amount Spent"),
+    ("Revenue", "Revenue"),
+    ("ROAS", "ROAS"),
+    ("CPM", "CPM"),
+    ("CPR", "CPR"),
+    ("CTR", "CTR"),
+    ("CPC", "CPC"),
+    ("ATC rate", "ATC Rate"),
+    ("CVR", "CVR"),
+    ("AOV", "AOV"),
+    ("ROAS", "ROAS"),
+    ("CAC", "CAC"),
+]
+
+PERFORMANCE_COLUMN_ORDER = []
+for _, metric_field in PERFORMANCE_STAT_ORDER:
+    if metric_field not in PERFORMANCE_COLUMN_ORDER:
+        PERFORMANCE_COLUMN_ORDER.append(metric_field)
+
+
 NUMERIC_SORT_COLUMNS = {
-    "ROAS", "Amount Spent", "Revenue", "Avg Cost Per Reach", "CTR", "CPC",
+    "ROAS", "Amount Spent", "Revenue", "CPM", "CPR", "Avg Cost Per Reach", "CTR", "CPC",
     "ATC Rate", "CVR", "AOV", "Hook Rate", "Hold Rate", "CAC",
-    "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "Avg Cost Per Reach (L30)",
+    "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "CPM (L30)", "CPR (L30)", "Avg Cost Per Reach (L30)",
     "CTR (L30)", "CPC (L30)", "ATC Rate (L30)", "CVR (L30)", "AOV (L30)",
     "Hook Rate (L30)", "Hold Rate (L30)", "CAC (L30)",
-    "ROAS (L7)", "Amount Spent (L7)", "Revenue (L7)", "Avg Cost Per Reach (L7)",
+    "ROAS (L7)", "Amount Spent (L7)", "Revenue (L7)", "CPM (L7)", "CPR (L7)", "Avg Cost Per Reach (L7)",
     "CTR (L7)", "CPC (L7)", "ATC Rate (L7)", "CVR (L7)", "AOV (L7)",
     "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
     "Views", "Likes", "Comments", "Shares", "Saves", "Total Engagement",
@@ -156,6 +177,17 @@ def _with_live_date(data: pd.DataFrame) -> pd.DataFrame:
         output = output.drop(columns=["Live Date"], errors="ignore")
         output = output.rename(columns={"_Date": "Live Date"})
     return _dedupe_columns(output)
+
+
+def _prepare_performance_metrics(data: pd.DataFrame) -> pd.DataFrame:
+    output = data.copy()
+    for metric in PERFORMANCE_COLUMN_ORDER:
+        if metric not in output.columns:
+            output[metric] = ""
+    if "Avg Cost Per Reach" in output.columns:
+        cpr_blank = output["CPR"].astype(str).str.strip().isin(["", "nan", "None", "NaT"])
+        output.loc[cpr_blank, "CPR"] = output.loc[cpr_blank, "Avg Cost Per Reach"]
+    return output
 
 
 def _sort_dataframe(data: pd.DataFrame, sort_by: str, descending: bool) -> pd.DataFrame:
@@ -251,6 +283,7 @@ df = df[df["_Date"].notna()]
 reasonable_floor = pd.Timestamp("2020-01-01")
 reasonable_ceiling = pd.Timestamp.today().normalize() + pd.Timedelta(days=7)
 df = df[(df["_Date"] >= reasonable_floor) & (df["_Date"] <= reasonable_ceiling)]
+df = _prepare_performance_metrics(df)
 
 if df.empty:
     st.warning("Rows loaded, but none had a usable live date after parsing.")
@@ -400,7 +433,7 @@ with tab_assets:
     table_cols = [
         "_Preview", "Source", "Record Type", "AD CODE", "Perf AD Code", "Live Date", "Creative Name", "Product",
         "Format", "Marketing Angle", "Cohort", "Belief", "Content Hook Type", "Static Message Type",
-        "Funnel Stage", "Creator", "ROAS", "Amount Spent", "Revenue", "CTR",
+        "Funnel Stage", "Creator", *PERFORMANCE_COLUMN_ORDER,
         "Drive Link", "Transcript Link", "Instagram / Live Link", "_Row Key",
     ]
     gallery_table = gallery_table[[c for c in table_cols if c in gallery_table.columns]]
@@ -487,16 +520,18 @@ with tab_assets:
 
         with perf_tab:
             st.caption(f"Metric source: {_safe_text(picked.get('Metric Source'), 'No metric columns populated yet')}")
-            p1, p2, p3, p4 = st.columns(4)
-            p1.metric("ROAS", _metric_value(picked, "ROAS"))
-            p2.metric("Spend", _metric_value(picked, "Amount Spent"))
-            p3.metric("Revenue", _metric_value(picked, "Revenue"))
-            p4.metric("CAC", _metric_value(picked, "CAC"))
+            for offset in range(0, len(PERFORMANCE_STAT_ORDER), 4):
+                metric_cards = st.columns(4)
+                for idx, (label, field) in enumerate(PERFORMANCE_STAT_ORDER[offset:offset + 4]):
+                    metric_cards[idx].metric(label, _metric_value(picked, field))
 
             perf_cols = [
-                "CTR", "CPC", "ATC Rate", "CVR", "AOV", "Hook Rate", "Hold Rate",
-                "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "CTR (L30)", "Hook Rate (L30)", "Hold Rate (L30)",
-                "ROAS (L7)", "Amount Spent (L7)", "Revenue (L7)", "CTR (L7)", "Hook Rate (L7)", "Hold Rate (L7)",
+                *PERFORMANCE_COLUMN_ORDER,
+                "Hook Rate", "Hold Rate",
+                "Amount Spent (L30)", "Revenue (L30)", "ROAS (L30)", "CPM (L30)", "CPR (L30)",
+                "CTR (L30)", "CPC (L30)", "ATC Rate (L30)", "CVR (L30)", "AOV (L30)", "Hook Rate (L30)", "Hold Rate (L30)", "CAC (L30)",
+                "Amount Spent (L7)", "Revenue (L7)", "ROAS (L7)", "CPM (L7)", "CPR (L7)",
+                "CTR (L7)", "CPC (L7)", "ATC Rate (L7)", "CVR (L7)", "AOV (L7)", "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
                 "Views", "Likes", "Comments", "Shares", "Saves", "Total Engagement", "Engagement Rate (%)",
             ]
             perf_table = pd.DataFrame(
@@ -588,7 +623,7 @@ with tab_quality:
             "_Date", "AD CODE", "Creative Name", "Product", "Format", "Creative Type",
             "Marketing Angle", "Belief", "Cohort", "Situational Driver", "Funnel Stage",
             "Visual Hook Type", "Content Hook Type", "Static Message Type", "CTA Message Type",
-            "ROAS", "Amount Spent", "CTR", "Drive Link",
+            *PERFORMANCE_COLUMN_ORDER, "Drive Link",
         ]
         taxonomy_table = _with_live_date(inhouse[[c for c in taxonomy_cols if c in inhouse.columns]])
         taxonomy_table = _table_controls(
@@ -621,7 +656,7 @@ with tab_audit:
 
     audit_cols = [
         "Source", "Record Type", "AD CODE", "Perf AD Code", "_Date", "Creative Name", "Product",
-        "Format", "Asset ID", "Creator", "Marketing Angle", "Content Hook Type", "ROAS", "Amount Spent", "Revenue", "CTR",
+        "Format", "Asset ID", "Creator", "Marketing Angle", "Content Hook Type", *PERFORMANCE_COLUMN_ORDER,
         "Needs Attention", "Drive Link", "Instagram / Live Link",
     ]
     audit = _with_live_date(filtered[[c for c in audit_cols if c in filtered.columns]])

@@ -8,6 +8,7 @@ from utils.taxonomy import (
     VISUAL_TREATMENTS, STATIC_MESSAGE_TYPES, CTA_FORMATS, CTA_MESSAGE_TYPES,
     AI_GENERATED_OPTIONS, TAXONOMY_CONFIDENCE,
     get_cohorts, get_angles, get_drivers, get_beliefs,
+    options_with_blank, selected_info,
 )
 
 st.set_page_config(page_title="Stage-1 Briefs — Creative OS", layout="wide")
@@ -18,13 +19,26 @@ st.caption("Plan WHAT you want to test — angle, cohort, belief. Take this to C
 experiments_df = load_experiments()
 existing_exp_ids = experiments_df["Experiment ID"].tolist() if not experiments_df.empty else []
 
+
+def _idx(options: list[str], value: str, default: int = 0) -> int:
+    return options.index(value) if value in options else default
+
+
+def _tax_select(container, label: str, options: list[str], value: str = "", help_text: str = ""):
+    opts = options_with_blank(options)
+    picked = container.selectbox(label, opts, index=_idx(opts, value), help=help_text)
+    info = selected_info(picked)
+    if info:
+        container.caption(info)
+    return picked
+
 # ── NEW BRIEF ─────────────────────────────────────────────────────────────────
 with st.expander("➕ Create new Stage-1 brief", expanded=True):
     with st.form("new_brief", clear_on_submit=True):
         c1, c2, c3 = st.columns(3)
         product = c1.selectbox("Product *", PRODUCTS)
         planned_date = c2.date_input("Planned Date", value=datetime.now().date())
-        funnel = c3.selectbox("Funnel Stage *", FUNNEL_STAGES)
+        funnel = _tax_select(c3, "Funnel Stage *", FUNNEL_STAGES, help_text="Where this static sits in the buying journey.")
 
         cohorts = get_cohorts(product)
         angles  = get_angles(product)
@@ -32,28 +46,38 @@ with st.expander("➕ Create new Stage-1 brief", expanded=True):
         beliefs = get_beliefs(product)
 
         t1, t2 = st.columns(2)
-        cohort = t1.selectbox("Cohort *", cohorts)
-        belief = t1.selectbox("Belief *", beliefs)
-        angle  = t2.selectbox("Marketing Angle *", angles)
-        driver = t2.selectbox("Situational Driver", drivers)
+        cohort = _tax_select(t1, "Cohort *", cohorts, help_text="Who this creative is speaking to.")
+        belief = _tax_select(t1, "Belief *", beliefs, help_text="The belief shift this creative is trying to create.")
+        angle = _tax_select(t2, "Marketing Angle *", angles, help_text="The message route. Exact MD columns appear below after selection.")
+        driver = _tax_select(t2, "Situational Driver", drivers, help_text="The trigger or moment that makes the need active now.")
 
-        st.markdown("#### Static execution plan")
-        s1, s2, s3 = st.columns(3)
-        static_subtype = s1.selectbox("Static Subtype", STATIC_SUBTYPES)
-        visual_hook = s1.selectbox("Visual Hook Type", VISUAL_HOOK_TYPES)
-        content_hook = s2.selectbox("Content Hook / Headline Type", CONTENT_HOOK_TYPES)
-        visual_treatment = s2.selectbox("Visual Treatment", VISUAL_TREATMENTS)
-        static_message = s3.selectbox("Static Message Type", STATIC_MESSAGE_TYPES)
-        cta_format = s3.selectbox("CTA Format", CTA_FORMATS)
-
-        s4, s5, s6 = st.columns(3)
-        cta_message = s4.selectbox("CTA Message Type", CTA_MESSAGE_TYPES)
-        ai_generated = s5.selectbox("AI-Generated?", AI_GENERATED_OPTIONS)
-        taxonomy_confidence = s6.selectbox("Taxonomy Confidence", TAXONOMY_CONFIDENCE, index=1)
-        primary_proof = st.text_input(
-            "Primary Proof Needed",
-            placeholder="e.g. RCF-CLM-04, review screenshot, product demo, before/after",
+        add_execution = st.checkbox(
+            "Add optional execution cuts now",
+            value=False,
+            help="Keep this off if you only want to brief the angle/persona/belief. Fill these later when the static is generated or goes live.",
         )
+        static_subtype = visual_hook = content_hook = visual_treatment = static_message = cta_format = cta_message = ""
+        ai_generated = ""
+        taxonomy_confidence = "Needs Review"
+        primary_proof = ""
+        if add_execution:
+            with st.expander("Optional static execution plan", expanded=True):
+                s1, s2, s3 = st.columns(3)
+                static_subtype = _tax_select(s1, "Static Subtype", STATIC_SUBTYPES, help_text="The structural type of static/carousel.")
+                visual_hook = _tax_select(s1, "Visual Hook Type", VISUAL_HOOK_TYPES, help_text="What is shown first in the first static impression.")
+                content_hook = _tax_select(s2, "Content Hook / Headline Type", CONTENT_HOOK_TYPES, help_text="What the headline/opening idea communicates.")
+                visual_treatment = _tax_select(s2, "Visual Treatment", VISUAL_TREATMENTS, help_text="The dominant visual treatment of the static.")
+                static_message = _tax_select(s3, "Static Message Type", STATIC_MESSAGE_TYPES, help_text="What the body of the static primarily communicates.")
+                cta_format = _tax_select(s3, "CTA Format", CTA_FORMATS, help_text="How the CTA is delivered.")
+
+                s4, s5, s6 = st.columns(3)
+                cta_message = _tax_select(s4, "CTA Message Type", CTA_MESSAGE_TYPES, help_text="What the CTA is communicating.")
+                ai_generated = s5.selectbox("AI-Generated?", AI_GENERATED_OPTIONS)
+                taxonomy_confidence = s6.selectbox("Taxonomy Confidence", TAXONOMY_CONFIDENCE, index=1)
+                primary_proof = st.text_input(
+                    "Primary Proof Needed",
+                    placeholder="e.g. RCF-CLM-04, review screenshot, product demo, before/after",
+                )
 
         core_msg = st.text_input(
             "Core Message (1-line) *",

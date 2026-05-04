@@ -49,7 +49,9 @@ from utils.taxonomy import (
     get_cohorts,
     get_claims,
     get_drivers,
+    options_with_blank,
     product_label,
+    selected_info,
 )
 
 
@@ -276,10 +278,19 @@ def _choice_index(options: list[str], *values) -> int:
     return 0
 
 
+def _tax_select(container, label: str, options: list[str], value: str = "", help_text: str = ""):
+    opts = options_with_blank(options)
+    picked = container.selectbox(label, opts, index=_choice_index(opts, value), help=help_text)
+    info = selected_info(picked)
+    if info:
+        container.caption(info)
+    return picked
+
+
 def _infer_product(path: str, filename: str) -> str:
     text = f"{path} {filename}".lower()
     if re.search(r"\brcf\b|rapid clear", text):
-        return "RCF"
+        return "Rapid Clear Facewash"
     if re.search(r"\bss\b|sunscreen|clear protect|cpgs", text):
         return "Clear Protect Sunscreen"
     if re.search(r"\bsfs\b|spot fade", text):
@@ -556,10 +567,12 @@ with tab_drive:
             with st.form("approve_drive_static"):
                 default_product = product_label(picked.get("Product"))
                 product = st.selectbox("Product", PRODUCTS, index=PRODUCTS.index(default_product))
-                subtype = st.selectbox(
+                subtype = _tax_select(
+                    st,
                     "Static subtype",
                     STATIC_SUBTYPES,
-                    index=STATIC_SUBTYPES.index(picked["Suggested Static Subtype"]) if picked["Suggested Static Subtype"] in STATIC_SUBTYPES else 0,
+                    value=picked["Suggested Static Subtype"],
+                    help_text="The structural type of static/carousel.",
                 )
 
                 cohorts = get_cohorts(product)
@@ -568,23 +581,23 @@ with tab_drive:
                 drivers = get_drivers(product)
 
                 c1, c2 = st.columns(2)
-                cohort = c1.selectbox("Cohort", cohorts)
-                belief = c1.selectbox("Belief", beliefs)
+                cohort = _tax_select(c1, "Cohort", cohorts, help_text="Who this creative is speaking to.")
+                belief = _tax_select(c1, "Belief", beliefs, help_text="The belief shift this creative is trying to create.")
                 angle_default = picked.get("Suggested Marketing Angle", "")
-                angle = c2.selectbox("Marketing angle", angles, index=angles.index(angle_default) if angle_default in angles else 0)
-                driver = c2.selectbox("Situational driver", drivers)
+                angle = _tax_select(c2, "Marketing angle", angles, value=angle_default, help_text="The message route. Exact MD columns appear below after selection.")
+                driver = _tax_select(c2, "Situational driver", drivers, help_text="The trigger or moment that makes the need active now.")
 
                 c3, c4 = st.columns(2)
-                funnel = c3.selectbox("Funnel stage", FUNNEL_STAGES)
-                influence = c3.selectbox("Influence mode", INFLUENCE_MODES)
-                visual_hook = c4.selectbox("Visual hook type", VISUAL_HOOK_TYPES)
-                content_hook = c4.selectbox("Content hook type", CONTENT_HOOK_TYPES)
+                funnel = _tax_select(c3, "Funnel stage", FUNNEL_STAGES, help_text="Where this creative sits in the buying journey.")
+                influence = _tax_select(c3, "Influence mode", INFLUENCE_MODES, help_text="The psychological job this creative is doing.")
+                visual_hook = _tax_select(c4, "Visual hook type", VISUAL_HOOK_TYPES, help_text="What is shown first in the first static impression.")
+                content_hook = _tax_select(c4, "Content hook type", CONTENT_HOOK_TYPES, help_text="What is said/written/implied first.")
 
                 c5, c6 = st.columns(2)
-                visual = c5.selectbox("Visual treatment", VISUAL_TREATMENTS)
-                static_message = c5.selectbox("Static message type", STATIC_MESSAGE_TYPES)
-                cta_format = c6.selectbox("CTA format", CTA_FORMATS)
-                cta_message = c6.selectbox("CTA message type", CTA_MESSAGE_TYPES)
+                visual = _tax_select(c5, "Visual treatment", VISUAL_TREATMENTS, help_text="The dominant visual treatment of the static.")
+                static_message = _tax_select(c5, "Static message type", STATIC_MESSAGE_TYPES, help_text="What the body of the static primarily communicates.")
+                cta_format = _tax_select(c6, "CTA format", CTA_FORMATS, help_text="How the CTA is delivered.")
+                cta_message = _tax_select(c6, "CTA message type", CTA_MESSAGE_TYPES, help_text="What the CTA is communicating.")
                 taxonomy_confidence = st.selectbox("Taxonomy confidence", TAXONOMY_CONFIDENCE, index=2)
 
                 ad_code = st.text_input("AD CODE if already live", placeholder="Optional, e.g. AD 512")
@@ -759,10 +772,12 @@ with tab_video:
 
             with st.form("approve_drive_video"):
                 product = st.selectbox("Product", PRODUCTS, index=_choice_index(PRODUCTS, default_product))
-                video_subtype = st.selectbox(
+                video_subtype = _tax_select(
+                    st,
                     "Video subtype",
                     VIDEO_SUBTYPES,
-                    index=_choice_index(VIDEO_SUBTYPES, existing_asset.get("Video Subtype") if existing_asset is not None else "", "VS1 - Consumer Testimonial"),
+                    value=existing_asset.get("Video Subtype") if existing_asset is not None else "VS1 - Consumer Testimonial",
+                    help_text="Exact definition and usage guidance appears below after selection.",
                 )
 
                 cohorts = get_cohorts(product)
@@ -772,32 +787,34 @@ with tab_video:
                 claims = get_claims(product)
 
                 c1, c2 = st.columns(2)
-                cohort = c1.selectbox("Cohort", cohorts, index=_choice_index(cohorts, existing_asset.get("Cohort") if existing_asset is not None else ""))
-                belief = c1.selectbox("Belief", beliefs, index=_choice_index(beliefs, existing_asset.get("Belief") if existing_asset is not None else ""))
-                angle = c2.selectbox(
+                cohort = _tax_select(c1, "Cohort", cohorts, value=existing_asset.get("Cohort") if existing_asset is not None else "", help_text="Who this creative is speaking to.")
+                belief = _tax_select(c1, "Belief", beliefs, value=existing_asset.get("Belief") if existing_asset is not None else "", help_text="The belief shift this creative is trying to create.")
+                angle = _tax_select(
+                    c2,
                     "Marketing angle",
                     angles,
-                    index=_choice_index(angles, existing_asset.get("Marketing Angle") if existing_asset is not None else "", _pick_from_row(meta_row, "Marketing Angle")),
+                    value=existing_asset.get("Marketing Angle") if existing_asset is not None else _pick_from_row(meta_row, "Marketing Angle"),
+                    help_text="The message route. Exact MD columns appear below after selection.",
                 )
-                driver = c2.selectbox("Situational driver", drivers, index=_choice_index(drivers, existing_asset.get("Situational Driver") if existing_asset is not None else ""))
+                driver = _tax_select(c2, "Situational driver", drivers, value=existing_asset.get("Situational Driver") if existing_asset is not None else "", help_text="The trigger or moment that makes the need active now.")
 
                 c3, c4 = st.columns(2)
-                visual_hook = c3.selectbox("Visual hook type", VISUAL_HOOK_TYPES, index=_choice_index(VISUAL_HOOK_TYPES, existing_asset.get("Visual Hook Type") if existing_asset is not None else ""))
-                content_hook = c3.selectbox("Content hook type", CONTENT_HOOK_TYPES, index=_choice_index(CONTENT_HOOK_TYPES, existing_asset.get("Content Hook Type") if existing_asset is not None else ""))
-                emotional_arc = c4.selectbox("Emotional arc", EMOTIONAL_ARCS, index=_choice_index(EMOTIONAL_ARCS, existing_asset.get("Emotional Arc") if existing_asset is not None else ""))
-                creator_arch = c4.selectbox("Creator archetype", ARCHETYPES, index=_choice_index(ARCHETYPES, existing_asset.get("Creator Archetype") if existing_asset is not None else "", "LEV - Lived Experience Validator"))
+                visual_hook = _tax_select(c3, "Visual hook type", VISUAL_HOOK_TYPES, value=existing_asset.get("Visual Hook Type") if existing_asset is not None else "", help_text="What is shown first in the opening frame/seconds.")
+                content_hook = _tax_select(c3, "Content hook type", CONTENT_HOOK_TYPES, value=existing_asset.get("Content Hook Type") if existing_asset is not None else "", help_text="What is said/written/implied first.")
+                emotional_arc = _tax_select(c4, "Emotional arc", EMOTIONAL_ARCS, value=existing_asset.get("Emotional Arc") if existing_asset is not None else "", help_text="The emotional journey from start to end.")
+                creator_arch = _tax_select(c4, "Creator archetype", ARCHETYPES, value=existing_asset.get("Creator Archetype") if existing_asset is not None else "LEV - Lived Experience Validator", help_text="Who is delivering the message and why they are trusted.")
 
                 c5, c6 = st.columns(2)
                 funnel_default = _pick_from_row(meta_row, "Funnel Level") or (existing_asset.get("Funnel Stage") if existing_asset is not None else "")
-                funnel = c5.selectbox("Funnel stage", FUNNEL_STAGES, index=_choice_index(FUNNEL_STAGES, funnel_default))
-                influence = c5.selectbox("Influence mode", INFLUENCE_MODES, index=_choice_index(INFLUENCE_MODES, existing_asset.get("Influence Mode") if existing_asset is not None else ""))
-                cta_format = c6.selectbox("CTA format", CTA_FORMATS, index=_choice_index(CTA_FORMATS, existing_asset.get("CTA Format") if existing_asset is not None else ""))
-                cta_message = c6.selectbox("CTA message type", CTA_MESSAGE_TYPES, index=_choice_index(CTA_MESSAGE_TYPES, existing_asset.get("CTA Message Type") if existing_asset is not None else ""))
+                funnel = _tax_select(c5, "Funnel stage", FUNNEL_STAGES, value=funnel_default, help_text="Where this creative sits in the buying journey.")
+                influence = _tax_select(c5, "Influence mode", INFLUENCE_MODES, value=existing_asset.get("Influence Mode") if existing_asset is not None else "", help_text="The psychological job this creative is doing.")
+                cta_format = _tax_select(c6, "CTA format", CTA_FORMATS, value=existing_asset.get("CTA Format") if existing_asset is not None else "", help_text="How the CTA is delivered.")
+                cta_message = _tax_select(c6, "CTA message type", CTA_MESSAGE_TYPES, value=existing_asset.get("CTA Message Type") if existing_asset is not None else "", help_text="What the CTA is communicating.")
 
                 claim_codes = st.multiselect(
                     "Approved claim codes used",
                     claims,
-                    default=[value for value in str(existing_asset.get("Claim Codes", "") if existing_asset is not None else "").split(", ") if value in claims] or ["None"],
+                    default=[value for value in str(existing_asset.get("Claim Codes", "") if existing_asset is not None else "").split(", ") if value in claims],
                 )
                 taxonomy_confidence = st.selectbox(
                     "Taxonomy confidence",
@@ -870,7 +887,7 @@ with tab_video:
                         "CTA Format": cta_format,
                         "CTA Message Type": cta_message,
                         "Taxonomy Confidence": taxonomy_confidence,
-                        "Claim Codes": ", ".join([claim for claim in claim_codes if claim != "None"]),
+                        "Claim Codes": ", ".join(claim_codes),
                         "Creator / Consumer Name": consumer_name,
                         "Source Interview ID": source_story_id,
                         "Meta Ad ID": normalized_code,

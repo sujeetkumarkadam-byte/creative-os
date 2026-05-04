@@ -3,5 +3,6 @@
 __pycache__/
 .env
 *.json
+!data/approved_taxonomy.json
 venv/
 .venv/

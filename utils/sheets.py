@@ -702,7 +702,7 @@ def _product_from_meta(value: str) -> str:
     text = str(value or "").strip()
     lowered = text.lower()
     if not text:
-        return "RCF"
+        return "Rapid Clear Facewash"
     if "emergency" in lowered:
         return "Emergency Acne Kit"
     if "combo" in lowered or "kit" in lowered or " + " in lowered:
@@ -724,7 +724,7 @@ def _product_from_meta(value: str) -> str:
     if "mini" in lowered or "bundle" in lowered:
         return "Minis"
     if "rcf" in lowered or "rapid clear" in lowered or "acne combo" in lowered:
-        return "RCF"
+        return "Rapid Clear Facewash"
     return canonical_product(text)
 
 

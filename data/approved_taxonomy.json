@@ -1,0 +1,3466 @@
+{
+  "source": {
+    "file_name": "Creative_OS_Approved_Taxonomy_Handover.md",
+    "note": "Generated exactly from the approved markdown handover; row text is not rewritten."
+  },
+  "products": [
+    {
+      "Product Code": "RCF",
+      "Product Name": "Rapid Clear Facewash",
+      "App Label": "Rapid Clear Facewash",
+      "Priority": "P1 — Core",
+      "Taxonomy Confidence": "Strong",
+      "Notes": "Full taxonomy. Transcript + clinical + competitive evidence."
+    },
+    {
+      "Product Code": "LPP",
+      "Product Name": "Liquid Pimple Patch",
+      "App Label": "Liquid Pimple Patch",
+      "Priority": "P1 — Core",
+      "Taxonomy Confidence": "Medium-Strong",
+      "Notes": "PDP + listing brief evidence. Limited live creative proof."
+    },
+    {
+      "Product Code": "SFARS",
+      "Product Name": "SpotFade Advanced Repair Serum",
+      "App Label": "SpotFade Serum",
+      "Priority": "P1 — Core",
+      "Taxonomy Confidence": "Medium",
+      "Notes": "Website + kit PDPs + transcript evidence."
+    },
+    {
+      "Product Code": "EMC",
+      "Product Name": "Effortless Melting Cleanser",
+      "App Label": "Effortless Melting Cleanser",
+      "Priority": "P1 — Core",
+      "Taxonomy Confidence": "Medium",
+      "Notes": "PDP + listing brief. Live creative evidence thin."
+    },
+    {
+      "Product Code": "CPG",
+      "Product Name": "Clear Protect Gel Sunscreen",
+      "App Label": "Clear Protect Sunscreen",
+      "Priority": "P2",
+      "Taxonomy Confidence": "Strong",
+      "Notes": "11-sheet product doc. Persona mapping. Clinical data strong."
+    },
+    {
+      "Product Code": "BRGM",
+      "Product Name": "Barrier Repair Gel Moisturiser",
+      "App Label": "Barrier Repair Moisturiser",
+      "Priority": "P2",
+      "Taxonomy Confidence": "Medium",
+      "Notes": "Website + kit page. No standalone product doc."
+    },
+    {
+      "Product Code": "KIT",
+      "Product Name": "Kits (Combo / Clear & Protect / Marks)",
+      "App Label": "Acne Kits",
+      "Priority": "P2",
+      "Taxonomy Confidence": "Medium",
+      "Notes": "Kit PDPs + reviews. Inherits from component products."
+    },
+    {
+      "Product Code": "EAK",
+      "Product Name": "Emergency Acne Kit",
+      "App Label": "Emergency Acne Kit",
+      "Priority": "P3",
+      "Taxonomy Confidence": "Medium",
+      "Notes": "Website copy. Inherits from RCF + LPP."
+    },
+    {
+      "Product Code": "MIN",
+      "Product Name": "Minis & Bundles",
+      "App Label": "Minis",
+      "Priority": "P3",
+      "Taxonomy Confidence": "Low",
+      "Notes": "Website only. No product doc. Needs creative validation."
+    },
+    {
+      "Product Code": "BSC",
+      "Product Name": "Barrier Soothing Cleanser",
+      "App Label": "Barrier Soothing Cleanser",
+      "Priority": "P3",
+      "Taxonomy Confidence": "Low-Medium",
+      "Notes": "Live. Product doc exists. Limited creative evidence so far."
+    },
+    {
+      "Product Code": "USDC",
+      "Product Name": "Ultra Smooth Daily Cleanser",
+      "App Label": "Ultra Smooth Cleanser",
+      "Priority": "P3",
+      "Taxonomy Confidence": "Low",
+      "Notes": "Website copy only. No standalone doc."
+    }
+  ],
+  "product_taxonomy": {
+    "Rapid Clear Facewash": {
+      "angles": {
+        "title": "Marketing Angles",
+        "headers": [
+          "Code",
+          "MA Name",
+          "One-line definition",
+          "What this angle conveys",
+          "When to use",
+          "Do not use when",
+          "Primary creative proof needed",
+          "Best-fit formats",
+          "Evidence",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "RCF-MA-01",
+            "MA Name": "SA, Dermats, Procedures — Didn't Work",
+            "One-line definition": "Previous tools failed because they used the wrong mechanism — not because the consumer gave up too soon.",
+            "What this angle conveys": "Your failure was the system's fault. RCF is a different mechanism, not more of the same.",
+            "When to use": "Consumer has tried SA face washes, derm visits, peels, or product stacks without success.",
+            "Do not use when": "Consumer is new to acne care and has no prior failure.",
+            "Primary creative proof needed": "Testimonials naming specific failed products. Competitive comparison vs SA.",
+            "Best-fit formats": "Video testimonial, comparison static",
+            "Evidence": "Strong",
+            "Notes": "Merged old MA-R1 + MA-R5 + MA-R12."
+          },
+          {
+            "Code": "RCF-MA-02",
+            "MA Name": "Clears Acne. Won't Destroy Your Skin.",
+            "One-line definition": "Ceramides, allantoin, panthenol, Cica — the formula treats without stripping the barrier.",
+            "What this angle conveys": "Control without damage. You don't have to choose.",
+            "When to use": "Consumer afraid of harsh actives or has had barrier damage before. C4 (sensitive) + C2 (burnt out).",
+            "Do not use when": "Consumer who wants the strongest possible treatment with no barrier concern.",
+            "Primary creative proof needed": "Testimonials on skin feeling comfortable. Ingredient callout statics.",
+            "Best-fit formats": "Video testimonial, ingredient static",
+            "Evidence": "Strong",
+            "Notes": "Merged old MA-R2 + MA-R3 + MA-R6 + MA-R11."
+          },
+          {
+            "Code": "RCF-MA-03",
+            "MA Name": "Early Proof, Not Just Hope",
+            "One-line definition": "First visible signs within days — not proof you're cured, but proof you're not wasting time again.",
+            "What this angle conveys": "Reassurance that it is working before full clearing lands.",
+            "When to use": "MOF-BOF. Consumer is skeptical and needs an early win to stay consistent.",
+            "Do not use when": "Consumer already convinced — too much reassurance creates doubt.",
+            "Primary creative proof needed": "Testimonials describing specific early drying or calming moments.",
+            "Best-fit formats": "Video testimonial, proof static",
+            "Evidence": "Strong",
+            "Notes": "CLM-002 / CLM-003 proof base."
+          },
+          {
+            "Code": "RCF-MA-04",
+            "MA Name": "India's First Micronised BPO",
+            "One-line definition": "Smaller BPO particles penetrate deeper, work faster, cause less surface irritation.",
+            "What this angle conveys": "Formulation innovation that explains why this is different from any BPO they may have tried before.",
+            "When to use": "TOFU + MOF. Any consumer open to understanding why this works differently.",
+            "Do not use when": "Consumer allergic to BPO or with strong objection to it — address barrier safety first.",
+            "Primary creative proof needed": "India's 1st credential. Micronised particle size explanation.",
+            "Best-fit formats": "Founder video, AA video, ingredient static",
+            "Evidence": "Strong",
+            "Notes": "From RCF belief system doc."
+          },
+          {
+            "Code": "RCF-MA-05",
+            "MA Name": "Clinically Proven on Indian Skin",
+            "One-line definition": "Double-blind, split-face, UKAS-accredited study. 78% clearer in 6 weeks. Visible reduction from Day 4.",
+            "What this angle conveys": "Objective evidence — not just self-reported. Tested on Indian skin at an independent lab.",
+            "When to use": "MOF-BOF. Evidence-seeking consumer who has been burned by unproven claims.",
+            "Do not use when": "Cold TOF audiences before emotional buy-in is established.",
+            "Primary creative proof needed": "Study method card. Stats creative. CLM-005.",
+            "Best-fit formats": "Data static, proof static, AA video",
+            "Evidence": "Strong",
+            "Notes": "CLM-002/003/005 proof base."
+          },
+          {
+            "Code": "RCF-MA-06",
+            "MA Name": "Face Wash Can Treat Acne",
+            "One-line definition": "Leave it on for 2 minutes and it stops being a cleanser — it becomes a treatment step.",
+            "What this angle conveys": "Time on skin is the mechanism. You're not doing more. You're just letting it work.",
+            "When to use": "Any audience that has dismissed the face wash format.",
+            "Do not use when": "Consumer who already believes BPO works — preaching to the converted.",
+            "Primary creative proof needed": "Founder/AA explanation of short-contact therapy. Demo of application + 2-min wait.",
+            "Best-fit formats": "Founder video, AA video, demo video",
+            "Evidence": "Strong",
+            "Notes": ""
+          },
+          {
+            "Code": "RCF-MA-07",
+            "MA Name": "Hormonal / Cycle / Stress-Triggered Acne",
+            "One-line definition": "For acne that tracks your cycle, spikes with stress or travel, or never goes away. This was built for that pattern.",
+            "What this angle conveys": "You don't have to choose between oral medication and giving up.",
+            "When to use": "MOST IMPORTANT MA. C1 + C7 + C8 primary. PCOS, hormonal, cyclical, overnight stress breakouts.",
+            "Do not use when": "Consumer whose acne is purely comedonal / texture — wrong mechanism.",
+            "Primary creative proof needed": "Testimonials on oral medication trap. Cyclical acne proof.",
+            "Best-fit formats": "Video testimonial",
+            "Evidence": "Strong",
+            "Notes": "Covers hormonal, PCOS, stress, overnight, postpartum."
+          },
+          {
+            "Code": "RCF-MA-08",
+            "MA Name": "The 2-Minute Protocol",
+            "One-line definition": "Apply, leave 2 minutes, rinse. That contact time is what converts a cleanser into a treatment.",
+            "What this angle conveys": "How you use it is why it works. The protocol is the product.",
+            "When to use": "MOF consumer who has the product or is about to buy. Education + onboarding.",
+            "Do not use when": "Cold TOF — too instructional before emotional buy-in.",
+            "Primary creative proof needed": "Demo video. Sink-side routine. AA explaining contact time.",
+            "Best-fit formats": "Demo video, protocol static",
+            "Evidence": "Strong",
+            "Notes": ""
+          },
+          {
+            "Code": "RCF-MA-09",
+            "MA Name": "How to Use It Without Wrecking Your Skin",
+            "One-line definition": "Tingling and initial dryness are normal. Here's the 2-step and 3-step protocol to support your skin through adjustment.",
+            "What this angle conveys": "Adjustment is expected — not damage. Stopping early is the mistake, not the tingling.",
+            "When to use": "Onboarding + MOF. Post-purchase reassurance. Pairs with BRGM cross-sell.",
+            "Do not use when": "TOF cold audiences before purchase intent exists.",
+            "Primary creative proof needed": "Protocol card. Testimonials on managing initial adjustment.",
+            "Best-fit formats": "Protocol static, short video",
+            "Evidence": "Medium",
+            "Notes": "From attached Protocols doc."
+          },
+          {
+            "Code": "RCF-MA-10",
+            "MA Name": "Ceramides, Allantoin, Panthenol, Cica",
+            "One-line definition": "Named actives that soothe and protect while BPO treats — for the ingredient-educated consumer.",
+            "What this angle conveys": "The formula was designed to protect skin, not just treat acne.",
+            "When to use": "Ingredient-educated consumer. AA/FO-led creatives.",
+            "Do not use when": "Consumer who finds ingredient talk overwhelming — use MA-02 instead.",
+            "Primary creative proof needed": "Ingredient spotlight statics. AA explainer.",
+            "Best-fit formats": "AA video, ingredient static",
+            "Evidence": "Medium",
+            "Notes": ""
+          }
+        ]
+      },
+      "beliefs": {
+        "title": "Beliefs",
+        "headers": [
+          "Code",
+          "Belief Name",
+          "Belief shift: from → to",
+          "One-line definition",
+          "Paired MAs",
+          "Do not confuse with",
+          "Evidence",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "RCF-B-01",
+            "Belief Name": "I was using the wrong tool — my skin isn't the problem",
+            "Belief shift: from → to": "FROM: \"My skin is just difficult / I haven't tried hard enough.\" TO: \"The category gave me the wrong mechanism. My effort was real. The tool was wrong.\"",
+            "One-line definition": "Shifts self-blame to category accountability.",
+            "Paired MAs": "RCF-MA-01, RCF-MA-07",
+            "Do not confuse with": "Not general product cynicism — this is mechanism-specific.",
+            "Evidence": "Strong",
+            "Notes": "Primary belief for C2 and C8."
+          },
+          {
+            "Code": "RCF-B-02",
+            "Belief Name": "My acne treatment doesn't have to destroy my skin to work",
+            "Belief shift: from → to": "FROM: \"Strong treatment = peeling, dryness, damage — pick one.\" TO: \"Treatment and barrier protection coexist in this formula.\"",
+            "One-line definition": "Effective ≠ harsh.",
+            "Paired MAs": "RCF-MA-02, RCF-MA-10",
+            "Do not confuse with": "Not a gentle skincare claim — ceramides are doing real barrier work.",
+            "Evidence": "Strong",
+            "Notes": "Primary belief for C4."
+          },
+          {
+            "Code": "RCF-B-03",
+            "Belief Name": "If my skin is calming down early, it's working",
+            "Belief shift: from → to": "FROM: \"I can't tell if this is working / if nothing happens fast I'll stop.\" TO: \"Pimples drying and calming in the first few days is real evidence — not just hope.\"",
+            "One-line definition": "Redefines what \"working\" looks like before full clearing.",
+            "Paired MAs": "RCF-MA-03, RCF-MA-05",
+            "Do not confuse with": "Not about promising fast results — about interpreting early signals correctly.",
+            "Evidence": "Strong",
+            "Notes": "Anti-quit belief. Critical for retention."
+          },
+          {
+            "Code": "RCF-B-04",
+            "Belief Name": "One right product beats five wrong ones",
+            "Belief shift: from → to": "FROM: \"More products = more chances of fixing it.\" TO: \"The problem was never effort or quantity. It was mechanism fit.\"",
+            "One-line definition": "Precision over volume.",
+            "Paired MAs": "RCF-MA-01, RCF-MA-06",
+            "Do not confuse with": "Not about minimalism for comfort — about targeted intervention replacing a failed stack.",
+            "Evidence": "Strong",
+            "Notes": ""
+          },
+          {
+            "Code": "RCF-B-05",
+            "Belief Name": "A face wash can treat my acne — if it's designed to stay on",
+            "Belief shift: from → to": "FROM: \"Face washes clean. They can't treat acne.\" TO: \"A face wash designed for 2-minute contact time stops being a cleanser and becomes a treatment step.\"",
+            "One-line definition": "Format credibility — the 2-minute contact time is the mechanism.",
+            "Paired MAs": "RCF-MA-06, RCF-MA-08",
+            "Do not confuse with": "Not the same as B-04 which is about routine simplification. This is about format capability.",
+            "Evidence": "Strong",
+            "Notes": ""
+          },
+          {
+            "Code": "RCF-B-06",
+            "Belief Name": "My hormonal acne is manageable, not something I have to live with forever",
+            "Belief shift: from → to": "FROM: \"My hormonal acne is a condition I'm losing to — it'll always come back.\" TO: \"Hormonal/cycle/stress-triggered acne follows a pattern. That pattern is treatable and predictable.\"",
+            "One-line definition": "Control is possible — not cure, but management.",
+            "Paired MAs": "RCF-MA-07",
+            "Do not confuse with": "Not about curing hormonal imbalance — about managing the skin manifestation of it.",
+            "Evidence": "Strong",
+            "Notes": "Primary for C1 + C7. Critical MA-07 belief."
+          },
+          {
+            "Code": "RCF-B-07",
+            "Belief Name": "Initial tingling or dryness doesn't mean I should stop",
+            "Belief shift: from → to": "FROM: \"Tingling / mild dryness = this product is too harsh for me.\" TO: \"Skin adjusting to active treatment looks like this. It's expected. I know how to support it.\"",
+            "One-line definition": "Adjustment reactions are normal — stopping early is the mistake.",
+            "Paired MAs": "RCF-MA-09",
+            "Do not confuse with": "Not about pushing through pain — about distinguishing normal adjustment from actual damage.",
+            "Evidence": "Medium",
+            "Notes": "Pairs with BRGM cross-sell. From Protocols doc."
+          }
+        ]
+      },
+      "cohorts": {
+        "title": "Consumer Cohorts",
+        "headers": [
+          "Code",
+          "Cohort Name",
+          "Simple definition",
+          "How to identify",
+          "Core pain / desire",
+          "Best-fit MAs",
+          "Do not confuse with",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "RCF-C01",
+            "Cohort Name": "Hormonal / Painful Inflamed",
+            "Simple definition": "Adult women with cyclical, cystic, painful acne tied to hormones or PCOS.",
+            "How to identify": "Mentions period flares, cystic acne, chin/cheek concentration, hormonal imbalance.",
+            "Core pain / desire": "\"My acne hurts and it comes back every cycle no matter what I do.\"",
+            "Best-fit MAs": "MA-07, MA-03",
+            "Do not confuse with": "C02 — C01 can name their trigger. C02 cannot.",
+            "Notes": "Primary cohort."
+          },
+          {
+            "Code": "RCF-C02",
+            "Cohort Name": "Long-term Burnt Out",
+            "Simple definition": "Years of trying everything — dermats, actives, brands. Resigned, not just frustrated.",
+            "How to identify": "Mentions 2+ years, multiple products/dermats failed, stopped expecting results.",
+            "Core pain / desire": "\"I've spent years and money trying to fix this. Nothing has worked.\"",
+            "Best-fit MAs": "MA-01, MA-03, MA-05",
+            "Do not confuse with": "C01 — C02's primary emotion is exhaustion. C01's is pain.",
+            "Notes": ""
+          },
+          {
+            "Code": "RCF-C03",
+            "Cohort Name": "Event-Driven / Panic",
+            "Simple definition": "Usually clear skin. Sudden breakout before an important event.",
+            "How to identify": "Mentions upcoming wedding, shoot, interview, or event. Not a chronic acne sufferer.",
+            "Core pain / desire": "\"My skin was fine and now I have a breakout right before something important.\"",
+            "Best-fit MAs": "MA-07, MA-03",
+            "Do not confuse with": "C01 — C03 is situational, not chronic.",
+            "Notes": ""
+          },
+          {
+            "Code": "RCF-C04",
+            "Cohort Name": "Barrier-Compromised / Sensitive",
+            "Simple definition": "History of harsh product reactions — peeling, stinging, barrier damage. Scared to try anything new.",
+            "How to identify": "Mentions prior damage from actives, extreme sensitivity, fear of trying again.",
+            "Core pain / desire": "\"Every time I treat my acne, something goes wrong. I'm scared to try again.\"",
+            "Best-fit MAs": "MA-02, MA-09",
+            "Do not confuse with": "C02 — C04's fear is skin damage. C02's fear is product failure.",
+            "Notes": ""
+          },
+          {
+            "Code": "RCF-C05",
+            "Cohort Name": "Teen / New to Acne",
+            "Simple definition": "Teenager or early 20s. Acne is new. Wants simple, won't stick to complex routines.",
+            "How to identify": "Young, mentions acne starting recently, easily overwhelmed.",
+            "Core pain / desire": "\"My skin just started breaking out and I don't know where to start.\"",
+            "Best-fit MAs": "MA-06, MA-08",
+            "Do not confuse with": "C03 — C05 is new to acne entirely, not reacting to a single event.",
+            "Notes": ""
+          },
+          {
+            "Code": "RCF-C06",
+            "Cohort Name": "Men / Low Involvement",
+            "Simple definition": "Doesn't identify as a skincare person. Wants one thing that works. No routine.",
+            "How to identify": "Mentions not wanting skincare, wanting something simple, male framing.",
+            "Core pain / desire": "\"I don't do skincare. I just want my face to stop breaking out.\"",
+            "Best-fit MAs": "MA-06, MA-08",
+            "Do not confuse with": "C05 — C06 actively resists complexity. C05 is just new to it.",
+            "Notes": ""
+          },
+          {
+            "Code": "RCF-C07",
+            "Cohort Name": "Postpartum / Post-Contraceptive",
+            "Simple definition": "Skin changed after pregnancy, breastfeeding, or stopping contraception. Disoriented.",
+            "How to identify": "Mentions postpartum, stopping pill, skin changing after a life event.",
+            "Core pain / desire": "\"My skin never used to be like this. Since my pregnancy/pill change it's completely different.\"",
+            "Best-fit MAs": "MA-07, MA-02",
+            "Do not confuse with": "C01 — C07's trigger is a life event. C01's is a chronic pattern.",
+            "Notes": ""
+          },
+          {
+            "Code": "RCF-C08",
+            "Cohort Name": "Advice-Fatigued / Culturally Over-Advised",
+            "Simple definition": "Everyone — mom, relatives, friends — has given them a home remedy. Tried all of it. Done listening.",
+            "How to identify": "Mentions ghee, haldi, soap, neem, or unsolicited advice from family.",
+            "Core pain / desire": "\"Everyone told me something different. I tried all of it. None of it worked.\"",
+            "Best-fit MAs": "MA-01, MA-06",
+            "Do not confuse with": "C02 — C08's fatigue is from cultural home remedies. C02's is from product trials.",
+            "Notes": ""
+          },
+          {
+            "Code": "RCF-C09",
+            "Cohort Name": "Accidental Discoverer",
+            "Simple definition": "Wasn't looking for an acne solution. A reel stopped the scroll. Something felt different.",
+            "How to identify": "Mentions not actively searching, stumbling on an ad or reel, gut instinct purchase.",
+            "Core pain / desire": "\"I wasn't looking for this. A reel stopped me. Something felt different about this one.\"",
+            "Best-fit MAs": "MA-03, MA-07",
+            "Do not confuse with": "C03 — C09 had no urgency or event. They weren't searching.",
+            "Notes": ""
+          }
+        ]
+      },
+      "drivers": {
+        "title": "Situational Drivers",
+        "headers": [
+          "Code",
+          "Driver Name",
+          "Simple definition",
+          "Trigger evidence",
+          "Best-fit MAs",
+          "Do not confuse with",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "SD-RCF-01",
+            "Driver Name": "Pre-Event Panic",
+            "Simple definition": "A wedding, shoot, interview, or important day is coming up and a pimple appeared.",
+            "Trigger evidence": "Mentions event + timeline.",
+            "Best-fit MAs": "MA-07, MA-03",
+            "Do not confuse with": "SD-RCF-02 — SD-01 has an external deadline.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-RCF-02",
+            "Driver Name": "Hormonal Cycle Flare",
+            "Simple definition": "Period approaching or just started. Predictable breakout arrived on schedule.",
+            "Trigger evidence": "Mentions period timing, cycle pattern.",
+            "Best-fit MAs": "MA-07",
+            "Do not confuse with": "SD-RCF-01 — SD-02 has no external event.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-RCF-03",
+            "Driver Name": "New Product Backfired",
+            "Simple definition": "Tried a new face wash, serum, or active. Skin worsened or reacted badly.",
+            "Trigger evidence": "Mentions switching products + worsening.",
+            "Best-fit MAs": "MA-01, MA-02",
+            "Do not confuse with": "SD-RCF-07 — SD-03 is a self-chosen new product. SD-07 is ongoing derm treatment.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-RCF-04",
+            "Driver Name": "Social Comment Trigger",
+            "Simple definition": "Someone pointed out their acne. The comment is the breaking point.",
+            "Trigger evidence": "Mentions a specific comment from someone else.",
+            "Best-fit MAs": "MA-07, MA-01",
+            "Do not confuse with": "SD-RCF-08 — SD-04 has an external trigger. SD-08 is purely internal.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-RCF-05",
+            "Driver Name": "Relapse After Good Skin",
+            "Simple definition": "Skin was clear for weeks or months. Acne came back.",
+            "Trigger evidence": "Mentions having had clear skin + relapse.",
+            "Best-fit MAs": "MA-03, MA-07",
+            "Do not confuse with": "SD-RCF-03 — SD-05 happened without changing anything.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-RCF-06",
+            "Driver Name": "Life Transition",
+            "Simple definition": "New city, job, college, marriage, climate change. Skin changed because life changed.",
+            "Trigger evidence": "Mentions life change + skin change.",
+            "Best-fit MAs": "MA-07",
+            "Do not confuse with": "SD-RCF-02 — SD-06 is a one-time event, not a cycle.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-RCF-07",
+            "Driver Name": "Post-Active Sensitivity",
+            "Simple definition": "On a derm prescription, retinoid, or acid. Skin reacting — red, dry, peeling.",
+            "Trigger evidence": "Mentions current active treatment + sensitivity.",
+            "Best-fit MAs": "MA-02, MA-09",
+            "Do not confuse with": "SD-RCF-03 — SD-07 is expected treatment sensitivity. SD-03 is a mistake.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-RCF-08",
+            "Driver Name": "Mirror Spiral",
+            "Simple definition": "No specific event. Daily mirror confrontation has become a source of distress.",
+            "Trigger evidence": "Mentions checking skin constantly, daily fixation.",
+            "Best-fit MAs": "MA-07, MA-03",
+            "Do not confuse with": "SD-RCF-04 — SD-08 is internal. SD-04 was triggered by someone else.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-RCF-09",
+            "Driver Name": "Oral Medication Stopped",
+            "Simple definition": "Was on steroids or antibiotics. Just stopped. Knows skin may rebound.",
+            "Trigger evidence": "Mentions stopping oral medication + fear of what comes next.",
+            "Best-fit MAs": "MA-07, MA-01",
+            "Do not confuse with": "SD-RCF-07 — SD-09 is about stopping meds. SD-07 is about ongoing sensitivity.",
+            "Notes": "High intent, high anxiety."
+          },
+          {
+            "Code": "SD-RCF-10",
+            "Driver Name": "Saw Someone Else's Result",
+            "Simple definition": "Came across a review, reel, or testimonial. Someone like them got clear skin.",
+            "Trigger evidence": "Mentions seeing a review or testimonial that stopped the scroll.",
+            "Best-fit MAs": "MA-03, MA-05",
+            "Do not confuse with": "C09 (Accidental Discoverer) — that is who they are. This is what just happened.",
+            "Notes": ""
+          }
+        ]
+      },
+      "claims": {
+        "title": "Product-Specific Proof / Claims",
+        "headers": [
+          "Proof Code",
+          "Proof / Claim",
+          "Can be used for",
+          "Required context / caveat",
+          "Do not say",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Proof Code": "RCF-CLM-01",
+            "Proof / Claim": "Visible reduction in acne in just 4 days",
+            "Can be used for": "AA/FO verbal. LEV end card super ONLY.",
+            "Required context / caveat": "In-vivo clinical study, UKAS-approved independent laboratory, 2025. Individual results may vary.",
+            "Do not say": "\"Cleared in 4 days\" / \"4 days and you're done\"",
+            "Notes": "Same data as CLM-02. Never use both in same asset."
+          },
+          {
+            "Proof Code": "RCF-CLM-02",
+            "Proof / Claim": "Calms Active Acne in 4 days",
+            "Can be used for": "AA/FO verbal. LEV end card super ONLY.",
+            "Required context / caveat": "Same as above.",
+            "Do not say": "Same as above.",
+            "Notes": "Same 4-day data as CLM-01. Never both in same asset."
+          },
+          {
+            "Proof Code": "RCF-CLM-03",
+            "Proof / Claim": "Kills 93% acne-causing bacteria in 1 minute",
+            "Can be used for": "AA/FO ONLY. NEVER LEV in any format.",
+            "Required context / caveat": "In-vitro time-kill study. Always attribute.",
+            "Do not say": "\"Kills 93% of bacteria\" without in-vitro caveat.",
+            "Notes": "Never appears in consumer testimonial in any form."
+          },
+          {
+            "Proof Code": "RCF-CLM-04",
+            "Proof / Claim": "Prevents breakouts for 78% clearer skin in 6 weeks",
+            "Can be used for": "AA/FO verbal. LEV end card super ONLY.",
+            "Required context / caveat": "Same study caveat.",
+            "Do not say": "\"70% clearer\" / \"8 weeks\" — exact wording mandatory.",
+            "Notes": "Exact wording: \"78% clearer skin in 6 weeks\"."
+          },
+          {
+            "Proof Code": "RCF-CLM-05",
+            "Proof / Claim": "47% reduction in active acne in 1 week",
+            "Can be used for": "AA/FO. Attribution required.",
+            "Required context / caveat": "Double-blind, split-face, UKAS lab.",
+            "Do not say": "Any variation of the number.",
+            "Notes": "From study data in Amazon listing."
+          },
+          {
+            "Proof Code": "RCF-CLM-06",
+            "Proof / Claim": "India's first face wash with Patented Micronised BPO",
+            "Can be used for": "All formats.",
+            "Required context / caveat": "State as fact, not claim.",
+            "Do not say": "\"India's only BPO face wash\"",
+            "Notes": "Patented is verified."
+          }
+        ]
+      }
+    },
+    "Liquid Pimple Patch": {
+      "angles": {
+        "title": "Marketing Angles",
+        "headers": [
+          "Code",
+          "MA Name",
+          "One-line definition",
+          "What this angle conveys",
+          "When to use",
+          "Do not use when",
+          "Primary creative proof needed",
+          "Best-fit formats",
+          "Evidence",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "LPP-MA-01",
+            "MA Name": "Hide It While You Heal It",
+            "One-line definition": "Invisible film treats the pimple underneath while you go about your day. Two jobs, one product.",
+            "What this angle conveys": "You don't have to choose between treating and showing up.",
+            "When to use": "Primary MA. TOF-MOF. Core positioning.",
+            "Do not use when": "Consumer who only wants treatment and has no social/visibility concern.",
+            "Primary creative proof needed": "UGC showing film + daily life continuation.",
+            "Best-fit formats": "Video UGC, testimonial",
+            "Evidence": "Medium-Strong",
+            "Notes": "Core positioning."
+          },
+          {
+            "Code": "LPP-MA-02",
+            "MA Name": "Shields From Outside",
+            "One-line definition": "Film creates a physical barrier between pimple and dust, pollution, gym equipment, phone screens, pillowcases.",
+            "What this angle conveys": "Your environment is making it worse. The patch stops that.",
+            "When to use": "TOF-MOF. Outdoor, commuter, gym context.",
+            "Do not use when": "Indoor-only consumers with no environmental concern.",
+            "Primary creative proof needed": "Demo: dust/pollution/phone contact blocked.",
+            "Best-fit formats": "Demo static, UGC",
+            "Evidence": "Medium",
+            "Notes": "Separate from MA-01 — environment is different from social visibility."
+          },
+          {
+            "Code": "LPP-MA-03",
+            "MA Name": "Works Under Makeup",
+            "One-line definition": "Foundation, concealer, and setting spray go over it without lifting, cracking, or peeling.",
+            "What this angle conveys": "Full-face look, no compromise, pimple being treated simultaneously.",
+            "When to use": "TOF-MOF. Makeup wearers with active breakout.",
+            "Do not use when": "Bare-skin users, men.",
+            "Primary creative proof needed": "Swipe demo: makeup over patch, no lifting.",
+            "Best-fit formats": "Demo video, static",
+            "Evidence": "Medium",
+            "Notes": ""
+          },
+          {
+            "Code": "LPP-MA-04",
+            "MA Name": "Fits Any Pimple",
+            "One-line definition": "Liquid film adapts to any shape, size, and location. Sticker patches leave gaps.",
+            "What this angle conveys": "Works where sticker patches can't — nose fold, jawline, cluster, irregular shape.",
+            "When to use": "MOF. Consumer frustrated by sticker patches.",
+            "Do not use when": "Consumer who has never used any patch format.",
+            "Primary creative proof needed": "Close-up: liquid-to-film demo on irregular pimple.",
+            "Best-fit formats": "Demo video",
+            "Evidence": "Medium",
+            "Notes": "L11 (adhesion) merged in."
+          },
+          {
+            "Code": "LPP-MA-05",
+            "MA Name": "Stops Accidental Damage",
+            "One-line definition": "Physical barrier between pimple and hands, phone, pillow at night. Healing doesn't require willpower.",
+            "What this angle conveys": "You don't have to resist the urge. The patch creates the barrier.",
+            "When to use": "TOF-MOF. Pickers, accidental touchers, night contact.",
+            "Do not use when": "Consumer who genuinely doesn't touch their face.",
+            "Primary creative proof needed": "Honest testimonials on accidental contact. Skit/relatable format.",
+            "Best-fit formats": "Skit, UGC",
+            "Evidence": "Medium",
+            "Notes": "Covers accidental physical contact including sleep."
+          },
+          {
+            "Code": "LPP-MA-06",
+            "MA Name": "Fewer Marks After",
+            "One-line definition": "Less irritation during healing = less PIH left behind. How you heal determines what you're left with.",
+            "What this angle conveys": "Treating it right now is the first step in preventing marks.",
+            "When to use": "MOF-BOF. Consumer anxious about post-pimple marks.",
+            "Do not use when": "Consumer with no marks concern — wrong entry.",
+            "Primary creative proof needed": "Testimonial + visual showing healed pimple with less residual marking.",
+            "Best-fit formats": "Testimonial video",
+            "Evidence": "Medium",
+            "Notes": "Note: LPP doesn't treat existing marks. It protects the healing process to reduce future marks."
+          }
+        ]
+      },
+      "beliefs": {
+        "title": "Beliefs",
+        "headers": [
+          "Code",
+          "Belief Name",
+          "Belief shift: from → to",
+          "One-line definition",
+          "Paired MAs",
+          "Do not confuse with",
+          "Evidence",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "LPP-B-01",
+            "Belief Name": "I can treat my pimple and still show up — at the same time",
+            "Belief shift: from → to": "FROM: \"If I treat it, it shows. If I cover it, I'm not treating it.\" TO: \"An invisible film does both — treatment underneath, presentable outside.\"",
+            "One-line definition": "Format capability: treat and appear simultaneously.",
+            "Paired MAs": "MA-01, MA-03",
+            "Do not confuse with": "Not about denial — the patch is doing real healing work.",
+            "Evidence": "Medium-Strong",
+            "Notes": ""
+          },
+          {
+            "Code": "LPP-B-02",
+            "Belief Name": "My pimple keeps getting worse from accidental contact — not just because of acne",
+            "Belief shift: from → to": "FROM: \"I'm not touching it.\" TO: \"Fingers, phone, pillow, makeup brushes cause most pimple damage accidentally.\"",
+            "One-line definition": "Accidental contact is a bigger factor than people realise.",
+            "Paired MAs": "MA-02, MA-05",
+            "Do not confuse with": "Not about making people feel guilty — about removing the need for willpower.",
+            "Evidence": "Medium",
+            "Notes": ""
+          },
+          {
+            "Code": "LPP-B-03",
+            "Belief Name": "A liquid film fits my pimple. A sticker can't.",
+            "Belief shift: from → to": "FROM: \"A pimple patch is a pimple patch — they're all the same.\" TO: \"Liquid conforms to every shape and location. A sticker leaves gaps on anything that isn't flat.\"",
+            "One-line definition": "Format superiority vs sticker patches — specific and visual.",
+            "Paired MAs": "MA-04",
+            "Do not confuse with": "Not a general \"liquid is better\" claim. Specifically about fit.",
+            "Evidence": "Medium",
+            "Notes": ""
+          },
+          {
+            "Code": "LPP-B-04",
+            "Belief Name": "How I heal my pimple determines what I'm left with after",
+            "Belief shift: from → to": "FROM: \"Marks are just what happens after a pimple.\" TO: \"PIH is influenced by how much the pimple was irritated during healing. Protect it properly, reduce what's left.\"",
+            "One-line definition": "Healing quality affects mark outcome.",
+            "Paired MAs": "MA-06",
+            "Do not confuse with": "Not a marks-treatment claim. LPP does not treat existing marks.",
+            "Evidence": "Medium",
+            "Notes": ""
+          },
+          {
+            "Code": "LPP-B-05",
+            "Belief Name": "I'm paying ₹5+ per sticker patch when I could be paying ₹2",
+            "Belief shift: from → to": "FROM: \"Pimple patches are all roughly the same price.\" TO: \"300+ patches in one tube at ₹2 per patch vs ₹5+ for sticker patches.\"",
+            "One-line definition": "Value: dramatically more patches per rupee spent.",
+            "Paired MAs": "MA-04",
+            "Do not confuse with": "Not a \"buy cheap\" message — positioned as better value for a superior format.",
+            "Evidence": "Medium",
+            "Notes": ""
+          },
+          {
+            "Code": "LPP-B-06",
+            "Belief Name": "My patch is completely invisible under makeup — not just barely there",
+            "Belief shift: from → to": "FROM: \"Pimple patches show under makeup — people can see it.\" TO: \"This forms a transparent film that makeup goes over seamlessly. No one can see it.\"",
+            "One-line definition": "True invisibility under makeup — not a compromise.",
+            "Paired MAs": "MA-03",
+            "Do not confuse with": "Not about hiding acne — about not announcing that you're treating it.",
+            "Evidence": "Medium",
+            "Notes": ""
+          }
+        ]
+      },
+      "cohorts": {
+        "title": "Consumer Cohorts",
+        "headers": [
+          "Code",
+          "Cohort Name",
+          "Simple definition",
+          "How to identify",
+          "Core pain / desire",
+          "Best-fit MAs",
+          "Do not confuse with",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "LPP-C01",
+            "Cohort Name": "Makeup Wearer With Active Breakout",
+            "Simple definition": "Regular makeup user with an active pimple needing simultaneous treatment and coverage.",
+            "How to identify": "Mentions makeup use + active pimple on same day.",
+            "Core pain / desire": "\"I have a pimple and I need to cover it but also need it to not get worse.\"",
+            "Best-fit MAs": "MA-01, MA-03, MA-06",
+            "Do not confuse with": "LPP-C02 — C01 is a regular day, no event deadline.",
+            "Notes": ""
+          },
+          {
+            "Code": "LPP-C02",
+            "Cohort Name": "Pre-Event Panic",
+            "Simple definition": "Usually clear skin. Something important is happening tomorrow. Pimple appeared today.",
+            "How to identify": "Mentions specific upcoming event + sudden pimple.",
+            "Core pain / desire": "\"Something important is happening tomorrow and I woke up with this.\"",
+            "Best-fit MAs": "MA-01, MA-04",
+            "Do not confuse with": "LPP-C01 — C02 has a specific deadline. Acute urgency.",
+            "Notes": ""
+          },
+          {
+            "Code": "LPP-C03",
+            "Cohort Name": "PIH Protector / Mark Preventer",
+            "Simple definition": "Gets pimples that leave marks. Wants to protect healing to reduce future marks.",
+            "How to identify": "History of post-pimple dark marks. Wants to prevent them.",
+            "Core pain / desire": "\"Every time I get a pimple I end up with a mark for months.\"",
+            "Best-fit MAs": "MA-06, MA-05",
+            "Do not confuse with": "Note: LPP does not treat existing marks. This cohort is about prevention during healing.",
+            "Notes": ""
+          },
+          {
+            "Code": "LPP-C04",
+            "Cohort Name": "Consistent Spot User",
+            "Simple definition": "Gets pimples regularly. Wants a reliable spot response as part of how they manage acne — not just for emergencies.",
+            "How to identify": "Regular acne, not one-off. Mentions \"I get them all the time.\"",
+            "Core pain / desire": "\"I get pimples regularly. I need something I can reach for every time.\"",
+            "Best-fit MAs": "MA-01, MA-05",
+            "Do not confuse with": "LPP-C02 — C04 has no urgency or event. This is maintenance.",
+            "Notes": ""
+          },
+          {
+            "Code": "LPP-C05",
+            "Cohort Name": "Accidental Toucher",
+            "Simple definition": "Touches or picks pimples without thinking — on the phone, while sleeping, when stressed.",
+            "How to identify": "Mentions picking, touching, waking up having touched it.",
+            "Core pain / desire": "\"I touch my pimples without thinking. I need something that physically stops the contact.\"",
+            "Best-fit MAs": "MA-05, MA-02",
+            "Do not confuse with": "LPP-C03 — C05 wants to stop the behaviour. C03 wants to prevent the outcome.",
+            "Notes": ""
+          },
+          {
+            "Code": "LPP-C06",
+            "Cohort Name": "Outdoor / Commuter",
+            "Simple definition": "Long days outside, gym, commute, pollution. Pimple exposed to everything.",
+            "How to identify": "Mentions commuting, outdoors, gym, heat.",
+            "Core pain / desire": "\"I'm out all day and my pimple is exposed to everything.\"",
+            "Best-fit MAs": "MA-02, MA-01",
+            "Do not confuse with": "LPP-C02 — C06's concern is environmental, not event-based.",
+            "Notes": ""
+          }
+        ]
+      },
+      "drivers": {
+        "title": "Situational Drivers",
+        "headers": [
+          "Code",
+          "Driver Name",
+          "Simple definition",
+          "Trigger evidence",
+          "Best-fit MAs",
+          "Do not confuse with",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "SD-LPP-01",
+            "Driver Name": "Pre-Event / Important Day",
+            "Simple definition": "Event tomorrow. Pimple appeared today.",
+            "Trigger evidence": "Mentions event + pimple + time pressure.",
+            "Best-fit MAs": "MA-01, MA-04",
+            "Do not confuse with": "SD-LPP-02 — SD-01 has a deadline.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-LPP-02",
+            "Driver Name": "Active Breakout While Working",
+            "Simple definition": "Has to be visible to people today. Pimple is there and unavoidable.",
+            "Trigger evidence": "Working day + active pimple + visibility concern.",
+            "Best-fit MAs": "MA-01, MA-03",
+            "Do not confuse with": "SD-LPP-01 — SD-02 has no deadline. Daily exposure.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-LPP-03",
+            "Driver Name": "Post-Treatment Sensitivity",
+            "Simple definition": "On actives and a pimple appeared while skin is sensitised. Can't use strong spot treatments.",
+            "Trigger evidence": "Mentions actives + sensitive skin + pimple.",
+            "Best-fit MAs": "MA-01, MA-05",
+            "Do not confuse with": "SD-LPP-01 — SD-03 is about skin state, not deadline.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-LPP-04",
+            "Driver Name": "Makeup Application Day",
+            "Simple definition": "Full-face makeup planned. Has a pimple. Wants to treat and cover simultaneously.",
+            "Trigger evidence": "Mentions full makeup + pimple + coverage need.",
+            "Best-fit MAs": "MA-03, MA-01",
+            "Do not confuse with": "SD-LPP-02 — SD-04 is specifically about the act of applying makeup.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-LPP-05",
+            "Driver Name": "Outdoor / Commute Day",
+            "Simple definition": "Long day outside. Pimple needs protecting from the environment all day.",
+            "Trigger evidence": "Mentions outdoor day + pimple + protection need.",
+            "Best-fit MAs": "MA-02, MA-01",
+            "Do not confuse with": "SD-LPP-02 — SD-05 is environmental. SD-02 is social visibility.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-LPP-06",
+            "Driver Name": "Night Picker Risk",
+            "Simple definition": "End of day. Alone. Prone to touching/picking at night. Wants a barrier before sleep.",
+            "Trigger evidence": "Mentions night, picking, wanting to protect during sleep.",
+            "Best-fit MAs": "MA-05, MA-02",
+            "Do not confuse with": "SD-LPP-03 — SD-06 is behavioural/nighttime. SD-03 is skin sensitivity.",
+            "Notes": ""
+          }
+        ]
+      },
+      "claims": {
+        "title": "Product-Specific Proof / Claims",
+        "headers": [
+          "Proof Code",
+          "Proof / Claim",
+          "Can be used for",
+          "Required context",
+          "Do not say",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Proof Code": "LPP-CLM-01",
+            "Proof / Claim": "India's first Liquid Pimple Patch",
+            "Can be used for": "All formats",
+            "Required context": "State as fact.",
+            "Do not say": "\"India's only liquid patch\"",
+            "Notes": "Use as positioning credential, not standalone angle."
+          },
+          {
+            "Proof Code": "LPP-CLM-02",
+            "Proof / Claim": "300+ patches per tube",
+            "Can be used for": "All formats",
+            "Required context": "State as fact. ₹2 per patch calculation.",
+            "Do not say": "Any exact comparison unless pricing is verified.",
+            "Notes": "Verify current pricing before using cost comparison."
+          },
+          {
+            "Proof Code": "LPP-CLM-03",
+            "Proof / Claim": "Clinically tested",
+            "Can be used for": "All formats",
+            "Required context": "Attribution required.",
+            "Do not say": "\"Clinically proven to clear pimples\"",
+            "Notes": "Scope of clinical test needs verification."
+          }
+        ]
+      }
+    },
+    "SpotFade Serum": {
+      "angles": {
+        "title": "Marketing Angles",
+        "headers": [
+          "Code",
+          "MA Name",
+          "One-line definition",
+          "What this angle conveys",
+          "When to use",
+          "Do not use when",
+          "Primary creative proof needed",
+          "Best-fit formats",
+          "Evidence",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "SFA-MA-01",
+            "MA Name": "Cleared Acne Isn't Solved Skin",
+            "One-line definition": "Active acne gone but marks remain. That's the second problem — and it needs its own solution.",
+            "What this angle conveys": "Getting rid of acne was step one. This is step two.",
+            "When to use": "TOF-MOF. Consumer who has cleared or is clearing acne but has visible PIH.",
+            "Do not use when": "Consumer with active acne who hasn't reached the marks stage.",
+            "Primary creative proof needed": "Hansika/Pooja on-camera mark journey. Before/after marks.",
+            "Best-fit formats": "Video testimonial, before/after static",
+            "Evidence": "Medium",
+            "Notes": ""
+          },
+          {
+            "Code": "SFA-MA-02",
+            "MA Name": "PIH From Treatment",
+            "One-line definition": "Actives and derm procedures cleared the acne but left hyperpigmentation behind.",
+            "What this angle conveys": "You did everything right. The marks are a side effect of treatment, not failure.",
+            "When to use": "MOF. Consumer on actives who developed PIH.",
+            "Do not use when": "Consumer whose marks came from acne directly, not treatment.",
+            "Primary creative proof needed": "Testimonials from consumers on active treatment regimens.",
+            "Best-fit formats": "Video testimonial, AA explainer",
+            "Evidence": "Medium",
+            "Notes": "Different emotional entry from MA-01."
+          },
+          {
+            "Code": "SFA-MA-03",
+            "MA Name": "Black → Brown → Pink → Gone",
+            "One-line definition": "The mark journey as a visible timeline. You will see it working before it's done.",
+            "What this angle conveys": "Progress is observable from the first few days — you don't have to trust blindly.",
+            "When to use": "MOF-BOF. Consumer impatient with marks treatments.",
+            "Do not use when": "Consumer wanting overnight results — frame realistically.",
+            "Primary creative proof needed": "Hansika's on-camera mark progression description.",
+            "Best-fit formats": "Video testimonial, proof static",
+            "Evidence": "Medium",
+            "Notes": "Serum-specific early proof angle."
+          }
+        ]
+      },
+      "beliefs": {
+        "title": "Beliefs",
+        "headers": [
+          "Code",
+          "Belief Name",
+          "Belief shift: from → to",
+          "One-line definition",
+          "Paired MAs",
+          "Do not confuse with",
+          "Evidence",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "SFA-B-01",
+            "Belief Name": "My acne clearing doesn't mean my skin is solved — the marks are a separate battle",
+            "Belief shift: from → to": "FROM: \"Once my acne clears, my skin is solved.\" TO: \"Clearing acne and fading the marks it left are two completely separate battles.\"",
+            "One-line definition": "The second chapter after acne — marks need their own intervention.",
+            "Paired MAs": "MA-01",
+            "Do not confuse with": "Not creating a new problem — naming a gap that already exists.",
+            "Evidence": "Medium",
+            "Notes": ""
+          },
+          {
+            "Code": "SFA-B-02",
+            "Belief Name": "My PIH marks aren't permanent — they respond to the right treatment",
+            "Belief shift: from → to": "FROM: \"PIH just fades over time — there's nothing to do but wait.\" TO: \"Post-acne marks respond to targeted treatment. Waiting is a choice, not the only option.\"",
+            "One-line definition": "Marks are treatable, not just time-dependent.",
+            "Paired MAs": "MA-02, MA-03",
+            "Do not confuse with": "Not about making dramatic speed claims. About shifting from passive to active.",
+            "Evidence": "Medium",
+            "Notes": ""
+          }
+        ]
+      },
+      "cohorts": {
+        "title": "Consumer Cohorts",
+        "headers": [
+          "Code",
+          "Cohort Name",
+          "Simple definition",
+          "How to identify",
+          "Core pain / desire",
+          "Best-fit MAs",
+          "Do not confuse with",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "SFA-C01",
+            "Cohort Name": "Post-Acne Mark Frustrated",
+            "Simple definition": "Acne has mostly cleared but dark marks remain. Solved one problem, stuck with another.",
+            "How to identify": "Mentions cleared acne + remaining marks. Recent history.",
+            "Core pain / desire": "\"My acne is mostly gone but the marks are still there. I solved one problem and created another.\"",
+            "Best-fit MAs": "MA-01, MA-03",
+            "Do not confuse with": "SFA-C02 — C01's marks are relatively recent.",
+            "Notes": ""
+          },
+          {
+            "Code": "SFA-C02",
+            "Cohort Name": "Long-term PIH Carrier",
+            "Simple definition": "Has had marks for months or years. Tried things. Nothing moved much. Almost accepted them.",
+            "How to identify": "Mentions months/years of marks, resignation setting in.",
+            "Core pain / desire": "\"I've had marks for a year. I've tried things. They haven't moved. I've almost accepted them.\"",
+            "Best-fit MAs": "MA-01, MA-02",
+            "Do not confuse with": "SFA-C01 — C02's marks are old and stubborn. Closer to resignation.",
+            "Notes": ""
+          },
+          {
+            "Code": "SFA-C03",
+            "Cohort Name": "Marks-Led Social Avoider",
+            "Simple definition": "Acne mostly gone but marks still cause social self-consciousness. Avoids photos, events, being documented.",
+            "How to identify": "Mentions avoiding photos, filters, events — specifically because of marks, not active acne.",
+            "Core pain / desire": "\"My acne is mostly gone but the marks make me feel like my skin still isn't presentable.\"",
+            "Best-fit MAs": "MA-01, MA-03",
+            "Do not confuse with": "SFA-C01 — C03's issue is specifically social confidence, not just frustration.",
+            "Notes": ""
+          }
+        ]
+      },
+      "drivers": {
+        "title": "Situational Drivers",
+        "headers": [
+          "Code",
+          "Driver Name",
+          "Simple definition",
+          "Trigger evidence",
+          "Best-fit MAs",
+          "Do not confuse with",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "SD-SFA-01",
+            "Driver Name": "Post-Acne Marks Visible",
+            "Simple definition": "Active acne cleared or clearing. Marks are now the most visible thing on the face.",
+            "Trigger evidence": "Mentions clearing acne + marks now prominent.",
+            "Best-fit MAs": "MA-01",
+            "Do not confuse with": "SD-SFA-02 — SD-01 is recent/new marks becoming noticeable.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-SFA-02",
+            "Driver Name": "Persistent PIH Not Moving",
+            "Simple definition": "Has been trying or waiting. Marks aren't changing. Resignation setting in.",
+            "Trigger evidence": "Months of marks + nothing changing.",
+            "Best-fit MAs": "MA-02",
+            "Do not confuse with": "SD-SFA-01 — SD-02's marks are old and stuck.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-SFA-03",
+            "Driver Name": "Photo or Event Trigger",
+            "Simple definition": "Upcoming photo, wedding, shoot. Marks are why they don't want to be photographed.",
+            "Trigger evidence": "Mentions upcoming event + mark self-consciousness.",
+            "Best-fit MAs": "MA-01, MA-03",
+            "Do not confuse with": "SD-SFA-01 — SD-03 has an external deadline.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-SFA-04",
+            "Driver Name": "Filter Dependency Noticed",
+            "Simple definition": "Realised they always use filters or edit photos to hide marks. The pattern itself becomes the trigger.",
+            "Trigger evidence": "Mentions always filtering / editing / never posting raw.",
+            "Best-fit MAs": "MA-01",
+            "Do not confuse with": "SD-SFA-03 — SD-04 is a self-awareness trigger, no upcoming event.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-SFA-05",
+            "Driver Name": "Someone Commented on Marks",
+            "Simple definition": "A comment specifically about marks or uneven tone — not active acne — is the breaking point.",
+            "Trigger evidence": "Mentions a comment about marks or pigmentation.",
+            "Best-fit MAs": "MA-01, MA-02",
+            "Do not confuse with": "SD-SFA-03 — SD-05 already happened. SD-03 is anticipatory.",
+            "Notes": ""
+          }
+        ]
+      },
+      "claims": {
+        "title": "Product-Specific Proof / Claims",
+        "headers": [
+          "Proof Code",
+          "Proof / Claim",
+          "Can be used for",
+          "Required context",
+          "Do not say",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Proof Code": "SFA-CLM-01",
+            "Proof / Claim": "India's first serum with 8% Solubilized Azelaic Acid",
+            "Can be used for": "All formats",
+            "Required context": "State as fact.",
+            "Do not say": "\"India's only Azelaic Acid serum\"",
+            "Notes": ""
+          },
+          {
+            "Proof Code": "SFA-CLM-02",
+            "Proof / Claim": "4% Niacinamide",
+            "Can be used for": "All formats",
+            "Required context": "Ingredient fact.",
+            "Do not say": "Any specific % reduction claim without study.",
+            "Notes": ""
+          },
+          {
+            "Proof Code": "SFA-CLM-03",
+            "Proof / Claim": "Clinically designed to reduce post-acne pigmentation and redness",
+            "Can be used for": "AA/FO contexts",
+            "Required context": "Attribution required.",
+            "Do not say": "\"Clinically proven to clear marks\"",
+            "Notes": "Wording must stay within approved scope. Needs User Review on exact claim scope."
+          }
+        ]
+      }
+    },
+    "Effortless Melting Cleanser": {
+      "angles": {
+        "title": "Marketing Angles",
+        "headers": [
+          "Code",
+          "MA Name",
+          "One-line definition",
+          "What this angle conveys",
+          "When to use",
+          "Do not use when",
+          "Primary creative proof needed",
+          "Best-fit formats",
+          "Evidence",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "EMC-MA-01",
+            "MA Name": "Kajal, SPF, Makeup — One Step, Everything Off",
+            "One-line definition": "Kajal, waterproof mascara, SPF — everything off in one step. No second cleanser. No cotton pad. No rubbing.",
+            "What this angle conveys": "You don't have to fight your makeup to remove it.",
+            "When to use": "TOF. Lead angle. Kajal-specific proof is most resonant in India.",
+            "Do not use when": "Consumer who doesn't wear makeup or use SPF.",
+            "Primary creative proof needed": "Demo: kajal application + EMC removal. Clean result.",
+            "Best-fit formats": "Demo video, demo static",
+            "Evidence": "Medium",
+            "Notes": "Kajal leads — most universally resonant Indian removal proof."
+          },
+          {
+            "Code": "EMC-MA-02",
+            "MA Name": "Safe for Acne-Prone Skin",
+            "One-line definition": "Emollient base, not oil. Removes like a cleansing oil without the comedogenic risk.",
+            "What this angle conveys": "You don't have to choose between cleansing power and not breaking out.",
+            "When to use": "TOF-MOF. Acne-prone consumer who has avoided cleansing oils.",
+            "Do not use when": "Non-acne-prone consumer focused purely on removal.",
+            "Primary creative proof needed": "Testimonial: acne-prone consumer who avoided oils.",
+            "Best-fit formats": "Video testimonial, ingredient static",
+            "Evidence": "Medium",
+            "Notes": ""
+          },
+          {
+            "Code": "EMC-MA-03",
+            "MA Name": "Double Cleanse — Without the Double Step",
+            "One-line definition": "Replaces the two-step double cleanse ritual with one product.",
+            "What this angle conveys": "If you double cleanse, you don't have to anymore.",
+            "When to use": "MOF. Consumer who knows about double cleansing and wants simplification.",
+            "Do not use when": "Consumer who has never heard of double cleansing.",
+            "Primary creative proof needed": "Side-by-side: two-step routine vs EMC single step.",
+            "Best-fit formats": "Comparison static",
+            "Evidence": "Medium",
+            "Notes": ""
+          },
+          {
+            "Code": "EMC-MA-04",
+            "MA Name": "Too Tired to Make It Complicated",
+            "One-line definition": "One product, 30 seconds, everything off — even on the lowest-energy days.",
+            "What this angle conveys": "Removes the friction that causes people to skip removal entirely.",
+            "When to use": "TOF-MOF. Any consumer who sometimes skips makeup removal because of effort.",
+            "Do not use when": "Consumer for whom removal is never a problem.",
+            "Primary creative proof needed": "Relatable scenario: tired evening, one quick step.",
+            "Best-fit formats": "Skit/UGC",
+            "Evidence": "Medium",
+            "Notes": "Not limited to night — any low-energy moment."
+          },
+          {
+            "Code": "EMC-MA-05",
+            "MA Name": "Cleanse Right, Everything After Works Better",
+            "One-line definition": "Sunscreen residue, sebum, makeup sitting on skin undermines every active you apply afterward.",
+            "What this angle conveys": "Your actives work better when the first step is right.",
+            "When to use": "MOF. Consumer using actives who isn't seeing expected results.",
+            "Do not use when": "Consumer not using actives with no routine.",
+            "Primary creative proof needed": "AA: consequences of inadequate cleansing on active performance.",
+            "Best-fit formats": "AA video",
+            "Evidence": "Medium",
+            "Notes": "Strong cross-sell with RCF."
+          }
+        ]
+      },
+      "beliefs": {
+        "title": "Beliefs",
+        "headers": [
+          "Code",
+          "Belief Name",
+          "Belief shift: from → to",
+          "One-line definition",
+          "Paired MAs",
+          "Do not confuse with",
+          "Evidence",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "EMC-B-01",
+            "Belief Name": "I can remove everything — kajal, SPF, waterproof makeup — without irritating my skin",
+            "Belief shift: from → to": "FROM: \"I have to choose between removing everything and not irritating my skin.\" TO: \"Emollient base has the solvency without the comedogenic risk. Thorough and gentle are not a trade-off.\"",
+            "One-line definition": "Complete removal without compromise.",
+            "Paired MAs": "MA-01, MA-02",
+            "Do not confuse with": "Not about cutting corners.",
+            "Evidence": "Medium",
+            "Notes": ""
+          },
+          {
+            "Code": "EMC-B-02",
+            "Belief Name": "What I don't remove properly affects how everything works the next morning",
+            "Belief shift: from → to": "FROM: \"Cleansing is just about feeling clean.\" TO: \"SPF residue, sebum, and makeup compromise active treatments applied afterward.\"",
+            "One-line definition": "First step quality affects every subsequent step.",
+            "Paired MAs": "MA-05",
+            "Do not confuse with": "Not a scare tactic — logical connection between cleansing and treatment efficacy.",
+            "Evidence": "Medium",
+            "Notes": ""
+          },
+          {
+            "Code": "EMC-B-03",
+            "Belief Name": "Removing my makeup doesn't have to be a ritual I dread",
+            "Belief shift: from → to": "FROM: \"Proper makeup removal is multi-step and effort-intensive.\" TO: \"One product, 30 seconds, everything off — even when you have no energy.\"",
+            "One-line definition": "Format removes the friction that causes skipping.",
+            "Paired MAs": "MA-04",
+            "Do not confuse with": "Not about cutting corners — about removing the barrier to consistent removal.",
+            "Evidence": "Medium",
+            "Notes": ""
+          }
+        ]
+      },
+      "cohorts": {
+        "title": "Consumer Cohorts",
+        "headers": [
+          "Code",
+          "Cohort Name",
+          "Simple definition",
+          "How to identify",
+          "Core pain / desire",
+          "Best-fit MAs",
+          "Do not confuse with",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "EMC-C01",
+            "Cohort Name": "Makeup Wearer, Acne-Prone",
+            "Simple definition": "Daily makeup user. Scared of cleansing oils because they break out. Never found a remover that works without causing pimples.",
+            "How to identify": "Daily makeup + acne-prone + oil avoidance.",
+            "Core pain / desire": "\"I wear makeup daily but cleansing oils break me out. Nothing removes properly without causing pimples.\"",
+            "Best-fit MAs": "MA-01, MA-02",
+            "Do not confuse with": "EMC-C03 — C01's fear is breakouts. C03's fear is stripping.",
+            "Notes": ""
+          },
+          {
+            "Code": "EMC-C02",
+            "Cohort Name": "Double Cleanse Seeker",
+            "Simple definition": "Knows about double cleansing. Wants to do it but the two-step ritual is too much.",
+            "How to identify": "Mentions double cleansing knowledge + wanting simplification.",
+            "Core pain / desire": "\"I know about double cleansing and want to do it properly but the two-step is too much.\"",
+            "Best-fit MAs": "MA-03, MA-01",
+            "Do not confuse with": "EMC-C04 — C02 wants simplification. C04 wants active treatment support.",
+            "Notes": ""
+          },
+          {
+            "Code": "EMC-C03",
+            "Cohort Name": "Barrier-Compromised Cleanser User",
+            "Simple definition": "Skin gets tight, red, or uncomfortable after washing. Current cleanser is part of the problem.",
+            "How to identify": "Mentions post-wash tightness/redness.",
+            "Core pain / desire": "\"My skin gets tight and red after washing. My cleanser is making things worse.\"",
+            "Best-fit MAs": "MA-01, MA-02",
+            "Do not confuse with": "EMC-C01 — C03 isn't worried about breakouts. Worried about stripping.",
+            "Notes": ""
+          },
+          {
+            "Code": "EMC-C04",
+            "Cohort Name": "Active Treatment User",
+            "Simple definition": "Using RCF, retinoids, or acids. Knows clean canvas matters for actives to work.",
+            "How to identify": "Mentions active treatment + wanting to support it with better cleansing.",
+            "Core pain / desire": "\"I'm using actives and I want my cleansing step to support them, not undermine them.\"",
+            "Best-fit MAs": "MA-05, MA-01",
+            "Do not confuse with": "EMC-C02 — C04 has a specific treatment they're optimising. C02 wants simplification.",
+            "Notes": ""
+          },
+          {
+            "Code": "EMC-C05",
+            "Cohort Name": "SPF + Sebum Buildup",
+            "Simple definition": "Wears SPF 50 daily. By evening, skin has a layer of sunscreen and sebum that their face wash doesn't fully remove.",
+            "How to identify": "Mentions daily SPF + feeling of residue by evening.",
+            "Core pain / desire": "\"I wear SPF 50 daily and by evening my skin has a layer of residue my face wash can't remove.\"",
+            "Best-fit MAs": "MA-01, MA-05",
+            "Do not confuse with": "EMC-C01 — C05 may not wear makeup at all. Removal concern is SPF + sebum.",
+            "Notes": ""
+          }
+        ]
+      },
+      "drivers": {
+        "title": "Situational Drivers",
+        "headers": [
+          "Code",
+          "Driver Name",
+          "Simple definition",
+          "Trigger evidence",
+          "Best-fit MAs",
+          "Do not confuse with",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "SD-EMC-01",
+            "Driver Name": "Heavy / Full-Coverage Makeup Day",
+            "Simple definition": "Full makeup worn today. Needs complete removal tonight.",
+            "Trigger evidence": "Full makeup day + removal concern.",
+            "Best-fit MAs": "MA-01, MA-04",
+            "Do not confuse with": "SD-EMC-04 — SD-01 is about makeup weight. SD-04 is about format dissatisfaction.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-EMC-02",
+            "Driver Name": "Starting Active Treatment Routine",
+            "Simple definition": "Just started RCF, retinoids, or acids. Realised clean canvas matters.",
+            "Trigger evidence": "New active + recognition of cleansing importance.",
+            "Best-fit MAs": "MA-05, MA-02",
+            "Do not confuse with": "SD-EMC-03 — SD-02 is proactive before damage. SD-03 is reactive after damage.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-EMC-03",
+            "Driver Name": "History of Tightness / Over-Stripping",
+            "Simple definition": "Current cleanser causing tightness, redness, or stripping.",
+            "Trigger evidence": "Post-wash tightness/redness description.",
+            "Best-fit MAs": "MA-01, MA-02",
+            "Do not confuse with": "SD-EMC-02 — SD-03 is damage already done.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-EMC-04",
+            "Driver Name": "Transitioning From Wipes / Micellar",
+            "Simple definition": "Current removal method is inadequate — kajal still on, SPF not gone, cotton pads required.",
+            "Trigger evidence": "Mentions wipes/micellar + dissatisfaction.",
+            "Best-fit MAs": "MA-01, MA-03",
+            "Do not confuse with": "SD-EMC-01 — SD-04 is about format inadequacy. SD-01 is about coverage weight.",
+            "Notes": ""
+          },
+          {
+            "Code": "SD-EMC-05",
+            "Driver Name": "End-of-Day Exhaustion",
+            "Simple definition": "Tired. Every other removal method feels like too much effort right now.",
+            "Trigger evidence": "Low energy mention + consideration of skipping removal.",
+            "Best-fit MAs": "MA-04",
+            "Do not confuse with": "SD-EMC-01 — SD-05 can happen with minimal makeup. Energy level, not makeup weight.",
+            "Notes": ""
+          }
+        ]
+      },
+      "claims": {
+        "title": "Product-Specific Proof / Claims",
+        "headers": [
+          "Proof Code",
+          "Proof / Claim",
+          "Can be used for",
+          "Required context",
+          "Do not say",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Proof Code": "EMC-CLM-01",
+            "Proof / Claim": "Removes kajal, SPF, and waterproof makeup",
+            "Can be used for": "All formats",
+            "Required context": "Demo-based proof preferred.",
+            "Do not say": "\"Removes 100% of makeup\" without demo.",
+            "Notes": ""
+          },
+          {
+            "Proof Code": "EMC-CLM-02",
+            "Proof / Claim": "Non-comedogenic, oil-free formula",
+            "Can be used for": "All formats",
+            "Required context": "Ingredient fact — emollient base, not oil.",
+            "Do not say": "\"Oil cleanser\" — it is NOT an oil cleanser. Emollient base.",
+            "Notes": "Critical distinction."
+          },
+          {
+            "Proof Code": "EMC-CLM-03",
+            "Proof / Claim": "Dermatologist tested",
+            "Can be used for": "AA/FO contexts",
+            "Required context": "Attribution required.",
+            "Do not say": "\"Dermatologist recommended\"",
+            "Notes": ""
+          }
+        ]
+      }
+    },
+    "Clear Protect Sunscreen": {
+      "angles": {
+        "title": "Marketing Angles",
+        "headers": [
+          "Code",
+          "MA Name",
+          "One-line definition",
+          "What this angle conveys",
+          "When to use",
+          "Do not use when",
+          "Primary creative proof needed",
+          "Best-fit formats",
+          "Evidence",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "CPG-MA-01",
+            "MA Name": "Won't Break You Out",
+            "One-line definition": "New-gen encapsulated filters don't sit in the pore. The reason your last sunscreen caused breakouts was old-gen filters — not SPF itself.",
+            "What this angle conveys": "You weren't wrong to avoid sunscreen. You were using the wrong formula.",
+            "When to use": "TOF. Acne-prone SPF avoider.",
+            "Do not use when": "Consumer whose concern is white cast, not breakouts.",
+            "Primary creative proof needed": "Shanthi C review. \"First sunscreen that didn't break me out.\" Demo on acne-prone skin.",
+            "Best-fit formats": "Video testimonial, proof static",
+            "Evidence": "Strong",
+            "Notes": ""
+          },
+          {
+            "Code": "CPG-MA-02",
+            "MA Name": "Zero White Cast",
+            "One-line definition": "Microencapsulated mineral filters. No white or grey cast on any Indian skin tone.",
+            "What this angle conveys": "Made for Indian skin tones, not adapted for them.",
+            "When to use": "TOF-MOF. White cast sufferer. Deeper skin tones.",
+            "Do not use when": "Fair-skinned consumer for whom cast was never a concern.",
+            "Primary creative proof needed": "Demo on deep Indian skin tone. Before/after: old SPF vs Clear Protect.",
+            "Best-fit formats": "Demo video, before/after static",
+            "Evidence": "Strong",
+            "Notes": ""
+          },
+          {
+            "Code": "CPG-MA-03",
+            "MA Name": "Feels Like Nothing",
+            "One-line definition": "Fluid gel, blends in seconds, no stickiness, no film, no heaviness — even in Indian heat.",
+            "What this angle conveys": "Finally a sunscreen you don't have to fight with.",
+            "When to use": "TOF. Texture hater. Sensory objection entry.",
+            "Do not use when": "Consumer who has never had a texture problem with sunscreen.",
+            "Primary creative proof needed": "Sensory UGC. Application demo on oily skin. Hansika \"ekdum matte look\" type.",
+            "Best-fit formats": "UGC, demo",
+            "Evidence": "Medium",
+            "Notes": "New MA."
+          },
+          {
+            "Code": "CPG-MA-04",
+            "MA Name": "Real SPF, Not Just a Feeling",
+            "One-line definition": "SPF 57.65 in-vitro tested. PA++++. 6-filter photostable system. Lightweight does not mean weak.",
+            "What this angle conveys": "Proof that what feels light is still full protection.",
+            "When to use": "MOF-BOF. Consumer doubting whether a good-feeling SPF actually works.",
+            "Do not use when": "TOF cold — too technical as entry.",
+            "Primary creative proof needed": "Stats card with study attribution. AA explaining photostable filters.",
+            "Best-fit formats": "Data static, AA video",
+            "Evidence": "Strong",
+            "Notes": ""
+          },
+          {
+            "Code": "CPG-MA-05",
+            "MA Name": "Works Under Makeup",
+            "One-line definition": "No pilling, no lifting. Reapplication over makeup works too.",
+            "What this angle conveys": "Protection that doesn't disturb your look.",
+            "When to use": "MOF. Makeup wearer who has experienced pilling.",
+            "Do not use when": "Bare-skin user — irrelevant.",
+            "Primary creative proof needed": "Demo: foundation over sunscreen, no pilling.",
+            "Best-fit formats": "Demo video, static",
+            "Evidence": "Medium",
+            "Notes": ""
+          },
+          {
+            "Code": "CPG-MA-06",
+            "MA Name": "Protection Without the Compromise",
+            "One-line definition": "Full SPF 50+ protection that doesn't make your skin feel punished for wearing it.",
+            "What this angle conveys": "You don't have to choose between protection that works and SPF that feels good.",
+            "When to use": "TOF-MOF. Any SPF avoider. Broad entry.",
+            "Do not use when": "Consumer already convinced sunscreen feels good.",
+            "Primary creative proof needed": "Testimonials on feel + protection combined.",
+            "Best-fit formats": "Video testimonial",
+            "Evidence": "Medium",
+            "Notes": ""
+          }
+        ]
+      },
+      "beliefs": {
+        "title": "Beliefs",
+        "headers": [
+          "Code",
+          "Belief Name",
+          "Belief shift: from → to",
+          "Paired MAs",
+          "Evidence",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "CPG-B-01",
+            "Belief Name": "SPF used to break me out because of old-gen filters — not because my skin can't handle SPF",
+            "Belief shift: from → to": "FROM: \"Sunscreen breaks me out — SPF just doesn't work for my skin.\" TO: \"Old-gen oil-soluble filters sit in pores. New-gen encapsulated filters don't. Wrong formula, not wrong skin.\"",
+            "Paired MAs": "MA-01",
+            "Evidence": "Strong",
+            "Notes": "Primary belief."
+          },
+          {
+            "Code": "CPG-B-02",
+            "Belief Name": "Most sunscreens weren't made for Indian skin tones — this one was",
+            "Belief shift: from → to": "FROM: \"Sunscreen always leaves a white cast on my skin.\" TO: \"Microencapsulated minerals with zero cast — formulated for the full range of Indian skin tones.\"",
+            "Paired MAs": "MA-02",
+            "Evidence": "Strong",
+            "Notes": ""
+          },
+          {
+            "Code": "CPG-B-03",
+            "Belief Name": "A sunscreen that feels like nothing can still give me full SPF 50+ protection",
+            "Belief shift: from → to": "FROM: \"If it feels like nothing, it's probably not doing much.\" TO: \"SPF 57.65 tested. PA++++. 6-filter photostable system. Lightweight ≠ unprotected.\"",
+            "Paired MAs": "MA-04",
+            "Evidence": "Strong",
+            "Notes": ""
+          },
+          {
+            "Code": "CPG-B-04",
+            "Belief Name": "I don't have to choose between protection that works and SPF that feels good on my skin",
+            "Belief shift: from → to": "FROM: \"Either it protects or it feels good. Can't have both.\" TO: \"This was designed to be both — fluid gel that blends in seconds with real SPF protection.\"",
+            "Paired MAs": "MA-06, MA-03",
+            "Evidence": "Medium",
+            "Notes": ""
+          }
+        ]
+      },
+      "cohorts": {
+        "title": "Consumer Cohorts",
+        "headers": [
+          "Code",
+          "Cohort Name",
+          "Core pain",
+          "Best-fit MAs",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "CPG-C01",
+            "Cohort Name": "Acne-Prone SPF Avoider",
+            "Core pain": "\"Every sunscreen I try breaks me out. I've stopped buying them.\"",
+            "Best-fit MAs": "MA-01, MA-06",
+            "Notes": "Largest persona."
+          },
+          {
+            "Code": "CPG-C02",
+            "Cohort Name": "Sensitive Skin SPF Avoider",
+            "Core pain": "\"Sunscreens sting, cause redness, or react badly. I've given up.\"",
+            "Best-fit MAs": "MA-06, MA-04",
+            "Notes": "Different fear from C01."
+          },
+          {
+            "Code": "CPG-C03",
+            "Cohort Name": "White Cast Sufferer",
+            "Core pain": "\"Every mineral SPF leaves a white or grey cast on my skin. SPF isn't designed for me.\"",
+            "Best-fit MAs": "MA-02, MA-06",
+            "Notes": "Deeper Indian skin tones."
+          },
+          {
+            "Code": "CPG-C04",
+            "Cohort Name": "Texture Hater",
+            "Core pain": "\"I hate how sunscreen feels — greasy, sticky, heavy. I skip it.\"",
+            "Best-fit MAs": "MA-03, MA-06",
+            "Notes": "Purely sensory blocker."
+          },
+          {
+            "Code": "CPG-C05",
+            "Cohort Name": "Makeup-First SPF User",
+            "Core pain": "\"I need SPF that works as a base and I can reapply over makeup without pilling.\"",
+            "Best-fit MAs": "MA-05, MA-03",
+            "Notes": "More advanced, higher intent."
+          }
+        ]
+      },
+      "drivers": {
+        "title": "Situational Drivers",
+        "headers": [
+          "Code",
+          "Driver Name",
+          "Trigger",
+          "Best-fit MAs"
+        ],
+        "rows": [
+          {
+            "Code": "SD-CPG-01",
+            "Driver Name": "Starting Acne Treatment",
+            "Trigger": "Just started RCF/retinoids. Told SPF is now non-negotiable.",
+            "Best-fit MAs": "MA-01, MA-06"
+          },
+          {
+            "Code": "SD-CPG-02",
+            "Driver Name": "Summer / Heat Season",
+            "Trigger": "Heat rising. Current SPF feels unbearable or they're skipping it.",
+            "Best-fit MAs": "MA-03, MA-06"
+          },
+          {
+            "Code": "SD-CPG-03",
+            "Driver Name": "Last Sunscreen Broke Them Out",
+            "Trigger": "Tried a sunscreen. Got pimples. Stopped using SPF.",
+            "Best-fit MAs": "MA-01, MA-06"
+          },
+          {
+            "Code": "SD-CPG-04",
+            "Driver Name": "White Cast Discovery",
+            "Trigger": "Noticed white cast in photos or natural light. Embarrassing enough to prompt switch.",
+            "Best-fit MAs": "MA-02"
+          },
+          {
+            "Code": "SD-CPG-05",
+            "Driver Name": "Reapplication Reminder",
+            "Trigger": "Mid-day — after gym/outdoors. Current SPF makes reapplication impossible over makeup.",
+            "Best-fit MAs": "MA-05, MA-03"
+          },
+          {
+            "Code": "SD-CPG-06",
+            "Driver Name": "Post-Tan Regret",
+            "Trigger": "Skin visibly tanned, marks darkened from sun exposure. SPF now urgent.",
+            "Best-fit MAs": "MA-04, MA-06"
+          }
+        ]
+      },
+      "claims": {
+        "title": "Product-Specific Proof / Claims",
+        "headers": [
+          "Proof Code",
+          "Proof / Claim",
+          "Can be used for",
+          "Required context",
+          "Do not say",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Proof Code": "CPG-CLM-01",
+            "Proof / Claim": "SPF 57.65 in-vitro tested",
+            "Can be used for": "All formats",
+            "Required context": "\"In-vitro tested, Mascot Spincontrol, ISO 24443:2012\"",
+            "Do not say": "\"SPF 57.65\" without in-vitro caveat",
+            "Notes": "Always attribute."
+          },
+          {
+            "Proof Code": "CPG-CLM-02",
+            "Proof / Claim": "PA++++",
+            "Can be used for": "All formats",
+            "Required context": "Standard JCIA grading.",
+            "Do not say": "\"Highest SPF\"",
+            "Notes": ""
+          },
+          {
+            "Proof Code": "CPG-CLM-03",
+            "Proof / Claim": "Dermatologically tested on sensitive skin — non-irritant",
+            "Can be used for": "All formats",
+            "Required context": "\"Mascot Spincontrol, June 2025\"",
+            "Do not say": "\"Dermatologist recommended\"",
+            "Notes": ""
+          },
+          {
+            "Proof Code": "CPG-CLM-04",
+            "Proof / Claim": "Non-comedogenic",
+            "Can be used for": "All formats",
+            "Required context": "Formulation-based claim.",
+            "Do not say": "\"Guaranteed not to cause pimples\"",
+            "Notes": "Not from separate comedogenicity study."
+          },
+          {
+            "Proof Code": "CPG-CLM-05",
+            "Proof / Claim": "6 microencapsulated UV filters",
+            "Can be used for": "All formats",
+            "Required context": "Formulation fact.",
+            "Do not say": "Any efficacy claim beyond filter type.",
+            "Notes": ""
+          }
+        ]
+      }
+    },
+    "Barrier Repair Moisturiser": {
+      "angles": {
+        "title": "Marketing Angles",
+        "headers": [
+          "Code",
+          "MA Name",
+          "One-line definition",
+          "When to use",
+          "Evidence"
+        ],
+        "rows": [
+          {
+            "Code": "BRG-MA-01",
+            "MA Name": "Make Your Acne Treatment Work Better",
+            "One-line definition": "Barrier damage causes treatments to cause redness and peeling. Repair the barrier and actives become tolerable and more effective.",
+            "When to use": "MOF. Consumer on RCF or actives. Primary cross-sell angle.",
+            "Evidence": "Medium"
+          },
+          {
+            "Code": "BRG-MA-02",
+            "MA Name": "Stop the Acne Cycle",
+            "One-line definition": "Barrier damage is one reason acne keeps returning. Repair the barrier → fewer future breakouts.",
+            "When to use": "TOF-MOF. Consumer whose acne keeps coming back.",
+            "Evidence": "Low — hypothesis. Needs creative validation."
+          },
+          {
+            "Code": "BRG-MA-03",
+            "MA Name": "Calm Skin, Every Day",
+            "One-line definition": "For reactive skin on actives, weather, or stress — a stable daily layer that prevents overreaction.",
+            "When to use": "TOF-MOF. C4 (barrier-compromised). Daily comfort entry.",
+            "Evidence": "Medium"
+          },
+          {
+            "Code": "BRG-MA-04",
+            "MA Name": "Oil-Free Repair",
+            "One-line definition": "Gel texture. Non-comedogenic. Fragrance-free. Barrier repair without oiliness or breakout risk.",
+            "When to use": "TOF-MOF. Consumer who avoids moisturiser fearing breakouts.",
+            "Evidence": "Medium"
+          },
+          {
+            "Code": "BRG-MA-05",
+            "MA Name": "Why You Need to Switch Moisturisers",
+            "One-line definition": "Your current moisturiser hydrates. It doesn't repair. Ceramides + Cica + Niacinamide = different category.",
+            "When to use": "MOF-BOF. Consumer already using a moisturiser who hasn't seen barrier improvement.",
+            "Evidence": "Low — hypothesis."
+          },
+          {
+            "Code": "BRG-MA-06",
+            "MA Name": "1% Ceramide Complex, Cica, Niacinamide",
+            "One-line definition": "Ingredient-led. Named actives for the ingredient-educated consumer.",
+            "When to use": "Ingredient-aware audience. AA/FO-led creatives.",
+            "Evidence": "Medium"
+          }
+        ]
+      },
+      "beliefs": {
+        "title": "Beliefs",
+        "headers": [
+          "Code",
+          "Belief Name",
+          "Belief shift",
+          "Paired MAs",
+          "Evidence"
+        ],
+        "rows": [
+          {
+            "Code": "BRG-B-01",
+            "Belief Name": "My acne treatment works better when my skin barrier isn't damaged",
+            "Belief shift": "\"Without barrier repair, treatments cause dryness and peeling that forces me to stop.\"",
+            "Paired MAs": "MA-01, MA-04",
+            "Evidence": "Medium"
+          },
+          {
+            "Code": "BRG-B-02",
+            "Belief Name": "My barrier being broken is part of why my acne keeps coming back",
+            "Belief shift": "\"Repeated harsh cycles damage the barrier, creating conditions for the next breakout.\"",
+            "Paired MAs": "MA-02",
+            "Evidence": "Low"
+          },
+          {
+            "Code": "BRG-B-03",
+            "Belief Name": "A moisturiser can repair my skin barrier without breaking me out",
+            "Belief shift": "\"Gel texture + ceramides + Cica — repairs deeply without a pore-clogging ingredient.\"",
+            "Paired MAs": "MA-04",
+            "Evidence": "Medium"
+          },
+          {
+            "Code": "BRG-B-04",
+            "Belief Name": "My current moisturiser hydrates my skin — but it doesn't repair my barrier",
+            "Belief shift": "\"Hydration and barrier repair are different jobs. Most moisturisers only do one.\"",
+            "Paired MAs": "MA-05, MA-06",
+            "Evidence": "Medium"
+          }
+        ]
+      },
+      "cohorts": {
+        "title": "Consumer Cohorts",
+        "headers": [
+          "Code",
+          "Cohort Name",
+          "Core pain",
+          "Best-fit MAs"
+        ],
+        "rows": [
+          {
+            "Code": "BRG-C01",
+            "Cohort Name": "Active Treatment User",
+            "Core pain": "\"I'm on RCF/retinoids and my skin is getting dry and red. I need support.\"",
+            "Best-fit MAs": "MA-01, MA-04"
+          },
+          {
+            "Code": "BRG-C02",
+            "Cohort Name": "Post-Treatment Rebuilder",
+            "Core pain": "\"My acne cleared but my skin still feels damaged. Dull, flaky, sensitive.\"",
+            "Best-fit MAs": "MA-03, MA-04"
+          },
+          {
+            "Code": "BRG-C03",
+            "Cohort Name": "Moisturiser Avoider",
+            "Core pain": "\"I have oily/acne-prone skin and I've always skipped moisturiser fearing breakouts.\"",
+            "Best-fit MAs": "MA-04, MA-03"
+          },
+          {
+            "Code": "BRG-C04",
+            "Cohort Name": "Chronic Rebound Acne",
+            "Core pain": "\"I clear my skin, it comes back. I've been in this cycle for years.\"",
+            "Best-fit MAs": "MA-02, MA-01"
+          }
+        ]
+      },
+      "drivers": {
+        "title": "Situational Drivers",
+        "headers": [
+          "Code",
+          "Driver Name",
+          "Trigger",
+          "Best-fit MAs"
+        ],
+        "rows": [
+          {
+            "Code": "SD-BRG-01",
+            "Driver Name": "Skin Reacting to RCF or Actives",
+            "Trigger": "A few days into RCF/retinoid. Skin tight, dry, or peeling.",
+            "Best-fit MAs": "MA-01, MA-04"
+          },
+          {
+            "Code": "SD-BRG-02",
+            "Driver Name": "Post-Treatment Damage",
+            "Trigger": "Active phase over. Skin looks dull, feels tight. In repair mode.",
+            "Best-fit MAs": "MA-03, MA-04"
+          },
+          {
+            "Code": "SD-BRG-03",
+            "Driver Name": "Dry and Flaky Despite Everything",
+            "Trigger": "Uses moisturiser regularly but still dry. Not doing enough.",
+            "Best-fit MAs": "MA-05, MA-04"
+          },
+          {
+            "Code": "SD-BRG-04",
+            "Driver Name": "Acne Cleared, Skin Still Rough",
+            "Trigger": "Acne gone. Texture remains rough or dull. Wants quality restoration.",
+            "Best-fit MAs": "MA-03, MA-04"
+          },
+          {
+            "Code": "SD-BRG-05",
+            "Driver Name": "Breaking Out After Adding a Product",
+            "Trigger": "Added a moisturiser or product, started breaking out. Wants non-comedogenic alternative.",
+            "Best-fit MAs": "MA-04, MA-03"
+          }
+        ]
+      },
+      "claims": {
+        "title": "Product-Specific Proof / Claims",
+        "headers": [
+          "Proof Code",
+          "Proof / Claim",
+          "Can be used for",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Proof Code": "BRG-CLM-01",
+            "Proof / Claim": "1% Ceramide Complex",
+            "Can be used for": "All formats",
+            "Notes": "Ingredient fact."
+          },
+          {
+            "Proof Code": "BRG-CLM-02",
+            "Proof / Claim": "S.M.A.R.T. Delivery System",
+            "Can be used for": "All formats",
+            "Notes": "Proprietary delivery system claim."
+          },
+          {
+            "Proof Code": "BRG-CLM-03",
+            "Proof / Claim": "Reduces skin damage by 70% in 4 weeks",
+            "Can be used for": "Needs verification",
+            "Notes": "From website. Attribution and study details required before use in ads. Mark as Needs User Review."
+          },
+          {
+            "Proof Code": "BRG-CLM-04",
+            "Proof / Claim": "Non-comedogenic, fragrance-free",
+            "Can be used for": "All formats",
+            "Notes": "Ingredient fact."
+          }
+        ]
+      }
+    },
+    "Acne Kits": {
+      "angles": {
+        "title": "Marketing Angles (shared across kit types)",
+        "headers": [
+          "Code",
+          "MA Name",
+          "One-line definition",
+          "When to use",
+          "Notes"
+        ],
+        "rows": [
+          {
+            "Code": "KIT-MA-01",
+            "MA Name": "No Confusion About What to Pair",
+            "One-line definition": "This combination is designed to work together. No research needed.",
+            "When to use": "MOF-BOF. Over-researched consumer paralysed by choice.",
+            "Notes": "Primary kit MA."
+          },
+          {
+            "Code": "KIT-MA-02",
+            "MA Name": "Better Results Together",
+            "One-line definition": "RCF clears + BRGM sustains. Each works better than either alone.",
+            "When to use": "TOF-MOF. Consumer considering one product.",
+            "Notes": ""
+          },
+          {
+            "Code": "KIT-MA-03",
+            "MA Name": "Value Routine",
+            "One-line definition": "Same products, lower cost per unit, delivered as a system.",
+            "When to use": "BOF. Cost-comparing buyer.",
+            "Notes": "Don't use as primary TOF angle."
+          },
+          {
+            "Code": "KIT-MA-04",
+            "MA Name": "The Complete Acne System",
+            "One-line definition": "Three products. One goal. Clear, repair, protect. Nothing else needed.",
+            "When to use": "TOF-MOF. Over-routinised or first-time routine builder.",
+            "Notes": "Low evidence — needs creative validation."
+          }
+        ]
+      },
+      "beliefs": {
+        "title": "Beliefs",
+        "headers": [
+          "Code",
+          "Belief Name",
+          "Paired MAs"
+        ],
+        "rows": [
+          {
+            "Code": "KIT-B-01",
+            "Belief Name": "Products designed to work together give me better results than products I assembled myself",
+            "Paired MAs": "MA-01, MA-02"
+          },
+          {
+            "Code": "KIT-B-02",
+            "Belief Name": "I don't need to research routine compatibility — this system already figured that out",
+            "Paired MAs": "MA-01, MA-03"
+          }
+        ]
+      },
+      "cohorts": {
+        "title": "Consumer Cohorts",
+        "headers": [
+          "Code",
+          "Cohort Name",
+          "Core tension"
+        ],
+        "rows": [
+          {
+            "Code": "KIT-C01",
+            "Cohort Name": "Routine Builder",
+            "Core tension": "\"I want to start treating my acne properly but I don't know which products to buy or combine.\""
+          },
+          {
+            "Code": "KIT-C02",
+            "Cohort Name": "Upgrader / System Buyer",
+            "Core tension": "\"I've been using one TSS product and seeing results. I want to extend into a full routine.\""
+          },
+          {
+            "Code": "KIT-C03",
+            "Cohort Name": "Lazy Researcher",
+            "Core tension": "\"I don't want to spend time figuring out if this face wash works with that moisturiser. Just tell me.\""
+          }
+        ]
+      },
+      "drivers": {
+        "title": "Situational Drivers",
+        "headers": [
+          "Code",
+          "Driver Name",
+          "Trigger"
+        ],
+        "rows": [
+          {
+            "Code": "SD-KIT-01",
+            "Driver Name": "Starting From Scratch",
+            "Trigger": "New to TSS. Wants a complete starting point without research."
+          },
+          {
+            "Code": "SD-KIT-02",
+            "Driver Name": "Ready to Upgrade",
+            "Trigger": "Existing customer. Seeing results. Ready to build a fuller routine."
+          },
+          {
+            "Code": "SD-KIT-03",
+            "Driver Name": "Gifting Occasion",
+            "Trigger": "Birthday, festival, self-gifting. Kit format makes natural gift."
+          }
+        ]
+      },
+      "claims": {
+        "title": "Claims",
+        "headers": [],
+        "rows": []
+      }
+    },
+    "Emergency Acne Kit": {
+      "angles": {
+        "title": "Marketing Angles (shared across kit types)",
+        "headers": [
+          "Code",
+          "MA Name",
+          "One-line definition"
+        ],
+        "rows": [
+          {
+            "Code": "EAK-MA-01",
+            "MA Name": "Treat It and Hide It",
+            "One-line definition": "RCF reduces the pimple + LPP makes it invisible while it heals. Two jobs simultaneously."
+          },
+          {
+            "Code": "EAK-MA-02",
+            "MA Name": "Always-Ready Backup",
+            "One-line definition": "Mini sizes for travel, events, shoots — always have it when acne shows up unexpectedly."
+          }
+        ]
+      },
+      "beliefs": {
+        "title": "Beliefs",
+        "headers": [],
+        "rows": []
+      },
+      "cohorts": {
+        "title": "Cohorts",
+        "headers": [],
+        "rows": []
+      },
+      "drivers": {
+        "title": "Drivers",
+        "headers": [],
+        "rows": []
+      },
+      "claims": {
+        "title": "Claims",
+        "headers": [],
+        "rows": []
+      }
+    },
+    "Minis": {
+      "angles": {
+        "title": "Marketing Angles",
+        "headers": [
+          "Code",
+          "MA Name",
+          "One-line definition"
+        ],
+        "rows": [
+          {
+            "Code": "MIN-MA-01",
+            "MA Name": "Try Before You Commit",
+            "One-line definition": "Same formula in 10-15ml. Real results. Before you buy full size, find out if it works for your skin."
+          },
+          {
+            "Code": "MIN-MA-02",
+            "MA Name": "Travel Ready",
+            "One-line definition": "Fits in carry-on. Keeps your routine intact wherever you are."
+          },
+          {
+            "Code": "MIN-MA-03",
+            "MA Name": "Gateway to the Routine",
+            "One-line definition": "Start with one mini. See the result. Then build the full system."
+          }
+        ]
+      },
+      "beliefs": {
+        "title": "Beliefs",
+        "headers": [
+          "Code",
+          "Belief Name"
+        ],
+        "rows": [
+          {
+            "Code": "MIN-B-01",
+            "Belief Name": "I can find out if this actually works for my skin before I commit to the full size"
+          }
+        ]
+      },
+      "cohorts": {
+        "title": "Cohorts",
+        "headers": [
+          "Code",
+          "Cohort",
+          "Core tension"
+        ],
+        "rows": [
+          {
+            "Code": "MIN-C01",
+            "Cohort": "Skeptical First-Timer",
+            "Core tension": "\"I've been burned by products before. I'm interested but not ready to spend full price.\""
+          },
+          {
+            "Code": "MIN-C02",
+            "Cohort": "Traveller",
+            "Core tension": "\"I need a version of my routine that fits in a carry-on.\""
+          }
+        ]
+      },
+      "drivers": {
+        "title": "Situational Drivers",
+        "headers": [
+          "Code",
+          "Driver Name",
+          "Simple definition",
+          "Best-fit MAs"
+        ],
+        "rows": [
+          {
+            "Code": "SD-MIN-01",
+            "Driver Name": "First Touch With TSS",
+            "Simple definition": "Heard about or saw TSS for the first time. Interested but not ready to commit to full size.",
+            "Best-fit MAs": "MIN-MA-01, MIN-MA-03"
+          },
+          {
+            "Code": "SD-MIN-02",
+            "Driver Name": "Travelling",
+            "Simple definition": "Trip coming up. Needs skincare that fits in a carry-on or won't be confiscated.",
+            "Best-fit MAs": "MIN-MA-02"
+          },
+          {
+            "Code": "SD-MIN-03",
+            "Driver Name": "Wants to Try Before Full Kit",
+            "Simple definition": "Considering a kit or multi-product purchase. Wants to confirm one product works first.",
+            "Best-fit MAs": "MIN-MA-01, MIN-MA-03"
+          }
+        ]
+      },
+      "claims": {
+        "title": "Claims",
+        "headers": [],
+        "rows": []
+      }
+    },
+    "Ultra Smooth Cleanser": {
+      "angles": {
+        "title": "Marketing Angles",
+        "headers": [
+          "Code",
+          "MA Name",
+          "One-line definition"
+        ],
+        "rows": [
+          {
+            "Code": "USC-MA-01",
+            "MA Name": "Smoother Skin From the First Wash",
+            "One-line definition": "AHA + BHA together. Texture, blackheads, rough skin — feel the difference immediately."
+          },
+          {
+            "Code": "USC-MA-02",
+            "MA Name": "Clears Without Stripping",
+            "One-line definition": "Dual-acid formula unclogs pores without destroying the moisture barrier. Non-stripping."
+          },
+          {
+            "Code": "USC-MA-03",
+            "MA Name": "For Blackheads and Clogged Pores",
+            "One-line definition": "AHA clears surface. BHA goes into the pore. The right tool for comedonal acne specifically."
+          }
+        ]
+      },
+      "beliefs": {
+        "title": "Beliefs",
+        "headers": [
+          "Code",
+          "Belief Name",
+          "Belief shift"
+        ],
+        "rows": [
+          {
+            "Code": "USC-B-01",
+            "Belief Name": "My skin texture can actually change — I don't have to accept rough skin and blackheads",
+            "Belief shift": "FROM: \"This is just how my skin is.\" TO: \"Texture and blackheads respond to the right formula.\""
+          },
+          {
+            "Code": "USC-B-02",
+            "Belief Name": "I can clear my pores every day without it irritating my skin",
+            "Belief shift": "FROM: \"Acid cleansers need to be used sparingly or they irritate.\" TO: \"AHA + BHA in a gentle glycerin base = effective and daily-use compatible.\""
+          }
+        ]
+      },
+      "cohorts": {
+        "title": "Cohorts",
+        "headers": [
+          "Code",
+          "Cohort",
+          "Core tension"
+        ],
+        "rows": [
+          {
+            "Code": "USC-C01",
+            "Cohort": "Texture and Blackhead Sufferer",
+            "Core tension": "\"My skin is rough, congested, full of blackheads. Nothing has made it smooth.\""
+          },
+          {
+            "Code": "USC-C02",
+            "Cohort": "Post-Acne Texture Carrier",
+            "Core tension": "\"Active acne cleared but texture is still rough and uneven.\""
+          },
+          {
+            "Code": "USC-C03",
+            "Cohort": "Oily / Congested",
+            "Core tension": "\"My skin produces too much oil. Pores look enlarged. Blackheads keep forming.\""
+          }
+        ]
+      },
+      "drivers": {
+        "title": "Situational Drivers",
+        "headers": [
+          "Code",
+          "Driver",
+          "Trigger"
+        ],
+        "rows": [
+          {
+            "Code": "SD-USC-01",
+            "Driver": "Blackheads Noticed or Worsened",
+            "Trigger": "Noticed blackheads more than before in mirror/photo."
+          },
+          {
+            "Code": "SD-USC-02",
+            "Driver": "Skin Texture Frustration",
+            "Trigger": "Foundation doesn't sit smoothly. Rough despite regular routine."
+          },
+          {
+            "Code": "SD-USC-03",
+            "Driver": "Post-Acne Texture Left Behind",
+            "Trigger": "Active acne cleared. Texture remains."
+          },
+          {
+            "Code": "SD-USC-04",
+            "Driver": "Oiliness Getting Worse",
+            "Trigger": "Face getting increasingly oily. Current cleanser not controlling it."
+          }
+        ]
+      },
+      "claims": {
+        "title": "Claims",
+        "headers": [],
+        "rows": []
+      }
+    },
+    "Barrier Soothing Cleanser": {
+      "angles": {
+        "title": "Marketing Angles",
+        "headers": [
+          "Code",
+          "MA Name",
+          "One-line definition"
+        ],
+        "rows": [
+          {
+            "Code": "BSC-MA-01",
+            "MA Name": "Clean Without the Tightness",
+            "One-line definition": "50% glycerin base. No post-wash tightness, dryness, or redness. Just clean and comfortable."
+          },
+          {
+            "Code": "BSC-MA-02",
+            "MA Name": "The Safe Daily Reset",
+            "One-line definition": "After every RCF/retinoid/active session — a cleanser that resets without setting back."
+          },
+          {
+            "Code": "BSC-MA-03",
+            "MA Name": "Gentle Enough for Every Day",
+            "One-line definition": "Comfortable with daily use — even twice daily on sensitive or reactive skin."
+          },
+          {
+            "Code": "BSC-MA-04",
+            "MA Name": "Safe for Sensitive Skin",
+            "One-line definition": "Fragrance-free, alcohol-free, tested on sensitive skin — for skin that reacts to almost everything."
+          }
+        ]
+      },
+      "beliefs": {
+        "title": "Beliefs",
+        "headers": [
+          "Code",
+          "Belief Name"
+        ],
+        "rows": [
+          {
+            "Code": "BSC-B-01",
+            "Belief Name": "My skin can feel genuinely clean AND comfortable after washing — I don't have to choose"
+          }
+        ]
+      },
+      "cohorts": {
+        "title": "Cohorts",
+        "headers": [
+          "Code",
+          "Cohort",
+          "Core tension"
+        ],
+        "rows": [
+          {
+            "Code": "BSC-C01",
+            "Cohort": "Active Treatment Companion Seeker",
+            "Core tension": "\"I'm on RCF/retinoid. My current face wash is too harsh for what I'm putting my skin through.\""
+          },
+          {
+            "Code": "BSC-C02",
+            "Cohort": "Post-Inflammation Soother",
+            "Core tension": "\"My skin has been through a lot. Reactive. I want a cleanser that calms it down.\""
+          },
+          {
+            "Code": "BSC-C03",
+            "Cohort": "CeraVe Upgrader",
+            "Core tension": "\"I use CeraVe. I want something made for Indian skin, Indian humidity, Indian skin tones.\""
+          }
+        ]
+      },
+      "drivers": {
+        "title": "Situational Drivers",
+        "headers": [
+          "Code",
+          "Driver",
+          "Trigger"
+        ],
+        "rows": [
+          {
+            "Code": "SD-BSC-01",
+            "Driver": "Current Cleanser Causing Tightness",
+            "Trigger": "Skin tight/uncomfortable after washing. Cleanser is the problem."
+          },
+          {
+            "Code": "SD-BSC-02",
+            "Driver": "Actives Made Skin More Sensitive",
+            "Trigger": "Started RCF/retinoid. Previous cleanser now too much."
+          },
+          {
+            "Code": "SD-BSC-03",
+            "Driver": "Switching From CeraVe or Similar",
+            "Trigger": "Not unhappy. Curious about something made for Indian skin specifically."
+          }
+        ]
+      },
+      "claims": {
+        "title": "Claims",
+        "headers": [],
+        "rows": []
+      }
+    }
+  },
+  "universal": {
+    "formats": {
+      "title": "Formats",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition",
+        "Used for"
+      ],
+      "rows": [
+        {
+          "Code": "FMT-V",
+          "Name": "Video",
+          "Definition": "Any moving creative — testimonial, demo, skit, founder, AI video, event.",
+          "Used for": "All video ad types."
+        },
+        {
+          "Code": "FMT-S",
+          "Name": "Static",
+          "Definition": "Any single frame or swipeable sequence — image, carousel, proof card, infographic.",
+          "Used for": "All still ad types."
+        }
+      ]
+    },
+    "video_subtypes": {
+      "title": "Video Subtypes",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition",
+        "When to use",
+        "Do not use when",
+        "Notes"
+      ],
+      "rows": [
+        {
+          "Code": "VS1",
+          "Name": "Consumer Testimonial",
+          "Definition": "Real consumer telling their lived product or problem story. Unscripted personal experience.",
+          "When to use": "Real acne journey. LEV archetype.",
+          "Do not use when": "Consumer is scripted or acting.",
+          "Notes": "Primary subtype for TSS."
+        },
+        {
+          "Code": "VS2",
+          "Name": "Founder-Led",
+          "Definition": "Divanshee speaking — intent, accountability, behind the scenes, product rationale.",
+          "When to use": "Any FO content.",
+          "Do not use when": "Another person is presenting as the founder.",
+          "Notes": ""
+        },
+        {
+          "Code": "VS3",
+          "Name": "Expert / Dermat",
+          "Definition": "Credentialed dermatologist, skin scientist, or AA archetype on screen.",
+          "When to use": "Clinical proof, objection handling, ingredient explanation.",
+          "Do not use when": "No credentials present.",
+          "Notes": ""
+        },
+        {
+          "Code": "VS4",
+          "Name": "Creator / UGC",
+          "Definition": "Paid or organic creator. Product in their routine or POV. Not their personal acne history.",
+          "When to use": "Influencer content, UGC-style.",
+          "Do not use when": "Creator is sharing a genuine personal acne story — that is VS1.",
+          "Notes": ""
+        },
+        {
+          "Code": "VS5",
+          "Name": "Product Demo",
+          "Definition": "Product-only or product-first video. Application, texture, formula shown. No creator narrating.",
+          "When to use": "Pure product demonstration.",
+          "Do not use when": "A creator is narrating the demo — that is VS4.",
+          "Notes": ""
+        },
+        {
+          "Code": "VS6",
+          "Name": "Skit / Scenario",
+          "Definition": "Scripted or acted scene. Character-led, not creator-led.",
+          "When to use": "Relatable scenario format. Panic moment.",
+          "Do not use when": "Genuine unscripted content.",
+          "Notes": ""
+        },
+        {
+          "Code": "VS7",
+          "Name": "AI Video",
+          "Definition": "AI-generated or AI-heavy moving creative.",
+          "When to use": "AI image-to-video, AI avatar.",
+          "Do not use when": "Real human appears.",
+          "Notes": ""
+        },
+        {
+          "Code": "VS8",
+          "Name": "Event Coverage",
+          "Definition": "Real-world event, launch, or behind-the-scenes footage.",
+          "When to use": "Launch events, brand moments.",
+          "Do not use when": "Not in active production — Low priority.",
+          "Notes": ""
+        }
+      ]
+    },
+    "static_subtypes": {
+      "title": "Static Subtypes",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition",
+        "When to use",
+        "Do not use when"
+      ],
+      "rows": [
+        {
+          "Code": "SS1",
+          "Name": "Single Image",
+          "Definition": "One hero frame — product, person, skin, headline-led, or product hero.",
+          "When to use": "Default for all single-image ads including product-only shots.",
+          "Do not use when": "Multiple frames needed."
+        },
+        {
+          "Code": "SS2",
+          "Name": "Carousel",
+          "Definition": "Multi-frame swipeable sequence.",
+          "When to use": "Educational sequence, product range, before/after steps.",
+          "Do not use when": "Single message."
+        },
+        {
+          "Code": "SS3",
+          "Name": "Before / After",
+          "Definition": "Visual contrast of two skin or routine states.",
+          "When to use": "Skin transformation proof.",
+          "Do not use when": "No genuine before/after evidence."
+        },
+        {
+          "Code": "SS4",
+          "Name": "Proof Screenshot",
+          "Definition": "Review, DM, clinical certificate, or testimonial screenshot.",
+          "When to use": "Social proof, credibility ads.",
+          "Do not use when": "Screenshot is unverified or from unknown source."
+        },
+        {
+          "Code": "SS5",
+          "Name": "Comparison",
+          "Definition": "Versus competitor, old routine, category myth, or wrong tool.",
+          "When to use": "MA-01 type creatives. Side-by-side.",
+          "Do not use when": "Competitor is named explicitly — naming not permitted."
+        },
+        {
+          "Code": "SS6",
+          "Name": "Meme / Topical",
+          "Definition": "Cultural reference or trending format adapted to TSS messaging.",
+          "When to use": "Cultural moments, trend jacking.",
+          "Do not use when": "Brand safety concern with the trend."
+        },
+        {
+          "Code": "SS7",
+          "Name": "Educational / Data",
+          "Definition": "Teaches a concept, protocol, or leads with a clinical number or study result.",
+          "When to use": "Clinical proof. Ingredient education. Protocol cards.",
+          "Do not use when": "TOF cold audiences before emotional buy-in."
+        },
+        {
+          "Code": "SS8",
+          "Name": "Ingredient Focus",
+          "Definition": "Single ingredient or formula spotlight.",
+          "When to use": "Ingredient-educated audience. AA content.",
+          "Do not use when": "Consumer who finds ingredient talk overwhelming."
+        },
+        {
+          "Code": "SS9",
+          "Name": "Offer / Promotional",
+          "Definition": "Creative whose primary purpose is communicating a price deal, discount, bundle, or limited offer. e.g. \"Buy 3 for ₹1599\", \"Free mini\", B2G1.",
+          "When to use": "Whenever an offer is the lead message.",
+          "Do not use when": "The offer is incidental — if product benefit leads and offer is only a secondary badge, use SS1."
+        }
+      ]
+    },
+    "visual_hook_types": {
+      "title": "Visual Hook Types",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition",
+        "Tag from",
+        "When to use"
+      ],
+      "rows": [
+        {
+          "Code": "VH1",
+          "Name": "Skin Visual",
+          "Definition": "Acne, marks, texture, redness, or clear skin close-up is the first visual.",
+          "Tag from": "First frame.",
+          "When to use": "Any skin-condition or transformation creative."
+        },
+        {
+          "Code": "VH2",
+          "Name": "Before / After",
+          "Definition": "Visible before/after or split contrast is the first thing shown.",
+          "Tag from": "First frame.",
+          "When to use": "Proof and transformation creatives."
+        },
+        {
+          "Code": "VH3",
+          "Name": "Product In Use",
+          "Definition": "Product dispensed, applied, or washed off is the first visual.",
+          "Tag from": "First frame.",
+          "When to use": "Demo and protocol creatives."
+        },
+        {
+          "Code": "VH4",
+          "Name": "Text / Super Dominant",
+          "Definition": "Bold text overlay is what the viewer reads first before anything else registers.",
+          "Tag from": "First frame.",
+          "When to use": "Pattern interrupt, editorial hooks."
+        },
+        {
+          "Code": "VH5",
+          "Name": "Screenshot / Proof on Screen",
+          "Definition": "Review, DM, clinical result, or screenshot shown immediately.",
+          "Tag from": "First frame.",
+          "When to use": "Social proof, credibility."
+        },
+        {
+          "Code": "VH6",
+          "Name": "Demo Object",
+          "Definition": "Unusual prop or demo object (permanent marker, dust, makeup) creates immediate curiosity.",
+          "Tag from": "First frame.",
+          "When to use": "EMC kajal demo, LPP dust protection."
+        },
+        {
+          "Code": "VH7",
+          "Name": "Relatable Scene",
+          "Definition": "A recognisable setting — bathroom mirror, makeup desk, gym, commute, bedtime.",
+          "Tag from": "First frame.",
+          "When to use": "Relatable scenario hooks."
+        },
+        {
+          "Code": "VH8",
+          "Name": "Face to Camera",
+          "Definition": "Person looking directly at viewer and speaking. No text, no product — just face.",
+          "Tag from": "First frame.",
+          "When to use": "LEV testimonials, direct address."
+        },
+        {
+          "Code": "VH9",
+          "Name": "Pattern Interrupt",
+          "Definition": "Unexpected visual, unusual framing, hard cut, or meme format.",
+          "Tag from": "First frame.",
+          "When to use": "Scroll-stop in competitive feed."
+        }
+      ]
+    },
+    "content_hook_types": {
+      "title": "Content Hook Types",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition",
+        "Tag from",
+        "Example"
+      ],
+      "rows": [
+        {
+          "Code": "CH1",
+          "Name": "Pain Named",
+          "Definition": "Opens by stating the exact frustration or problem.",
+          "Tag from": "First spoken line or opening subtitle.",
+          "Example": "\"So the pimples never leave my face.\""
+        },
+        {
+          "Code": "CH2",
+          "Name": "Functional Payoff Open",
+          "Definition": "Opens with a tangible, observable result already achieved.",
+          "Tag from": "First spoken line.",
+          "Example": "\"Even after two-three washes, significant result dikha.\""
+        },
+        {
+          "Code": "CH3",
+          "Name": "Objection First",
+          "Definition": "Opens with the viewer's doubt, fear, or reason not to believe.",
+          "Tag from": "First spoken line or subtitle.",
+          "Example": "\"Another fake product, another fake review.\""
+        },
+        {
+          "Code": "CH4",
+          "Name": "Curiosity Gap / Secret",
+          "Definition": "Opens with withheld information — passively incomplete or actively gatekept.",
+          "Tag from": "First spoken line.",
+          "Example": "\"She stopped the oral medication.\""
+        },
+        {
+          "Code": "CH5",
+          "Name": "Myth / Comparison / Reframe",
+          "Definition": "Opens by challenging a belief OR placing two things side-by-side.",
+          "Tag from": "First spoken line or subtitle.",
+          "Example": "\"SA targets pores. BPO kills bacteria.\""
+        },
+        {
+          "Code": "CH6",
+          "Name": "Relatable Scenario",
+          "Definition": "Opens with a specific lived moment the viewer recognises as their own.",
+          "Tag from": "First spoken line.",
+          "Example": "\"Gym mein makeup nahi laga sakte — aur face dikhega.\""
+        },
+        {
+          "Code": "CH7",
+          "Name": "Authority / Credibility",
+          "Definition": "Opens with expert, clinical, founder, or credentialed proof.",
+          "Tag from": "First spoken line or subtitle.",
+          "Example": "\"India's first face wash with micronised BPO.\""
+        },
+        {
+          "Code": "CH8",
+          "Name": "Social Proof",
+          "Definition": "Opens with what someone else experienced — unsolicited, specific, credible.",
+          "Tag from": "First spoken line.",
+          "Example": "\"Thank you for making this magical thing.\""
+        },
+        {
+          "Code": "CH9",
+          "Name": "Urgency / Panic",
+          "Definition": "Opens with a deadline, event, or sudden problem.",
+          "Tag from": "First spoken line.",
+          "Example": "\"Something important is tomorrow and I woke up with this.\""
+        },
+        {
+          "Code": "CH10",
+          "Name": "Dark Humour / Irony",
+          "Definition": "Opens with sardonic or comedic framing of a real problem.",
+          "Tag from": "First spoken line.",
+          "Example": "\"Phone sunta hai — aur kabhi kabhi sahi sunta hai.\""
+        },
+        {
+          "Code": "CH11",
+          "Name": "Emotional Payoff Open",
+          "Definition": "Opens with the emotional state change — confidence, freedom, no longer hiding.",
+          "Tag from": "First spoken line.",
+          "Example": "\"Now I'm completely ready. Let's go. Kab jaana hai batao?\""
+        },
+        {
+          "Code": "CH12",
+          "Name": "Price / Value Lead",
+          "Definition": "Opens with a cost comparison or value statement.",
+          "Tag from": "First spoken line or subtitle.",
+          "Example": "\"₹2 per patch. 300+ patches in one tube.\""
+        },
+        {
+          "Code": "CH13",
+          "Name": "Negative Trigger / Challenge",
+          "Definition": "Opens with a conditional challenge that activates fear of being left behind.",
+          "Tag from": "First spoken line or subtitle.",
+          "Example": "\"If you're not ready for purging, you're not ready to clear your acne.\""
+        }
+      ]
+    },
+    "emotional_arcs": {
+      "title": "Emotional Arcs",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition",
+        "When to use"
+      ],
+      "rows": [
+        {
+          "Code": "EA1",
+          "Name": "Pain → Relief",
+          "Definition": "Starts in discomfort or frustration, ends in relief.",
+          "When to use": "Most consumer testimonials."
+        },
+        {
+          "Code": "EA2",
+          "Name": "Confusion → Clarity",
+          "Definition": "Starts not understanding why things aren't working, ends with sense-making.",
+          "When to use": "MA-01 and MA-06 type creatives."
+        },
+        {
+          "Code": "EA3",
+          "Name": "Skepticism → Belief",
+          "Definition": "Starts doubtful, ends convinced by evidence or experience.",
+          "When to use": "BOF proof creatives. Zero-hope testimonials."
+        },
+        {
+          "Code": "EA4",
+          "Name": "Fear → Safety",
+          "Definition": "Starts afraid of a product, category, or outcome, ends reassured.",
+          "When to use": "C4 (barrier-compromised). Barrier safety MAs."
+        },
+        {
+          "Code": "EA5",
+          "Name": "Shame → Confidence",
+          "Definition": "Starts hiding, avoiding, or embarrassed, ends showing up.",
+          "When to use": "Social wound testimonials. Marks testimonials."
+        },
+        {
+          "Code": "EA6",
+          "Name": "Resignation → Hope",
+          "Definition": "Starts with having given up, ends with reason to try again.",
+          "When to use": "C2 (burnt out). Zero-hope arc."
+        },
+        {
+          "Code": "EA7",
+          "Name": "Discovery → Decision",
+          "Definition": "Starts unaware the solution exists, ends ready to act.",
+          "When to use": "Accidental discoverer. TOF education."
+        },
+        {
+          "Code": "EA8",
+          "Name": "Dark Humour → Vindication",
+          "Definition": "Starts sardonic or self-deprecating, ends with the thing that actually worked.",
+          "When to use": "C8 (culturally over-advised). Irony hooks."
+        },
+        {
+          "Code": "EA9",
+          "Name": "Loyalty → Advocacy",
+          "Definition": "Starts already convinced, ends recommending or restocking. Confirmation, not persuasion.",
+          "When to use": "BOF/retention. Repeat-purchase testimonials."
+        }
+      ]
+    },
+    "funnel_stages": {
+      "title": "Funnel Stages",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition",
+        "Creative job",
+        "Typical proof needed"
+      ],
+      "rows": [
+        {
+          "Code": "TOFU",
+          "Name": "Top of Funnel",
+          "Definition": "Cold audience. Problem-aware but not solution-aware.",
+          "Creative job": "Make them feel understood and introduce the solution.",
+          "Typical proof needed": "Emotional resonance. Problem naming."
+        },
+        {
+          "Code": "MOFU",
+          "Name": "Middle of Funnel",
+          "Definition": "Solution-aware. Comparing options, building trust, not yet ready to buy.",
+          "Creative job": "Build credibility. Address objections. Show proof.",
+          "Typical proof needed": "Clinical data, testimonials, mechanism explanation."
+        },
+        {
+          "Code": "BOFU",
+          "Name": "Bottom of Funnel",
+          "Definition": "Warm audience. Ready to buy, needs final push or reassurance.",
+          "Creative job": "Close. Final proof. Remove last friction.",
+          "Typical proof needed": "Social proof, offer, risk reversal."
+        },
+        {
+          "Code": "CONV",
+          "Name": "Cold Conversion",
+          "Definition": "Cold audience but creative is built to convert directly — enough proof, specificity, and credibility to skip warm-up.",
+          "Creative job": "Convert cold. High-specificity hook + immediate proof + direct CTA.",
+          "Typical proof needed": "Strong proof hook + direct testimonial + clear CTA."
+        }
+      ]
+    },
+    "creator_archetypes": {
+      "title": "Creator Archetypes",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition",
+        "When to use",
+        "Do not use when"
+      ],
+      "rows": [
+        {
+          "Code": "AA",
+          "Name": "Authority Anchor",
+          "Definition": "Dermatologist, skin expert, scientist, or credentialed voice. Trusted for correctness.",
+          "When to use": "Clinical explanation, ingredient education, objection handling.",
+          "Do not use when": "No credentials — mislabelling damages trust."
+        },
+        {
+          "Code": "LEV",
+          "Name": "Lived Experience Validator",
+          "Definition": "Real consumer who experienced the problem. Trusted for honesty and relatability.",
+          "When to use": "Consumer testimonials. Personal acne stories.",
+          "Do not use when": "Consumer is scripted in a way that feels inauthentic."
+        },
+        {
+          "Code": "FO",
+          "Name": "Founder-Operator",
+          "Definition": "Divanshee. Trusted for intent, accountability, and behind-the-scenes reasoning.",
+          "When to use": "Brand story. Product intent. Founder POV.",
+          "Do not use when": "Another person presenting as founder."
+        },
+        {
+          "Code": "IC",
+          "Name": "Influencer / Creator",
+          "Definition": "Paid or organic creator. Product in routine or POV. Not a personal acne history.",
+          "When to use": "UGC-style. Lifestyle integration.",
+          "Do not use when": "Creator is sharing genuine personal acne journey — that is LEV."
+        },
+        {
+          "Code": "CSA",
+          "Name": "Situational Relatable",
+          "Definition": "Creator mirroring a lived everyday moment. Scene-setting, not story-telling.",
+          "When to use": "Skit, scenario, relatable context.",
+          "Do not use when": "Deep emotional story — that is LEV."
+        },
+        {
+          "Code": "BRAND",
+          "Name": "Brand / No Creator",
+          "Definition": "AI-generated, product-only, or brand-produced with no human creator.",
+          "When to use": "Product demos, AI statics, data cards.",
+          "Do not use when": "A human appears."
+        }
+      ]
+    },
+    "influence_modes": {
+      "title": "Influence Modes",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition",
+        "What it does psychologically",
+        "When to use"
+      ],
+      "rows": [
+        {
+          "Code": "M1",
+          "Name": "Permission / De-risking",
+          "Definition": "Makes trying feel safe. Reduces fear of starting.",
+          "What it does psychologically": "Lowers the psychological cost of action.",
+          "When to use": "C4 (sensitive). Any fear-of-product audience."
+        },
+        {
+          "Code": "M2",
+          "Name": "Reassurance / Anti-Panic",
+          "Definition": "Calms fear and prevents quitting or over-reacting.",
+          "What it does psychologically": "Stabilises the viewer's emotional state.",
+          "When to use": "Post-purchase. Early use. Initial reaction fear."
+        },
+        {
+          "Code": "M3",
+          "Name": "Belief Reframe",
+          "Definition": "Shifts a held belief so the product becomes logical.",
+          "What it does psychologically": "Installs a new mental model.",
+          "When to use": "MA-01, MA-06. Category objection creatives."
+        },
+        {
+          "Code": "M4",
+          "Name": "Demonstration",
+          "Definition": "Shows the product visibly working.",
+          "What it does psychologically": "Creates direct sensory or visual proof.",
+          "When to use": "Demo videos. Product in action."
+        },
+        {
+          "Code": "M5",
+          "Name": "Proof Delivery",
+          "Definition": "Evidence — before/after, numbers, clinical data, testimonials.",
+          "What it does psychologically": "Transfers credibility through proof.",
+          "When to use": "MOF-BOF. Evidence-seeking audience."
+        },
+        {
+          "Code": "M6",
+          "Name": "Objection Handling",
+          "Definition": "Takes the main reason not to buy and neutralises it.",
+          "What it does psychologically": "Removes the specific blocker to purchase.",
+          "When to use": "BOF. Retargeting."
+        },
+        {
+          "Code": "M7",
+          "Name": "Acute Stabiliser",
+          "Definition": "Meets the consumer in a panic or urgent moment.",
+          "What it does psychologically": "Provides immediate calm and direction.",
+          "When to use": "Event panic. Sudden breakout. C3."
+        },
+        {
+          "Code": "M8",
+          "Name": "Social Proof Loop",
+          "Definition": "Distributed trust — people like me used this and it worked.",
+          "What it does psychologically": "Normalises the purchase through peer evidence.",
+          "When to use": "TOF-MOF. Scale proof."
+        },
+        {
+          "Code": "M9",
+          "Name": "Conversion Close",
+          "Definition": "Structured to get the buy — offer, direct ask, final push.",
+          "What it does psychologically": "Creates immediate action.",
+          "When to use": "BOF only."
+        },
+        {
+          "Code": "M10",
+          "Name": "Cost / Value Contrast",
+          "Definition": "Shows the price of not solving vs the cost of solving.",
+          "What it does psychologically": "Reframes the spend as rational.",
+          "When to use": "Derm-fatigue. Product-stack-fatigued."
+        },
+        {
+          "Code": "M11",
+          "Name": "Dark Humour / Irony",
+          "Definition": "Uses comedy or irony to make the truth land.",
+          "What it does psychologically": "Creates recognition through laughter.",
+          "When to use": "C8. Cultural advice fatigue."
+        }
+      ]
+    },
+    "visual_treatments": {
+      "title": "Visual Treatment (Statics)",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition",
+        "Best used for"
+      ],
+      "rows": [
+        {
+          "Code": "VT1",
+          "Name": "Skin-Led",
+          "Definition": "Skin, marks, texture, or face is the dominant visual element.",
+          "Best used for": "Testimonial statics, before/after, transformation proof."
+        },
+        {
+          "Code": "VT2",
+          "Name": "Product-Led",
+          "Definition": "Product shot is the dominant visual element.",
+          "Best used for": "Product hero, ingredient focus, launch creative."
+        },
+        {
+          "Code": "VT3",
+          "Name": "Text-Led",
+          "Definition": "Copy or headline is the primary element. Visual supports text.",
+          "Best used for": "Data cards, proof statements, bold headline ads."
+        },
+        {
+          "Code": "VT4",
+          "Name": "Lifestyle / Scene",
+          "Definition": "Person or real-life setting dominates. Product may or may not be visible.",
+          "Best used for": "Relatable scenario, UGC-style statics."
+        },
+        {
+          "Code": "VT5",
+          "Name": "Data / Proof Visual",
+          "Definition": "Numbers, chart, label, or clinical imagery is the hero.",
+          "Best used for": "Clinical proof statics, stats cards."
+        },
+        {
+          "Code": "VT6",
+          "Name": "Illustration / AI",
+          "Definition": "Illustrated or AI-generated visual style.",
+          "Best used for": "Ingredient visualisation, educational explainer."
+        }
+      ]
+    },
+    "cta_formats": {
+      "title": "CTA Format",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition"
+      ],
+      "rows": [
+        {
+          "Code": "CF1",
+          "Name": "AI Voiceover Slide",
+          "Definition": "AI VO read over a closing card. Primary TSS format."
+        },
+        {
+          "Code": "CF2",
+          "Name": "Creator Spoken",
+          "Definition": "Talent delivers CTA in their own words, in-frame."
+        },
+        {
+          "Code": "CF3",
+          "Name": "Text End Card",
+          "Definition": "Closing card with text only. No VO."
+        },
+        {
+          "Code": "CF4",
+          "Name": "No Explicit CTA",
+          "Definition": "Content ends without a direct ask. Awareness or engagement."
+        }
+      ]
+    },
+    "cta_message_types": {
+      "title": "CTA Message Type",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition"
+      ],
+      "rows": [
+        {
+          "Code": "CM1",
+          "Name": "Direct Buy",
+          "Definition": "Clean, direct call to purchase. \"Buy now / Shop now / Try now.\""
+        },
+        {
+          "Code": "CM2",
+          "Name": "Soft Permission",
+          "Definition": "Low-pressure invitation. \"Give it a try / See if it works for you.\""
+        },
+        {
+          "Code": "CM3",
+          "Name": "Social Proof Close",
+          "Definition": "Anchors ask to others' results. \"She got her skin clear — what about you?\""
+        },
+        {
+          "Code": "CM4",
+          "Name": "Problem Restate",
+          "Definition": "Echoes the hook's pain before the ask. Closes the emotional loop."
+        },
+        {
+          "Code": "CM5",
+          "Name": "Viewer Direct Address",
+          "Definition": "Speaks directly to the viewer's turn. \"Now it's your turn.\""
+        },
+        {
+          "Code": "CM6",
+          "Name": "Urgency",
+          "Definition": "Time, stock, or event pressure."
+        },
+        {
+          "Code": "CM7",
+          "Name": "Risk Reversal",
+          "Definition": "Reduces the cost of trying. \"Zero hope — she tried it anyway.\""
+        },
+        {
+          "Code": "CM8",
+          "Name": "Offer / Deal",
+          "Definition": "CTA leads with the deal. \"Buy 3 for ₹1599 — shop now.\" \"Free mini on orders above ₹499.\""
+        }
+      ]
+    },
+    "static_message_types": {
+      "title": "Static Message Type",
+      "headers": [
+        "Code",
+        "Name",
+        "Definition",
+        "Example",
+        "Do not confuse with"
+      ],
+      "rows": [
+        {
+          "Code": "SPM1",
+          "Name": "Offer / Promotional",
+          "Definition": "The body communicates a price deal, bundle discount, or limited offer as the primary message.",
+          "Example": "\"Buy 3 for ₹1599 and get a free mini.\" \"B2G1 this week.\"",
+          "Do not confuse with": "SPM2 — SPM1 is about a specific deal/promotion. SPM2 is about the general value argument without a time-bound offer."
+        },
+        {
+          "Code": "SPM2",
+          "Name": "Price / Value",
+          "Definition": "The body communicates cost comparison, price per use, or affordability as the primary argument.",
+          "Example": "\"₹2 per patch. 300+ patches in one tube.\" \"Less than your current routine at ₹799.\"",
+          "Do not confuse with": "SPM1 — SPM2 has no specific deal or time pressure. It is a standing value argument."
+        },
+        {
+          "Code": "SPM3",
+          "Name": "Clinical / Data Proof",
+          "Definition": "The body leads with study data, lab results, clinical credentials, or specific numbers as primary proof.",
+          "Example": "\"78% clearer skin in 6 weeks. UKAS-accredited study.\" \"SPF 57.65 in-vitro tested.\"",
+          "Do not confuse with": "SPM4 — SPM3 is brand/lab-generated proof. SPM4 is consumer-generated proof."
+        },
+        {
+          "Code": "SPM4",
+          "Name": "Consumer / Social Proof",
+          "Definition": "The body leads with consumer testimonials, reviews, star ratings, or before/after results as primary proof.",
+          "Example": "Review screenshot. \"First sunscreen that didn't break me out — Shanthi C, 2nd purchase.\"",
+          "Do not confuse with": "SPM3 — SPM4 is what real people said or experienced. SPM3 is what the study or lab found."
+        },
+        {
+          "Code": "SPM5",
+          "Name": "Product Education",
+          "Definition": "The body explains how the product works, what it contains, or how to use it correctly.",
+          "Example": "\"Apply. Leave 2 minutes. Rinse. That's the treatment step.\" Ingredient breakdown. Protocol card.",
+          "Do not confuse with": "SPM6 — SPM5 is about the product mechanism. SPM6 is about the consumer's problem."
+        },
+        {
+          "Code": "SPM6",
+          "Name": "Problem / Pain",
+          "Definition": "The body articulates and deepens the consumer's problem — making them feel understood before any solution is offered.",
+          "Example": "\"You've tried SA. You've been to a dermatologist. It keeps coming back.\"",
+          "Do not confuse with": "SPM5 — SPM6 has no product explanation. It is purely problem resonance."
+        },
+        {
+          "Code": "SPM7",
+          "Name": "Differentiation",
+          "Definition": "The body shows how this product is categorically different from alternatives — wrong tool, old-gen formula, competitor category.",
+          "Example": "\"SA targets pores. BPO kills bacteria. You were using the wrong tool.\" \"Old-gen filters sit in your pores. Ours don't.\"",
+          "Do not confuse with": "SPM3 — SPM7 is about relative difference. SPM3 is about absolute proof numbers."
+        }
+      ]
+    }
+  },
+  "deprecated_merge_map": {
+    "headers": [
+      "Old Code / Name",
+      "Old Category",
+      "New Code / Name",
+      "Action",
+      "Reason"
+    ],
+    "rows": [
+      {
+        "Old Code / Name": "Hook Type H1–H20 (v9)",
+        "Old Category": "Hook Type",
+        "New Code / Name": "VH1–VH9 + CH1–CH13",
+        "Action": "Split into two fields",
+        "Reason": "Was mixing visual + content in one field. Now separated."
+      },
+      {
+        "Old Code / Name": "MA-R3 (Won't Backfire)",
+        "Old Category": "RCF MA",
+        "New Code / Name": "RCF-MA-02",
+        "Action": "Merged",
+        "Reason": "Same consumer fear as MA-R2."
+      },
+      {
+        "Old Code / Name": "MA-R6 (Barrier-First Design)",
+        "Old Category": "RCF MA",
+        "New Code / Name": "RCF-MA-02",
+        "Action": "Merged",
+        "Reason": "Mechanism proof for MA-02, not separate angle."
+      },
+      {
+        "Old Code / Name": "MA-R11 (Won't Wreck Barrier)",
+        "Old Category": "RCF MA",
+        "New Code / Name": "RCF-MA-02",
+        "Action": "Merged",
+        "Reason": "Third name for same consumer fear."
+      },
+      {
+        "Old Code / Name": "MA-R5 (One Step, Right Problem)",
+        "Old Category": "RCF MA",
+        "New Code / Name": "RCF-MA-01",
+        "Action": "Merged",
+        "Reason": "Routine simplification is part of \"wrong tool\" arc."
+      },
+      {
+        "Old Code / Name": "MA-R12 (Alt to Derm)",
+        "Old Category": "RCF MA",
+        "New Code / Name": "RCF-MA-01",
+        "Action": "Merged",
+        "Reason": "Cost/derm-fatigue covered in wrong tool arc."
+      },
+      {
+        "Old Code / Name": "LPP-MA-L4 (Protects from Makeup)",
+        "Old Category": "LPP MA",
+        "New Code / Name": "LPP-MA-03",
+        "Action": "Merged",
+        "Reason": "Mechanism proof for makeup angle, not separate."
+      },
+      {
+        "Old Code / Name": "LPP-MA-L6 (India's First)",
+        "Old Category": "LPP MA",
+        "New Code / Name": "LPP-CLM-01",
+        "Action": "Removed as MA",
+        "Reason": "Positioning credential, not a creative angle."
+      },
+      {
+        "Old Code / Name": "LPP-MA-L9 (Consistent Healing)",
+        "Old Category": "LPP MA",
+        "New Code / Name": "LPP-MA-05",
+        "Action": "Merged",
+        "Reason": "Outcome of barrier MA, not separate angle."
+      },
+      {
+        "Old Code / Name": "LPP-MA-L10 (Prevents Accidental Damage)",
+        "Old Category": "LPP MA",
+        "New Code / Name": "LPP-MA-05",
+        "Action": "Merged",
+        "Reason": "Same MA as Stops Accidental Damage."
+      },
+      {
+        "Old Code / Name": "LPP-MA-L11 (Superior Adhesion)",
+        "Old Category": "LPP MA",
+        "New Code / Name": "LPP-MA-04",
+        "Action": "Merged",
+        "Reason": "Adhesion is proof point for Fits Any Pimple."
+      },
+      {
+        "Old Code / Name": "SFS-SF2 (Post-Acne Recovery)",
+        "Old Category": "SFS MA",
+        "New Code / Name": "SFA-MA-01",
+        "Action": "Merged",
+        "Reason": "Same consumer state as Cleared Acne Isn't Solved."
+      },
+      {
+        "Old Code / Name": "SFS-SF3 (Barrier Ready Before Fade)",
+        "Old Category": "SFS Belief",
+        "New Code / Name": "Removed",
+        "Action": "Removed",
+        "Reason": "Works against the sale. Tells consumer they can't use the product yet."
+      },
+      {
+        "Old Code / Name": "SFS-SF4 (Barrier-Compromised)",
+        "Old Category": "SFS Cohort",
+        "New Code / Name": "BRG-C01",
+        "Action": "Moved",
+        "Reason": "Barrier cohort belongs in BRGM, not SFARS."
+      },
+      {
+        "Old Code / Name": "SS6 (Product Hero)",
+        "Old Category": "Static Subtype",
+        "New Code / Name": "SS1 (Single Image)",
+        "Action": "Merged",
+        "Reason": "Product hero IS a single image. VT2 covers product-led visual."
+      },
+      {
+        "Old Code / Name": "SS10 (Data/Stats Card)",
+        "Old Category": "Static Subtype",
+        "New Code / Name": "SS7 (Educational/Data)",
+        "Action": "Merged",
+        "Reason": "Data card is a subtype of educational."
+      },
+      {
+        "Old Code / Name": "SS11 (AI-Generated Static)",
+        "Old Category": "Static Subtype",
+        "New Code / Name": "AI-Generated: Yes/No flag",
+        "Action": "Removed as subtype",
+        "Reason": "AI is a production method, not a structural type."
+      },
+      {
+        "Old Code / Name": "TSOF",
+        "Old Category": "Funnel Stage",
+        "New Code / Name": "CONV (Cold Conversion)",
+        "Action": "Renamed",
+        "Reason": "New name is self-explanatory."
+      },
+      {
+        "Old Code / Name": "N/A (Creator Archetype)",
+        "Old Category": "Creator Archetype",
+        "New Code / Name": "BRAND",
+        "Action": "Renamed",
+        "Reason": "\"N/A\" implies missing data. \"BRAND\" is intentional."
+      },
+      {
+        "Old Code / Name": "CSA-R / CSA-D",
+        "Old Category": "Creator Archetype",
+        "New Code / Name": "CSA",
+        "Action": "Merged",
+        "Reason": "Distinction too thin for consistent tagging."
+      },
+      {
+        "Old Code / Name": "C1–C8 (CTA Style)",
+        "Old Category": "CTA Style",
+        "New Code / Name": "CF1–CF4 + CM1–CM7",
+        "Action": "Split into two fields",
+        "Reason": "CTA Format and CTA Message Type are different decisions."
+      },
+      {
+        "Old Code / Name": "V1–V11 (Visual Style)",
+        "Old Category": "Visual Style",
+        "New Code / Name": "VT1–VT6",
+        "Action": "Replaced",
+        "Reason": "Separated from Static Subtype. Simplified to 6 visual treatments."
+      }
+    ]
+  },
+  "implementation_notes": {
+    "headers": [
+      "Area",
+      "Instruction",
+      "Priority",
+      "Notes"
+    ],
+    "rows": [
+      {
+        "Area": "Taxonomy file",
+        "Instruction": "Update taxonomy.py with all approved codes, names, and definitions from this document.",
+        "Priority": "P1",
+        "Notes": "Use stable codes as primary keys."
+      },
+      {
+        "Area": "Hook fields",
+        "Instruction": "Add Visual Hook Type (VH1–VH9) and Content Hook Type (CH1–CH13) as two separate fields.",
+        "Priority": "P1",
+        "Notes": "Remove or archive old single Hook Type field. Preserve as legacy field if backward compatibility needed."
+      },
+      {
+        "Area": "CTA fields",
+        "Instruction": "Split into CTA Format (CF1–CF4) and CTA Message Type (CM1–CM7).",
+        "Priority": "P1",
+        "Notes": "Retire old C1–C8 CTA Style field."
+      },
+      {
+        "Area": "Product-specific dropdowns",
+        "Instruction": "Dashboard dropdowns for MA, Belief, Cohort, Driver should filter by selected product.",
+        "Priority": "P1",
+        "Notes": "RCF dropdowns show RCF-MA-xx only, etc."
+      },
+      {
+        "Area": "Static vs video fields",
+        "Instruction": "Static logging form should not require: Creator Archetype, Video Subtype.",
+        "Priority": "P1",
+        "Notes": "These are video-only fields."
+      },
+      {
+        "Area": "Video logging",
+        "Instruction": "Video logging form should include: Video Subtype, Visual Hook Type, Content Hook Type, Emotional Arc, Creator Archetype, Influence Mode, CTA Format, CTA Message Type.",
+        "Priority": "P1",
+        "Notes": ""
+      },
+      {
+        "Area": "AI-Generated flag",
+        "Instruction": "Add AI-Generated: Yes/No as a metadata field on all static assets. Not a subtype.",
+        "Priority": "P2",
+        "Notes": ""
+      },
+      {
+        "Area": "Asset detail view",
+        "Instruction": "Each asset should show: taxonomy tags, AD CODE, Drive link, thumbnail/preview, creator/consumer name, performance data.",
+        "Priority": "P1",
+        "Notes": ""
+      },
+      {
+        "Area": "Funnel stage update",
+        "Instruction": "Replace TSOF with CONV in all dropdown options.",
+        "Priority": "P2",
+        "Notes": ""
+      },
+      {
+        "Area": "Legacy field preservation",
+        "Instruction": "Keep H1–H20, C1–C8, V1–V11 as archived fields in database if needed for backward compatibility. Do not show in active tagging UI.",
+        "Priority": "P2",
+        "Notes": ""
+      },
+      {
+        "Area": "Taxonomy confidence",
+        "Instruction": "Every tagged asset should have a Taxonomy Confidence field: High / Medium / Low / Needs Review.",
+        "Priority": "P2",
+        "Notes": ""
+      },
+      {
+        "Area": "Multi-product assets",
+        "Instruction": "For kit/bundle assets, allow product field to accept a primary product + secondary product.",
+        "Priority": "P3",
+        "Notes": ""
+      },
+      {
+        "Area": "Claims check",
+        "Instruction": "Add a Claims field per video that references approved claim codes. Flag if claim code is present without required disclaimer.",
+        "Priority": "P1",
+        "Notes": "Especially RCF-CLM-03 (93% claim) — NEVER for LEV."
+      },
+      {
+        "Area": "Static Message Type",
+        "Instruction": "Add SPM (Static Message Type) as a statics-only field with values SPM1–SPM7. Do not show on video logging forms.",
+        "Priority": "P1",
+        "Notes": "New field — no legacy equivalent."
+      },
+      {
+        "Area": "Offer Static",
+        "Instruction": "SS9 (Offer / Promotional) added to Static Subtypes. Add to static subtype dropdown.",
+        "Priority": "P1",
+        "Notes": "Captures deal/bundle/discount creatives as a distinct structural type."
+      },
+      {
+        "Area": "Offer CTA",
+        "Instruction": "CM8 (Offer / Deal) added to CTA Message Types. Add to CTA message type dropdown.",
+        "Priority": "P1",
+        "Notes": "For CTAs that lead with a price offer or bundle deal."
+      }
+    ]
+  }
+}

@@ -63,6 +63,8 @@ ASSET_EXTRA_HEADERS = [
     "Preview Asset Link", "Source Folder Link", "Thumbnail Link", "Reference Image Link",
     "Transcript Link", "Transcript Notes", "Aspect Ratio Links", "Taxonomy Review Status",
     "CPM", "CPR", "CPM (L30)", "CPR (L30)", "CPM (L7)", "CPR (L7)",
+    "Is Post-CRAN", "Post-CRAN Parent AD CODE", "Post-CRAN Parent Asset ID",
+    "Post-CRAN Change Summary", "Post-CRAN Insight",
 ]
 
 MASTER_HEADERS = ASSET_HEADERS + ASSET_EXTRA_HEADERS
@@ -158,6 +160,7 @@ META_AD_CODE_COL_INDEX = 37  # Column AL, zero-based.
 _ADNAME_DATE_RE = re.compile(r"\b(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{2,4})\b")
 _LIKELY_INHOUSE_RE = re.compile(r"\b(in\s*house|in-house|inhouse)\b", re.IGNORECASE)
 _KUHU_RE = re.compile(r"\bkuhu\b", re.IGNORECASE)
+_POST_CRAN_RE = re.compile(r"\bpost\s*[-_ ]?\s*cran\b", re.IGNORECASE)
 
 
 @st.cache_resource
@@ -991,6 +994,16 @@ def _is_kuhu_meta_row(row: pd.Series) -> bool:
     return bool(_KUHU_RE.search(_combine_text(row, columns)))
 
 
+def _is_post_cran_row(*rows: pd.Series | None) -> bool:
+    columns = [
+        "Creative Name", "FB Ad Name", "Campaign Name", "Ad Name (TSS)", "Ad Name (Porcellia)",
+        "Drive Link", "Preview Asset Link", "Source Folder Link", "Creative Folder Link",
+        "Creative Folder", "Notes", "Comment", "Comments", "Post-CRAN Change Summary",
+    ]
+    text = " ".join(_combine_text(row, columns) for row in rows if row is not None)
+    return bool(_POST_CRAN_RE.search(text))
+
+
 def _normalized_master_row(asset: pd.Series, meta_row: pd.Series | None) -> dict:
     creative_type = _coalesce(asset, "Creative Type")
     fmt = _first_non_empty(asset.get("Format", ""), infer_format(creative_type))
@@ -1045,6 +1058,7 @@ def _normalized_master_row(asset: pd.Series, meta_row: pd.Series | None) -> dict
         "Static Message Type": asset.get("Static Message Type", ""),
         "AI-Generated": asset.get("AI-Generated", ""),
         "Taxonomy Confidence": asset.get("Taxonomy Confidence", ""),
+        "Taxonomy Review Status": asset.get("Taxonomy Review Status", ""),
         "Claim Codes": asset.get("Claim Codes", ""),
         "Secondary Product": asset.get("Secondary Product", ""),
         "Creator / Consumer Name": asset.get("Creator / Consumer Name", ""),
@@ -1067,6 +1081,11 @@ def _normalized_master_row(asset: pd.Series, meta_row: pd.Series | None) -> dict
         "Status": _first_non_empty(asset.get("Status", ""), meta_row.get("Status", "") if meta_row is not None else ""),
         "Notes": asset.get("Notes", ""),
         "Needs Attention": "",
+        "Is Post-CRAN": _first_non_empty(asset.get("Is Post-CRAN", ""), "Yes" if _is_post_cran_row(asset, meta_row) else ""),
+        "Post-CRAN Parent AD CODE": normalize_ad_code(asset.get("Post-CRAN Parent AD CODE", "")),
+        "Post-CRAN Parent Asset ID": asset.get("Post-CRAN Parent Asset ID", ""),
+        "Post-CRAN Change Summary": asset.get("Post-CRAN Change Summary", ""),
+        "Post-CRAN Insight": asset.get("Post-CRAN Insight", ""),
     }
     _add_metric_fields(row, asset, meta_row)
     return row
@@ -1146,6 +1165,11 @@ def _normalized_influencer_row(influencer: pd.Series, meta_row: pd.Series | None
         "Saves": influencer.get("Saves", ""),
         "Total Engagement": influencer.get("Total Engagement", ""),
         "Engagement Rate (%)": influencer.get("Engagement Rate (%)", ""),
+        "Is Post-CRAN": "",
+        "Post-CRAN Parent AD CODE": "",
+        "Post-CRAN Parent Asset ID": "",
+        "Post-CRAN Change Summary": "",
+        "Post-CRAN Insight": "",
     }
     _add_metric_fields(row, influencer, meta_row)
     return row
@@ -1206,6 +1230,11 @@ def _normalized_meta_row(meta: pd.Series, source: str) -> dict:
         "Status": _coalesce(meta, "Status"),
         "Notes": _coalesce(meta, "Comment", "Comments"),
         "Needs Attention": "Likely in-house row missing from Master_Asset_Registry" if source == "Needs Logging" else "",
+        "Is Post-CRAN": "Yes" if _is_post_cran_row(meta) else "",
+        "Post-CRAN Parent AD CODE": "",
+        "Post-CRAN Parent Asset ID": "",
+        "Post-CRAN Change Summary": "",
+        "Post-CRAN Insight": "",
     }
     _add_metric_fields(row, meta)
     return row

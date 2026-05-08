@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 
 import streamlit as st
 
@@ -66,6 +67,11 @@ def _meta_prefill(ad_code: str, meta_df):
     }
 
 
+def _is_post_cran_text(*values) -> bool:
+    text = " ".join(str(value or "") for value in values)
+    return bool(re.search(r"\bpost\s*[-_ ]?\s*cran\b", text, flags=re.IGNORECASE))
+
+
 assets_df = load_assets()
 experiments_df = load_experiments()
 sources_df = load_sources()
@@ -131,6 +137,15 @@ with tab_video:
         variant_letter = variant_right.selectbox("Variant #", VARIANT_LETTERS, index=0, disabled=not is_variant)
         what_diff = variant_right.text_input("What changed?", disabled=not is_variant)
 
+        st.markdown("#### Creative analysis / post-CRAN")
+        post_default = _is_post_cran_text(meta_hint.get("Creative Name", ""), meta_hint.get("Campaign Name", ""), meta_hint.get("Drive Link", ""))
+        post_col1, post_col2 = st.columns([0.35, 0.65])
+        is_post_cran = post_col1.checkbox("This is a post-CRAN version", value=post_default)
+        post_parent_ad = post_col2.text_input("Original / parent AD CODE", disabled=not is_post_cran, placeholder="AD 480")
+        post_col3, post_col4 = st.columns(2)
+        post_parent_asset = post_col3.text_input("Original / parent Asset ID", disabled=not is_post_cran, placeholder="Optional if AD CODE is known")
+        post_change_summary = post_col4.text_input("What changed after creative analysis?", disabled=not is_post_cran, placeholder="Hook tightened, CTA changed, clips reduced...")
+
         st.markdown("#### Taxonomy")
         cohorts = get_cohorts(product)
         beliefs = get_beliefs(product)
@@ -175,8 +190,11 @@ with tab_video:
         submitted = st.form_submit_button("Save video to Master_Asset_Registry", type="primary", use_container_width=True)
         if submitted:
             normalized_code = normalize_ad_code(ad_code)
+            normalized_parent_code = normalize_ad_code(post_parent_ad)
             if not normalized_code:
                 st.error("AD CODE is required.")
+            elif is_post_cran and not normalized_parent_code:
+                st.error("Post-CRAN rows need the original / parent AD CODE so the dashboard can compare versions.")
             elif normalized_code in existing_codes:
                 st.error(f"{normalized_code} already exists in Master_Asset_Registry.")
             else:
@@ -227,6 +245,10 @@ with tab_video:
                     "Brief Link": brief_link,
                     "Notes": notes,
                     "Taxonomy Review Status": "Tagged",
+                    "Is Post-CRAN": "Yes" if is_post_cran else "",
+                    "Post-CRAN Parent AD CODE": normalized_parent_code if is_post_cran else "",
+                    "Post-CRAN Parent Asset ID": post_parent_asset if is_post_cran else "",
+                    "Post-CRAN Change Summary": post_change_summary if is_post_cran else "",
                 }
                 try:
                     save_asset(row)
@@ -321,13 +343,24 @@ with tab_static:
 
         brief_link = st.text_input("Brief / Asana link", value=meta_hint.get("Brief Link", ""))
         campaign = st.text_input("Campaign / FB ad name", value=meta_hint.get("Campaign Name", ""))
+        st.markdown("#### Creative analysis / post-CRAN")
+        post_default = _is_post_cran_text(meta_hint.get("Creative Name", ""), meta_hint.get("Campaign Name", ""), meta_hint.get("Drive Link", ""))
+        post_col1, post_col2 = st.columns([0.35, 0.65])
+        is_post_cran = post_col1.checkbox("This is a post-CRAN version", value=post_default, key="static_post_cran")
+        post_parent_ad = post_col2.text_input("Original / parent AD CODE", disabled=not is_post_cran, placeholder="AD 104")
+        post_col3, post_col4 = st.columns(2)
+        post_parent_asset = post_col3.text_input("Original / parent Asset ID", disabled=not is_post_cran, placeholder="Optional if AD CODE is known", key="static_post_parent_asset")
+        post_change_summary = post_col4.text_input("What changed after creative analysis?", disabled=not is_post_cran, placeholder="Headline changed, first card changed, CTA changed...", key="static_post_change")
         notes = st.text_area("Notes", value=prefill.get("Notes", ""), height=80)
 
         submitted = st.form_submit_button("Save static to Master_Asset_Registry", type="primary", use_container_width=True)
         if submitted:
             normalized_code = normalize_ad_code(ad_code)
+            normalized_parent_code = normalize_ad_code(post_parent_ad)
             if not normalized_code:
                 st.error("AD CODE is required.")
+            elif is_post_cran and not normalized_parent_code:
+                st.error("Post-CRAN rows need the original / parent AD CODE so the dashboard can compare versions.")
             elif normalized_code in existing_codes:
                 st.error(f"{normalized_code} already exists in Master_Asset_Registry.")
             else:
@@ -373,6 +406,10 @@ with tab_static:
                     "Reference Image Link": reference_link,
                     "Notes": notes,
                     "Taxonomy Review Status": "Tagged",
+                    "Is Post-CRAN": "Yes" if is_post_cran else "",
+                    "Post-CRAN Parent AD CODE": normalized_parent_code if is_post_cran else "",
+                    "Post-CRAN Parent Asset ID": post_parent_asset if is_post_cran else "",
+                    "Post-CRAN Change Summary": post_change_summary if is_post_cran else "",
                 }
                 try:
                     save_asset(row)

@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from utils.sheets import build_creative_ops_view, load_performance_import, refresh_sheet_cache
+from utils.sheets import build_creative_ops_view, load_performance_import, normalize_ad_code, refresh_sheet_cache
 
 
 st.set_page_config(page_title="Dashboard - Creative OS", layout="wide")
@@ -119,6 +119,15 @@ for _, metric_field in PERFORMANCE_STAT_ORDER:
     if metric_field not in PERFORMANCE_COLUMN_ORDER:
         PERFORMANCE_COLUMN_ORDER.append(metric_field)
 
+GLOBAL_SEARCH_COLUMNS = [
+    "AD CODE", "Perf AD Code", "Asset ID", "Creative Name", "Creator", "Creator / Consumer Name",
+    "Product", "Format", "Creative Type", "Video Subtype", "Static Subtype", "Source",
+    "Marketing Angle", "Cohort", "Belief", "Situational Driver", "Visual Hook Type",
+    "Content Hook Type", "Static Message Type", "CTA Message Type", "Drive Link",
+    "Source Folder Link", "Transcript Link", "Instagram / Live Link", "Campaign Name",
+    "Notes", "Taxonomy Review Status", "Post-CRAN Parent AD CODE", "Post-CRAN Change Summary",
+]
+
 
 NUMERIC_SORT_COLUMNS = {
     "ROAS", "Amount Spent", "Revenue", "CPM", "CPR", "Avg Cost Per Reach", "CTR", "CPC",
@@ -157,6 +166,26 @@ def _number(value):
     return pd.to_numeric(cleaned, errors="coerce")
 
 
+def _float(value) -> float | None:
+    parsed = _number(value)
+    return None if pd.isna(parsed) else float(parsed)
+
+
+def _pct_delta(current, previous, inverse_good: bool = False) -> tuple[str, str]:
+    cur = _float(current)
+    prev = _float(previous)
+    if cur is None or prev is None or prev == 0:
+        return "not enough data", "flat"
+    change = (cur - prev) / abs(prev)
+    if inverse_good:
+        good = change < 0
+    else:
+        good = change > 0
+    direction = "up" if change > 0 else "down"
+    quality = "good" if good else "bad"
+    return f"{direction} {abs(change) * 100:.0f}% ({prev:g} -> {cur:g})", quality
+
+
 def _dedupe_columns(data: pd.DataFrame) -> pd.DataFrame:
     """Keep the first copy of any duplicate display column name."""
     if data.columns.duplicated().any():
@@ -188,6 +217,151 @@ def _prepare_performance_metrics(data: pd.DataFrame) -> pd.DataFrame:
         cpr_blank = output["CPR"].astype(str).str.strip().isin(["", "nan", "None", "NaT"])
         output.loc[cpr_blank, "CPR"] = output.loc[cpr_blank, "Avg Cost Per Reach"]
     return output
+
+
+def _apply_global_search(data: pd.DataFrame, search_value: str) -> pd.DataFrame:
+    if data.empty or not str(search_value or "").strip():
+        return data
+    terms = [term.lower() for term in re.split(r"\s+", search_value.strip()) if term.strip()]
+    if not terms:
+        return data
+    searchable = [column for column in GLOBAL_SEARCH_COLUMNS if column in data.columns]
+    if not searchable:
+        return data
+    haystack = data[searchable].fillna("").astype(str).agg(" ".join, axis=1).str.lower()
+    mask = pd.Series(True, index=data.index)
+    for term in terms:
+        mask = mask & haystack.str.contains(re.escape(term), na=False)
+    return data[mask].copy()
+
+
+def _is_yes(value) -> bool:
+    return str(value or "").strip().lower() in {"yes", "true", "1", "y"}
+
+
+def _is_post_cran_row(row: pd.Series) -> bool:
+    if _is_yes(row.get("Is Post-CRAN", "")):
+        return True
+    text = " ".join(str(row.get(column, "") or "") for column in [
+        "Creative Name", "Campaign Name", "Drive Link", "Source Folder Link",
+        "Notes", "Post-CRAN Change Summary",
+    ])
+    return bool(re.search(r"\bpost\s*[-_ ]?\s*cran\b", text, flags=re.IGNORECASE))
+
+
+def _add_post_cran_flag(data: pd.DataFrame) -> pd.DataFrame:
+    output = data.copy()
+    if "Is Post-CRAN" not in output.columns:
+        output["Is Post-CRAN"] = ""
+    output["Post-CRAN"] = output.apply(lambda row: "Yes" if _is_post_cran_row(row) else "", axis=1)
+    return output
+
+
+def _add_performance_buckets(data: pd.DataFrame, low_spend: float, top_roas: float, potential_roas: float, low_roas: float) -> pd.DataFrame:
+    output = data.copy()
+    spend = output["Amount Spent"].map(_number) if "Amount Spent" in output.columns else pd.Series(pd.NA, index=output.index)
+    roas = output["ROAS"].map(_number) if "ROAS" in output.columns else pd.Series(pd.NA, index=output.index)
+    ctr = output["CTR"].map(_number) if "CTR" in output.columns else pd.Series(pd.NA, index=output.index)
+    atc = output["ATC Rate"].map(_number) if "ATC Rate" in output.columns else pd.Series(pd.NA, index=output.index)
+    cvr = output["CVR"].map(_number) if "CVR" in output.columns else pd.Series(pd.NA, index=output.index)
+
+    enough_spend = spend.fillna(0) >= low_spend
+    ctr_med = ctr[enough_spend].dropna().median()
+    atc_med = atc[enough_spend].dropna().median()
+    cvr_med = cvr[enough_spend].dropna().median()
+
+    buckets = []
+    reasons = []
+    for idx in output.index:
+        row_spend = spend.loc[idx]
+        row_roas = roas.loc[idx]
+        strong_signal = False
+        signal_bits = []
+        for label, series, median in [("CTR", ctr, ctr_med), ("ATC", atc, atc_med), ("CVR", cvr, cvr_med)]:
+            value = series.loc[idx]
+            if pd.notna(value) and pd.notna(median) and median > 0 and value >= median:
+                strong_signal = True
+                signal_bits.append(f"{label} above median")
+
+        if pd.isna(row_spend) or row_spend < low_spend:
+            buckets.append("Still Learning (Low Spend)")
+            reasons.append(f"Spend below {low_spend:g}; do not judge too early.")
+        elif pd.notna(row_roas) and row_roas >= top_roas:
+            buckets.append("Top Performer")
+            reasons.append(f"ROAS {row_roas:g} is at/above top threshold {top_roas:g}.")
+        elif pd.notna(row_roas) and row_roas >= potential_roas:
+            buckets.append("Potential Performer")
+            reasons.append(f"ROAS {row_roas:g} is usable but not top yet.")
+        elif strong_signal and (pd.isna(row_roas) or row_roas >= low_roas):
+            buckets.append("Potential Performer")
+            reasons.append("; ".join(signal_bits) + ".")
+        elif pd.notna(row_roas) and row_roas < low_roas:
+            buckets.append("Low Performer")
+            reasons.append(f"ROAS {row_roas:g} is below low threshold {low_roas:g} after enough spend.")
+        else:
+            buckets.append("Still Learning (Low Spend)")
+            reasons.append("Performance signal is not decisive yet.")
+
+    output["Performance Bucket"] = buckets
+    output["Performance Read"] = reasons
+    return output
+
+
+def _find_post_cran_parent(data: pd.DataFrame, row: pd.Series) -> pd.Series | None:
+    if data.empty or not _is_post_cran_row(row):
+        return None
+    candidates = data.copy()
+    current_code = normalize_ad_code(row.get("AD CODE", ""))
+    parent_code = normalize_ad_code(row.get("Post-CRAN Parent AD CODE", ""))
+    if parent_code:
+        hits = candidates[candidates["AD CODE"].map(normalize_ad_code) == parent_code]
+        if not hits.empty:
+            return hits.iloc[-1]
+
+    parent_asset = str(row.get("Post-CRAN Parent Asset ID", "") or "").strip()
+    if parent_asset and "Asset ID" in candidates.columns:
+        hits = candidates[candidates["Asset ID"].astype(str).str.strip() == parent_asset]
+        if not hits.empty:
+            return hits.iloc[-1]
+
+    candidates = candidates[candidates["AD CODE"].map(normalize_ad_code) != current_code]
+    candidates = candidates[~candidates.apply(_is_post_cran_row, axis=1)]
+    if "Product" in candidates.columns and _safe_text(row.get("Product"), ""):
+        candidates = candidates[candidates["Product"].astype(str) == str(row.get("Product"))]
+    if "Format" in candidates.columns and _safe_text(row.get("Format"), ""):
+        candidates = candidates[candidates["Format"].astype(str) == str(row.get("Format"))]
+
+    creator = str(row.get("Creator") or row.get("Creator / Consumer Name") or "").strip().lower()
+    if creator:
+        creator_cols = [column for column in ["Creator", "Creator / Consumer Name", "Creative Name"] if column in candidates.columns]
+        mask = pd.Series(False, index=candidates.index)
+        for column in creator_cols:
+            mask = mask | candidates[column].astype(str).str.lower().str.contains(re.escape(creator), na=False)
+        candidates = candidates[mask]
+
+    if "_Date" in candidates.columns and pd.notna(row.get("_Date")):
+        candidates = candidates[candidates["_Date"] < row.get("_Date")]
+        candidates = candidates.sort_values("_Date", ascending=False)
+
+    return None if candidates.empty else candidates.iloc[0]
+
+
+def _post_cran_insight(row: pd.Series, parent: pd.Series | None) -> str:
+    if parent is None:
+        return "Post-CRAN version detected, but no parent version could be matched yet. Add Parent AD CODE for a clean comparison."
+    parts = []
+    for label, field, inverse in [
+        ("ROAS", "ROAS", False),
+        ("CTR", "CTR", False),
+        ("CPC", "CPC", True),
+        ("CAC", "CAC", True),
+    ]:
+        text, quality = _pct_delta(row.get(field), parent.get(field), inverse_good=inverse)
+        if text != "not enough data":
+            parts.append(f"{label} is {text}")
+    if not parts:
+        return f"Matched to parent {normalize_ad_code(parent.get('AD CODE', ''))}, but performance fields are not populated enough yet."
+    return f"Compared with {normalize_ad_code(parent.get('AD CODE', ''))}: " + "; ".join(parts[:3]) + "."
 
 
 def _sort_dataframe(data: pd.DataFrame, sort_by: str, descending: bool) -> pd.DataFrame:
@@ -284,6 +458,7 @@ reasonable_floor = pd.Timestamp("2020-01-01")
 reasonable_ceiling = pd.Timestamp.today().normalize() + pd.Timedelta(days=7)
 df = df[(df["_Date"] >= reasonable_floor) & (df["_Date"] <= reasonable_ceiling)]
 df = _prepare_performance_metrics(df)
+df = _add_post_cran_flag(df)
 
 if df.empty:
     st.warning("Rows loaded, but none had a usable live date after parsing.")
@@ -296,7 +471,16 @@ latest = df["_Date"].max().date()
 earliest = df["_Date"].min().date()
 
 with st.sidebar:
-    st.header("Dashboard Filters")
+    st.header("Find Creatives")
+    simple_search = st.text_input(
+        "Simple search",
+        placeholder="consumer name, AD CODE, product, static/video...",
+        help="Searches across all dashboard tabs: consumer, creator, creative name, AD CODE, product, format, taxonomy, links, and notes.",
+    )
+    if simple_search.strip():
+        st.caption("Tip: search `laxmi`, `AD 568`, `RCF`, `postcran`, `video`, etc.")
+
+    st.header("Date")
     preset = st.radio(
         "Date range",
         ["Last 7 days", "Last 14 days", "Last 30 days", "This month", "All time", "Custom"],
@@ -319,6 +503,17 @@ with st.sidebar:
 
     st.caption(f"Available data: {earliest.strftime('%d %b %Y')} to {latest.strftime('%d %b %Y')}")
 
+    with st.expander("Performer logic", expanded=False):
+        low_spend_threshold = st.number_input("Still learning below spend", min_value=0.0, value=3000.0, step=500.0)
+        top_roas_threshold = st.number_input("Top performer ROAS >=", min_value=0.0, value=1.5, step=0.1)
+        potential_roas_threshold = st.number_input("Potential performer ROAS >=", min_value=0.0, value=1.0, step=0.1)
+        low_roas_threshold = st.number_input("Low performer ROAS <", min_value=0.0, value=0.8, step=0.1)
+        st.caption("Potential also includes creatives with enough spend and strong CTR/ATC/CVR vs the current loaded dataset.")
+
+df = _add_performance_buckets(df, low_spend_threshold, top_roas_threshold, potential_roas_threshold, low_roas_threshold)
+
+with st.sidebar:
+    st.header("Filters")
     source_order = ["Inhouse", "Influencer", "Porcellia", "Needs Logging", "Unclassified"]
     sources_present = [source for source in source_order if source in set(df["Source"].astype(str))]
     selected_sources = st.multiselect("Source", sources_present, default=[s for s in sources_present if s != "Unclassified"])
@@ -329,28 +524,42 @@ with st.sidebar:
     format_options = sorted(v for v in df["Format"].dropna().astype(str).unique() if v.strip())
     selected_formats = st.multiselect("Format", format_options, default=format_options)
 
-    search = st.text_input("Search", placeholder="AD code, creator, asset, angle...")
+    bucket_options = ["Top Performer", "Potential Performer", "Low Performer", "Still Learning (Low Spend)"]
+    selected_buckets = st.multiselect("Performer bucket", [b for b in bucket_options if b in set(df["Performance Bucket"])], default=[])
+
+    angle_options = sorted(v for v in df["Marketing Angle"].dropna().astype(str).unique() if v.strip()) if "Marketing Angle" in df.columns else []
+    selected_angles = st.multiselect("Marketing angle", angle_options, default=[])
+
+    content_options = sorted(v for v in df["Content Hook Type"].dropna().astype(str).unique() if v.strip()) if "Content Hook Type" in df.columns else []
+    selected_content_hooks = st.multiselect("Content hook", content_options, default=[])
+
+    review_options = sorted(v for v in df["Taxonomy Review Status"].dropna().astype(str).unique() if v.strip()) if "Taxonomy Review Status" in df.columns else []
+    selected_review_status = st.multiselect("Taxonomy review", review_options, default=[])
+
+    postcran_filter = st.selectbox("Post-CRAN", ["All", "Post-CRAN only", "Exclude Post-CRAN"])
 
 
 filtered = df.copy()
 filtered = filtered[(filtered["_Date"] >= pd.Timestamp(start)) & (filtered["_Date"] <= pd.Timestamp(end))]
+filtered = _apply_global_search(filtered, simple_search)
 if selected_sources:
     filtered = filtered[filtered["Source"].isin(selected_sources)]
 if selected_products:
     filtered = filtered[filtered["Product"].isin(selected_products) | filtered["Product"].astype(str).str.strip().eq("")]
 if selected_formats:
     filtered = filtered[filtered["Format"].isin(selected_formats) | filtered["Format"].astype(str).str.strip().eq("")]
-if search.strip():
-    term = search.strip().lower()
-    search_cols = [
-        "AD CODE", "Perf AD Code", "Asset ID", "Creative Name", "Creator", "Creator / Consumer Name",
-        "Marketing Angle", "Cohort", "Belief", "Visual Hook Type", "Content Hook Type",
-        "Static Message Type", "CTA Message Type", "Drive Link", "Instagram / Live Link",
-    ]
-    mask = pd.Series(False, index=filtered.index)
-    for column in [c for c in search_cols if c in filtered.columns]:
-        mask = mask | filtered[column].astype(str).str.lower().str.contains(term, na=False)
-    filtered = filtered[mask]
+if selected_buckets:
+    filtered = filtered[filtered["Performance Bucket"].isin(selected_buckets)]
+if selected_angles:
+    filtered = filtered[filtered["Marketing Angle"].isin(selected_angles)]
+if selected_content_hooks:
+    filtered = filtered[filtered["Content Hook Type"].isin(selected_content_hooks)]
+if selected_review_status:
+    filtered = filtered[filtered["Taxonomy Review Status"].isin(selected_review_status)]
+if postcran_filter == "Post-CRAN only":
+    filtered = filtered[filtered["Post-CRAN"] == "Yes"]
+elif postcran_filter == "Exclude Post-CRAN":
+    filtered = filtered[filtered["Post-CRAN"] != "Yes"]
 
 if filtered.empty:
     st.warning("No creatives match the current filters.")
@@ -367,8 +576,15 @@ metrics[3].metric("Porcellia", int(source_counts.get("Porcellia", 0)))
 metrics[4].metric("Needs logging", int(source_counts.get("Needs Logging", 0)))
 metrics[5].metric("With AD CODE", int(filtered["AD CODE"].astype(str).str.contains("AD ", na=False).sum()))
 
-tab_overview, tab_assets, tab_quality, tab_audit = st.tabs(
-    ["Overview", "Creative Deep Dive", "Quality & Taxonomy", "Data Audit"]
+bucket_counts = filtered["Performance Bucket"].value_counts() if "Performance Bucket" in filtered.columns else pd.Series(dtype=int)
+bucket_cards = st.columns(4)
+bucket_cards[0].metric("Top performers", int(bucket_counts.get("Top Performer", 0)))
+bucket_cards[1].metric("Potential", int(bucket_counts.get("Potential Performer", 0)))
+bucket_cards[2].metric("Low performers", int(bucket_counts.get("Low Performer", 0)))
+bucket_cards[3].metric("Still learning", int(bucket_counts.get("Still Learning (Low Spend)", 0)))
+
+tab_overview, tab_assets, tab_performers, tab_quality, tab_audit = st.tabs(
+    ["Overview", "Creative Deep Dive", "Performer View", "Quality & Taxonomy", "Data Audit"]
 )
 
 color_map = {
@@ -433,7 +649,7 @@ with tab_assets:
     table_cols = [
         "_Preview", "Source", "Record Type", "AD CODE", "Perf AD Code", "Live Date", "Creative Name", "Product",
         "Format", "Marketing Angle", "Cohort", "Belief", "Content Hook Type", "Static Message Type",
-        "Funnel Stage", "Creator", *PERFORMANCE_COLUMN_ORDER,
+        "Funnel Stage", "Creator", "Performance Bucket", "Post-CRAN", "Post-CRAN Parent AD CODE", *PERFORMANCE_COLUMN_ORDER,
         "Drive Link", "Transcript Link", "Instagram / Live Link", "_Row Key",
     ]
     gallery_table = gallery_table[[c for c in table_cols if c in gallery_table.columns]]
@@ -445,7 +661,7 @@ with tab_assets:
             "Marketing Angle", "Cohort", "Belief", "Visual Hook Type", "Content Hook Type",
             "Static Message Type", "CTA Message Type", "Product", "Format", "Source", "Drive Link", "Transcript Link", "Instagram / Live Link",
         ],
-        filter_columns=["Source", "Record Type", "Product", "Format", "Marketing Angle", "Cohort", "Belief", "Funnel Stage", "Content Hook Type", "Static Message Type", "Creator"],
+        filter_columns=["Source", "Record Type", "Product", "Format", "Performance Bucket", "Post-CRAN", "Marketing Angle", "Cohort", "Belief", "Funnel Stage", "Content Hook Type", "Static Message Type", "Creator"],
         default_sort="Live Date",
         expanded=True,
     )
@@ -493,7 +709,9 @@ with tab_assets:
             identity_fields = [
                 "Asset ID", "Record Type", "Status", "Creator", "Creator / Consumer Name",
                 "Agency", "POC", "Followers", "Platform", "Language", "Campaign Name",
-                "Ad Set Name", "Landing Page URL",
+                "Ad Set Name", "Landing Page URL", "Performance Bucket", "Performance Read",
+                "Post-CRAN", "Post-CRAN Parent AD CODE", "Post-CRAN Parent Asset ID",
+                "Post-CRAN Change Summary",
             ]
             for idx, field in enumerate(identity_fields):
                 with cols[idx % 2]:
@@ -520,6 +738,15 @@ with tab_assets:
 
         with perf_tab:
             st.caption(f"Metric source: {_safe_text(picked.get('Metric Source'), 'No metric columns populated yet')}")
+            if _is_post_cran_row(picked):
+                parent_row = _find_post_cran_parent(df, picked)
+                insight = _post_cran_insight(picked, parent_row)
+                st.info(insight)
+                if parent_row is not None:
+                    st.caption(
+                        f"Parent matched: {_safe_text(parent_row.get('Creative Name'))} "
+                        f"({normalize_ad_code(parent_row.get('AD CODE', ''))})"
+                    )
             for offset in range(0, len(PERFORMANCE_STAT_ORDER), 4):
                 metric_cards = st.columns(4)
                 for idx, (label, field) in enumerate(PERFORMANCE_STAT_ORDER[offset:offset + 4]):
@@ -567,6 +794,57 @@ with tab_assets:
         if st.session_state.get("dashboard_selected_row_key") != new_key:
             st.session_state["dashboard_selected_row_key"] = new_key
             st.rerun()
+
+with tab_performers:
+    st.subheader("Creative analysis buckets")
+    st.caption(
+        "Use this for the creative analysis meeting: Top = scale/learn from it, Potential = improve and re-run, "
+        "Low = diagnose or pause, Still Learning = don't judge yet because spend is low."
+    )
+    st.info(
+        f"Current logic: Still Learning below spend {low_spend_threshold:g}; "
+        f"Top if ROAS >= {top_roas_threshold:g}; Potential if ROAS >= {potential_roas_threshold:g} "
+        "or leading indicators are strong; Low if enough spend and ROAS is weak."
+    )
+
+    performer_cols = [
+        "Performance Bucket", "Performance Read", "Source", "AD CODE", "Live Date", "Creative Name",
+        "Product", "Format", "Creator", "Marketing Angle", "Content Hook Type",
+        "Post-CRAN", "Post-CRAN Parent AD CODE", *PERFORMANCE_COLUMN_ORDER,
+        "Drive Link", "_Row Key",
+    ]
+    performer_table = _with_live_date(filtered[[c for c in performer_cols if c in filtered.columns]].copy())
+    performer_table = _table_controls(
+        performer_table,
+        key="performer_view",
+        search_columns=GLOBAL_SEARCH_COLUMNS + ["Performance Bucket", "Performance Read"],
+        filter_columns=["Performance Bucket", "Source", "Product", "Format", "Marketing Angle", "Content Hook Type", "Post-CRAN"],
+        default_sort="ROAS",
+        expanded=False,
+    )
+    if performer_table.empty:
+        st.warning("No creatives match the performer view filters.")
+    else:
+        bucket_order = ["Top Performer", "Potential Performer", "Low Performer", "Still Learning (Low Spend)"]
+        cols = st.columns(4)
+        for idx, bucket in enumerate(bucket_order):
+            subset = performer_table[performer_table["Performance Bucket"] == bucket] if "Performance Bucket" in performer_table.columns else pd.DataFrame()
+            cols[idx].metric(bucket.replace(" (Low Spend)", ""), len(subset))
+
+        for bucket in bucket_order:
+            subset = performer_table[performer_table["Performance Bucket"] == bucket] if "Performance Bucket" in performer_table.columns else pd.DataFrame()
+            if subset.empty:
+                continue
+            with st.expander(f"{bucket} ({len(subset)})", expanded=bucket in {"Top Performer", "Potential Performer"}):
+                sort_by = "Amount Spent" if bucket == "Still Learning (Low Spend)" else "ROAS"
+                subset = _sort_dataframe(subset, sort_by, descending=bucket != "Low Performer")
+                st.dataframe(
+                    _numeric_display(subset.drop(columns=["_Row Key"], errors="ignore")),
+                    use_container_width=True,
+                    hide_index=True,
+                    height=320,
+                    column_config={"Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open")},
+                )
 
 with tab_quality:
     st.subheader("Quality and taxonomy coverage")
@@ -623,7 +901,7 @@ with tab_quality:
             "_Date", "AD CODE", "Creative Name", "Product", "Format", "Creative Type",
             "Marketing Angle", "Belief", "Cohort", "Situational Driver", "Funnel Stage",
             "Visual Hook Type", "Content Hook Type", "Static Message Type", "CTA Message Type",
-            *PERFORMANCE_COLUMN_ORDER, "Drive Link",
+            "Performance Bucket", "Post-CRAN", "Post-CRAN Parent AD CODE", *PERFORMANCE_COLUMN_ORDER, "Drive Link",
         ]
         taxonomy_table = _with_live_date(inhouse[[c for c in taxonomy_cols if c in inhouse.columns]])
         taxonomy_table = _table_controls(
@@ -656,7 +934,8 @@ with tab_audit:
 
     audit_cols = [
         "Source", "Record Type", "AD CODE", "Perf AD Code", "_Date", "Creative Name", "Product",
-        "Format", "Asset ID", "Creator", "Marketing Angle", "Content Hook Type", *PERFORMANCE_COLUMN_ORDER,
+        "Format", "Asset ID", "Creator", "Marketing Angle", "Content Hook Type",
+        "Performance Bucket", "Post-CRAN", "Post-CRAN Parent AD CODE", *PERFORMANCE_COLUMN_ORDER,
         "Needs Attention", "Drive Link", "Instagram / Live Link",
     ]
     audit = _with_live_date(filtered[[c for c in audit_cols if c in filtered.columns]])

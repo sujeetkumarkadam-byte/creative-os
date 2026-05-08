@@ -204,6 +204,13 @@ if "Creative Type" in df.columns:
     )
 
 with st.sidebar:
+    st.header("Find Creatives")
+    search = st.text_input(
+        "Simple search",
+        placeholder="consumer name, AD CODE, product, angle...",
+        help="Searches asset ID, AD CODE, consumer/creator, product, format, taxonomy, links, notes, and post-CRAN fields.",
+    )
+
     st.header("Filters")
     product_options = sorted(v for v in df["Product"].dropna().astype(str).unique() if v.strip()) or PRODUCTS
     selected_products = st.multiselect("Product", product_options, default=product_options)
@@ -211,7 +218,6 @@ with st.sidebar:
     selected_formats = st.multiselect("Format", format_options, default=format_options)
     status_options = sorted(v for v in df["Status"].dropna().astype(str).unique() if v.strip()) if "Status" in df.columns else []
     selected_status = st.multiselect("Status", status_options, default=status_options)
-    search = st.text_input("Search", placeholder="asset, AD CODE, creator, angle...")
 
 filtered = df.copy()
 if selected_products and "Product" in filtered.columns:
@@ -227,6 +233,7 @@ if search.strip():
         "Belief", "Cohort", "Visual Hook Type", "Content Hook Type", "Static Message Type",
         "CTA Message Type", "Notes", "Drive Link", "Transcript Link", "Experiment ID", "Source Interview ID",
         "Product", "Format", "Creative Type", "Static Subtype", "Video Subtype", "Status",
+        "Taxonomy Review Status", "Post-CRAN Parent AD CODE", "Post-CRAN Change Summary",
     ]
     mask = pd.Series(False, index=filtered.index)
     for col in [c for c in cols if c in filtered.columns]:
@@ -256,7 +263,7 @@ with left:
     table_cols = [
         "_Preview", "Asset ID", "Meta Ad ID", "Published Date", "Product", "Format", "Creative Type",
         "Creator / Consumer Name", "Marketing Angle", "Cohort", "Content Hook Type", "ROAS", "Amount Spent", "Revenue",
-        "CTR", "Drive Link", "Transcript Link", "_Row Key",
+        "CTR", "Taxonomy Review Status", "Is Post-CRAN", "Post-CRAN Parent AD CODE", "Drive Link", "Transcript Link", "_Row Key",
     ]
     table = filtered[[c for c in table_cols if c in filtered.columns]].copy()
     table = _table_controls(table, key="asset_registry")
@@ -331,7 +338,8 @@ with right:
         fields = [
             "Status", "Channel", "Bucket", "Parent Asset ID", "Variant #", "What's Different",
             "A/B Pair ID", "Creator / Consumer Name", "Source Interview ID", "Experiment ID",
-            "Campaign Name", "Ad Set Name", "Notes",
+            "Campaign Name", "Ad Set Name", "Is Post-CRAN", "Post-CRAN Parent AD CODE",
+            "Post-CRAN Parent Asset ID", "Post-CRAN Change Summary", "Notes",
         ]
         for field in fields:
             if field in row.index:

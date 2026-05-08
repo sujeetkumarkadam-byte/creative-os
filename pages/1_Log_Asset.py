@@ -1,6 +1,7 @@
 from datetime import datetime
 import re
 
+import pandas as pd
 import streamlit as st
 
 from utils.sheets import (
@@ -10,8 +11,9 @@ from utils.sheets import (
     load_sources,
     next_asset_id,
     normalize_ad_code,
-    save_asset,
+    parse_mixed_dates,
     update_experiment,
+    upsert_asset_by_ad_code,
 )
 from utils.taxonomy import (
     PRODUCTS, BUCKETS, FORMATS, VIDEO_SUBTYPES, STATIC_SUBTYPES,
@@ -53,23 +55,73 @@ def _meta_prefill(ad_code: str, meta_df):
     if hit.empty:
         return {}
     row = hit.iloc[-1]
+    date_col = "Date [Ad Taken Live]" if "Date [Ad Taken Live]" in row.index else ""
+    parsed_date = None
+    if date_col:
+        parsed = parse_mixed_dates(pd.Series([row.get(date_col, "")]))
+        if not parsed.empty and pd.notna(parsed.iloc[0]):
+            parsed_date = parsed.iloc[0].date()
+
+    creative_type = row.get("Creative Type", "")
+    creative_name = row.get("Creative Name", "")
+    folder_link = row.get("Creative Folder Link", "") or row.get("Creative Folder", "")
+    preview_link = (
+        row.get("1:1 Creative Link", "")
+        or row.get("4:5 Creative Link", "")
+        or row.get("9:16 Creative Link", "")
+        or folder_link
+    )
     return {
         "Product": row.get("Product", ""),
         "Bucket": "Performance",
-        "Creative Name": row.get("Creative Name", ""),
-        "Creative Type": row.get("Creative Type", ""),
-        "Marketing Angle": row.get("Marketing Angle", ""),
-        "Funnel Stage": row.get("Funnel Level", ""),
+        "Creative Name": creative_name,
+        "Creative Type": creative_type,
         "Campaign Name": row.get("FB Ad Name", ""),
-        "Drive Link": row.get("Creative Folder Link", "") or row.get("Creative Folder", ""),
+        "Drive Link": folder_link or preview_link,
+        "Preview Link": preview_link,
+        "Source Folder Link": folder_link,
         "Brief Link": row.get("Asana Link", ""),
         "Landing Page URL": row.get("Landing Page URL", ""),
+        "Published Date": parsed_date,
     }
 
 
 def _is_post_cran_text(*values) -> bool:
     text = " ".join(str(value or "") for value in values)
     return bool(re.search(r"\bpost\s*[-_ ]?\s*cran\b", text, flags=re.IGNORECASE))
+
+
+def _file_id_from_drive_url(url: str) -> str:
+    text = str(url or "")
+    for pattern in [r"/file/d/([a-zA-Z0-9_-]+)", r"[?&]id=([a-zA-Z0-9_-]+)"]:
+        match = re.search(pattern, text)
+        if match:
+            return match.group(1)
+    return ""
+
+
+def _preview_image_url(url: str) -> str:
+    text = str(url or "").strip()
+    if not text:
+        return ""
+    if text.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+        return text
+    file_id = _file_id_from_drive_url(text)
+    if file_id:
+        return f"https://drive.google.com/thumbnail?id={file_id}&sz=w900"
+    return ""
+
+
+def _show_meta_preview(meta_hint: dict):
+    preview_link = meta_hint.get("Preview Link", "") or meta_hint.get("Drive Link", "")
+    preview_url = _preview_image_url(preview_link)
+    if preview_url:
+        st.image(preview_url, caption="Preview from Meta Ads link", width=260)
+    elif preview_link:
+        st.warning(
+            "Meta Ads has a link, but it is not directly previewable as a thumbnail. "
+            "Keep the Drive/folder link, but add a direct image/video file link in Preview if you want thumbnail view."
+        )
 
 
 assets_df = load_assets()
@@ -115,7 +167,8 @@ with tab_video:
     ad_code_lookup = st.text_input("AD CODE to prefill from Meta Ads", placeholder="AD 482", key="video_lookup")
     meta_hint = _meta_prefill(ad_code_lookup, meta_df)
     if ad_code_lookup and meta_hint:
-        st.success("Found this AD CODE in Meta Ads. Product, campaign, and links will prefill where possible.")
+        st.success("Found this AD CODE in Meta Ads. Hard facts like live date, product, campaign, and links will prefill where possible.")
+        _show_meta_preview(meta_hint)
     elif ad_code_lookup:
         st.info("No Meta Ads match found yet. You can still log the asset; performance will connect when the code appears.")
 
@@ -128,7 +181,7 @@ with tab_video:
 
         live1, live2, live3 = st.columns(3)
         ad_code = live1.text_input("AD CODE", value=normalize_ad_code(ad_code_lookup), placeholder="AD 482")
-        published_date = live2.date_input("Published date", value=datetime.now().date())
+        published_date = live2.date_input("Published date", value=meta_hint.get("Published Date") or datetime.now().date())
         status = live3.selectbox("Status", ["Published", "Live", "Testing", "Paused"], index=0)
 
         variant_left, variant_right = st.columns(2)
@@ -157,7 +210,7 @@ with tab_video:
         belief = _tax_select(tax1, "Belief", beliefs, help_text="The belief shift this creative is trying to create.")
         angle = _tax_select(tax2, "Marketing angle", angles, help_text="The message route. Exact MD columns appear below after selection.")
         driver = _tax_select(tax2, "Situational driver", drivers, help_text="The trigger or moment that makes the need active now.")
-        funnel = _tax_select(tax3, "Funnel stage", FUNNEL_STAGES, value=meta_hint.get("Funnel Stage", ""), help_text="Where this creative sits in the buying journey.")
+        funnel = _tax_select(tax3, "Funnel stage", FUNNEL_STAGES, help_text="Where this creative sits in the buying journey.")
         influence = _tax_select(tax3, "Influence mode", INFLUENCE_MODES, help_text="The psychological job this creative is doing.")
 
         v1, v2, v3 = st.columns(3)
@@ -179,7 +232,7 @@ with tab_video:
 
         link1, link2, link3 = st.columns(3)
         drive_link = link1.text_input("Final asset / Drive link", value=meta_hint.get("Drive Link", ""))
-        preview_link = link2.text_input("Preview asset link", value=meta_hint.get("Drive Link", ""))
+        preview_link = link2.text_input("Preview asset link", value=meta_hint.get("Preview Link", "") or meta_hint.get("Drive Link", ""))
         brief_link = link3.text_input("Brief / source link", value=meta_hint.get("Brief Link", ""))
 
         camp1, camp2 = st.columns(2)
@@ -193,10 +246,10 @@ with tab_video:
             normalized_parent_code = normalize_ad_code(post_parent_ad)
             if not normalized_code:
                 st.error("AD CODE is required.")
+            elif not str(preview_link or "").strip():
+                st.error("Preview asset link is required so this creative can show a thumbnail/detail preview later.")
             elif is_post_cran and not normalized_parent_code:
                 st.error("Post-CRAN rows need the original / parent AD CODE so the dashboard can compare versions.")
-            elif normalized_code in existing_codes:
-                st.error(f"{normalized_code} already exists in Master_Asset_Registry.")
             else:
                 asset_id = next_asset_id(product, "Video", existing_ids)
                 row = {
@@ -241,7 +294,8 @@ with tab_video:
                     "Ad Set Name": adset,
                     "Drive Link": drive_link,
                     "Preview Asset Link": preview_link,
-                    "Source Folder Link": drive_link,
+                    "Thumbnail Link": preview_link,
+                    "Source Folder Link": meta_hint.get("Source Folder Link", "") or drive_link,
                     "Brief Link": brief_link,
                     "Notes": notes,
                     "Taxonomy Review Status": "Tagged",
@@ -251,8 +305,11 @@ with tab_video:
                     "Post-CRAN Change Summary": post_change_summary if is_post_cran else "",
                 }
                 try:
-                    save_asset(row)
-                    st.success(f"Saved {asset_id} to Master_Asset_Registry.")
+                    action, saved_asset_id = upsert_asset_by_ad_code(row)
+                    if action == "updated":
+                        st.success(f"Updated existing Master row for {normalized_code}.")
+                    else:
+                        st.success(f"Saved {saved_asset_id or asset_id} to Master_Asset_Registry.")
                 except Exception as exc:
                     st.error(f"Save failed: {exc}")
 
@@ -297,17 +354,28 @@ with tab_static:
 
     ad_code_lookup = st.text_input("AD CODE to prefill from Meta Ads", placeholder="AD 512", key="static_lookup")
     meta_hint = _meta_prefill(ad_code_lookup, meta_df)
+    if ad_code_lookup and meta_hint:
+        st.success("Found this AD CODE in Meta Ads. Hard facts like live date, product, creative name, campaign, and links will prefill where possible.")
+        _show_meta_preview(meta_hint)
+    elif ad_code_lookup:
+        st.info("No Meta Ads match found yet. You can still log the static; performance will connect when the code appears.")
 
     with st.form("static_live_form", clear_on_submit=True):
         default_product = product_label(prefill.get("Product") or meta_hint.get("Product", ""))
         top1, top2, top3 = st.columns(3)
         product = top1.selectbox("Product", PRODUCTS, index=_idx(PRODUCTS, default_product))
-        static_subtype = _tax_select(top2, "Static subtype", STATIC_SUBTYPES, value=prefill.get("Static Subtype", ""), help_text="The structural type of static/carousel.")
+        static_subtype = _tax_select(
+            top2,
+            "Static subtype",
+            STATIC_SUBTYPES,
+            value=prefill.get("Static Subtype", ""),
+            help_text="The structural type of static/carousel.",
+        )
         bucket = top3.selectbox("Bucket", BUCKETS, index=_idx(BUCKETS, meta_hint.get("Bucket", "Performance")))
 
         live1, live2, live3 = st.columns(3)
         ad_code = live1.text_input("AD CODE", value=normalize_ad_code(ad_code_lookup), placeholder="AD 512")
-        published_date = live2.date_input("Published date", value=datetime.now().date(), key="static_pub")
+        published_date = live2.date_input("Published date", value=meta_hint.get("Published Date") or datetime.now().date(), key="static_pub")
         status = live3.selectbox("Status", ["Published", "Live", "Testing", "Paused"], index=0, key="static_status")
 
         cohorts = get_cohorts(product)
@@ -320,7 +388,7 @@ with tab_static:
         belief = _tax_select(tax1, "Belief", beliefs, value=prefill.get("Belief", ""), help_text="The belief shift this creative is trying to create.")
         angle = _tax_select(tax2, "Marketing angle", angles, value=prefill.get("Marketing Angle", ""), help_text="The message route. Exact MD columns appear below after selection.")
         driver = _tax_select(tax2, "Situational driver", drivers, value=prefill.get("Situational Driver", ""), help_text="The trigger or moment that makes the need active now.")
-        funnel = _tax_select(tax3, "Funnel stage", FUNNEL_STAGES, value=prefill.get("Funnel Stage", "") or meta_hint.get("Funnel Stage", ""), help_text="Where this creative sits in the buying journey.")
+        funnel = _tax_select(tax3, "Funnel stage", FUNNEL_STAGES, value=prefill.get("Funnel Stage", ""), help_text="Where this creative sits in the buying journey.")
         influence = _tax_select(tax3, "Influence mode", INFLUENCE_MODES, help_text="The psychological job this creative is doing.")
 
         vis1, vis2, vis3 = st.columns(3)
@@ -338,9 +406,10 @@ with tab_static:
 
         link1, link2, link3 = st.columns(3)
         drive_link = link1.text_input("Final static / Drive link", value=meta_hint.get("Drive Link", ""))
-        preview_link = link2.text_input("Preview image link", value=meta_hint.get("Drive Link", ""))
+        preview_link = link2.text_input("Preview image link", value=meta_hint.get("Preview Link", "") or meta_hint.get("Drive Link", ""))
         reference_link = link3.text_input("Reference image link", value=prefill.get("Reference Image Link", ""))
 
+        creative_name = st.text_input("Creative name / label", value=meta_hint.get("Creative Name", ""))
         brief_link = st.text_input("Brief / Asana link", value=meta_hint.get("Brief Link", ""))
         campaign = st.text_input("Campaign / FB ad name", value=meta_hint.get("Campaign Name", ""))
         st.markdown("#### Creative analysis / post-CRAN")
@@ -359,10 +428,10 @@ with tab_static:
             normalized_parent_code = normalize_ad_code(post_parent_ad)
             if not normalized_code:
                 st.error("AD CODE is required.")
+            elif not str(preview_link or "").strip():
+                st.error("Preview image/file link is required so this static can show a thumbnail/detail preview later.")
             elif is_post_cran and not normalized_parent_code:
                 st.error("Post-CRAN rows need the original / parent AD CODE so the dashboard can compare versions.")
-            elif normalized_code in existing_codes:
-                st.error(f"{normalized_code} already exists in Master_Asset_Registry.")
             else:
                 asset_id = next_asset_id(product, "Static", existing_ids)
                 row = {
@@ -397,11 +466,13 @@ with tab_static:
                     "Taxonomy Confidence": taxonomy_confidence,
                     "Claim Codes": ", ".join(claim_codes),
                     "Experiment ID": experiment_id if use_brief else "",
+                    "Creator / Consumer Name": creative_name,
                     "Meta Ad ID": normalized_code,
                     "Campaign Name": campaign,
                     "Drive Link": drive_link,
                     "Preview Asset Link": preview_link,
-                    "Source Folder Link": drive_link,
+                    "Thumbnail Link": preview_link,
+                    "Source Folder Link": meta_hint.get("Source Folder Link", "") or drive_link,
                     "Brief Link": brief_link,
                     "Reference Image Link": reference_link,
                     "Notes": notes,
@@ -412,9 +483,12 @@ with tab_static:
                     "Post-CRAN Change Summary": post_change_summary if is_post_cran else "",
                 }
                 try:
-                    save_asset(row)
+                    action, saved_asset_id = upsert_asset_by_ad_code(row)
                     if use_brief and experiment_id:
-                        update_experiment(experiment_id, {"Promoted To Asset ID": asset_id, "Status": "Published"})
-                    st.success(f"Saved {asset_id} to Master_Asset_Registry.")
+                        update_experiment(experiment_id, {"Promoted To Asset ID": saved_asset_id or asset_id, "Status": "Published"})
+                    if action == "updated":
+                        st.success(f"Updated existing Master row for {normalized_code}.")
+                    else:
+                        st.success(f"Saved {saved_asset_id or asset_id} to Master_Asset_Registry.")
                 except Exception as exc:
                     st.error(f"Save failed: {exc}")

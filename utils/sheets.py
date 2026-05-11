@@ -159,6 +159,7 @@ AD_CODE_RE = re.compile(r"\bAD\s*[-_]?\s*0*(\d+)\b", re.IGNORECASE)
 META_AD_CODE_COL_INDEX = 37  # Column AL, zero-based.
 _ADNAME_DATE_RE = re.compile(r"\b(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{2,4})\b")
 _LIKELY_INHOUSE_RE = re.compile(r"\b(in\s*house|in-house|inhouse)\b", re.IGNORECASE)
+_LIKELY_INFLUENCER_RE = re.compile(r"\binfluencer\b", re.IGNORECASE)
 _KUHU_RE = re.compile(r"\bkuhu\b", re.IGNORECASE)
 _POST_CRAN_RE = re.compile(r"\bpost\s*[-_ ]?\s*cran\b", re.IGNORECASE)
 
@@ -419,6 +420,23 @@ def _drop_truly_blank_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 def _combine_text(row: pd.Series, columns: list[str]) -> str:
     return " ".join(str(row.get(column, "")) for column in columns if column in row.index)
+
+
+def _normalized_link_key(value: str) -> str:
+    text = str(value or "").strip()
+    if not text or not re.match(r"^https?://", text, flags=re.IGNORECASE):
+        return ""
+    parsed = urlparse(text)
+    path = re.sub(r"/+$", "", parsed.path.lower())
+    return f"{parsed.netloc.lower()}{path}"
+
+
+def _row_link_keys(row: pd.Series, columns: list[str]) -> set[str]:
+    return {
+        key for column in columns
+        for key in [_normalized_link_key(row.get(column, ""))]
+        if column in row.index and key
+    }
 
 
 def _coalesce(row: pd.Series, *columns: str) -> str:
@@ -936,7 +954,14 @@ def classify_meta_ads(meta_df: pd.DataFrame, assets_df: pd.DataFrame, influencer
     if not influencer_df.empty and "Perf AD Code" in influencer_df.columns:
         influencer_codes = {normalize_ad_code(value) for value in influencer_df["Perf AD Code"].tolist() if normalize_ad_code(value)}
 
+    influencer_links = set()
+    if not influencer_df.empty:
+        influencer_link_columns = ["Live Link", "Instagram / Live Link"]
+        for _, influencer in influencer_df.iterrows():
+            influencer_links.update(_row_link_keys(influencer, influencer_link_columns))
+
     likely_mask = out.apply(_is_likely_inhouse_meta_row, axis=1)
+    likely_influencer_mask = out.apply(_is_likely_influencer_meta_row, axis=1)
 
     def _classify(row: pd.Series) -> str:
         code = normalize_ad_code(row.get("AD CODE"))
@@ -950,6 +975,11 @@ def classify_meta_ads(meta_df: pd.DataFrame, assets_df: pd.DataFrame, influencer
             return "Inhouse"
         if bool(likely_mask.loc[row.name]):
             return "Needs Logging"
+        meta_links = _row_link_keys(row, ["1:1 Creative Link", "4:5 Creative Link", "9:16 Creative Link", "Creative Folder Link", "Creative Folder"])
+        if meta_links and influencer_links and meta_links.intersection(influencer_links):
+            return "Influencer"
+        if bool(likely_influencer_mask.loc[row.name]):
+            return "Influencer"
         return "Porcellia"
 
     out["Source"] = out.apply(_classify, axis=1)
@@ -984,6 +1014,13 @@ def _is_likely_inhouse_meta_row(row: pd.Series) -> bool:
     if _KUHU_RE.search(text):
         return False
     return bool(_LIKELY_INHOUSE_RE.search(text))
+
+
+def _is_likely_influencer_meta_row(row: pd.Series) -> bool:
+    columns = [
+        "Creative Name", "Ad Name (TSS)", "Ad Name (Porcellia)",
+    ]
+    return bool(_LIKELY_INFLUENCER_RE.search(_combine_text(row, columns)))
 
 
 def _is_kuhu_meta_row(row: pd.Series) -> bool:
@@ -1190,7 +1227,7 @@ def _normalized_meta_row(meta: pd.Series, source: str) -> dict:
         "Product": _coalesce(meta, "Product"),
         "Format": _first_non_empty(infer_format(meta.get("Creative Type", "")), infer_format(text_for_format)),
         "Creative Type": _coalesce(meta, "Creative Type"),
-        "Video Subtype": "",
+        "Video Subtype": "Influencer Video" if source == "Influencer" and infer_format(text_for_format) == "Video" else "",
         "Static Subtype": infer_static_subtype(text_for_format) if infer_format(text_for_format) == "Static" else "",
         "Bucket": "Performance",
         "Funnel Stage": _coalesce(meta, "Funnel Level"),
@@ -1203,7 +1240,7 @@ def _normalized_meta_row(meta: pd.Series, source: str) -> dict:
         "Visual Hook Type": _coalesce(meta, "Visual Hook Type"),
         "Content Hook Type": _coalesce(meta, "Content Hook Type", "Creative Hook"),
         "Emotional Arc": "",
-        "Creator Archetype": "",
+        "Creator Archetype": "IC - Influencer / Creator" if source == "Influencer" else "",
         "Influence Mode": "",
         "Visual Style": _coalesce(meta, "Visual format"),
         "Visual Treatment": _coalesce(meta, "Visual Treatment", "Visual format"),
@@ -1224,7 +1261,7 @@ def _normalized_meta_row(meta: pd.Series, source: str) -> dict:
         "Brief Link": _coalesce(meta, "Asana Link"),
         "Reference Image Link": "",
         "Landing Page URL": _coalesce(meta, "Landing Page URL"),
-        "Instagram / Live Link": "",
+        "Instagram / Live Link": _coalesce(meta, "1:1 Creative Link", "4:5 Creative Link", "9:16 Creative Link") if source == "Influencer" else "",
         "Campaign Name": _coalesce(meta, "FB Ad Name", "Ad Name (TSS)", "Ad Name (Porcellia)"),
         "Ad Set Name": "",
         "Status": _coalesce(meta, "Status"),

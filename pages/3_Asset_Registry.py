@@ -130,7 +130,7 @@ def _table_controls(data: pd.DataFrame, key: str) -> pd.DataFrame:
     if data.empty:
         return data
     working = data.copy()
-    with st.expander("Search, filter, and sort this table", expanded=True):
+    with st.expander("Search, filter, and sort this table", expanded=False):
         search_value = st.text_input("Search table", key=f"{key}_search", placeholder="name, AD CODE, asset ID, angle, consumer...")
         if search_value.strip():
             term = search_value.strip().lower()

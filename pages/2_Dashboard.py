@@ -663,7 +663,7 @@ with tab_assets:
         ],
         filter_columns=["Source", "Record Type", "Product", "Format", "Performance Bucket", "Post-CRAN", "Marketing Angle", "Cohort", "Belief", "Funnel Stage", "Content Hook Type", "Static Message Type", "Creator"],
         default_sort="Live Date",
-        expanded=True,
+        expanded=False,
     )
 
     if gallery_table.empty:
@@ -674,6 +674,33 @@ with tab_assets:
     if selected_key not in set(gallery_table["_Row Key"].astype(str)):
         selected_key = str(gallery_table.iloc[0]["_Row Key"])
         st.session_state["dashboard_selected_row_key"] = selected_key
+
+    jump_labels = {}
+    for _, row in gallery_table.iterrows():
+        key = str(row.get("_Row Key", ""))
+        if not key:
+            continue
+        label_bits = [
+            _fmt_date(row.get("Live Date")),
+            _safe_text(row.get("Format"), "Unknown format"),
+            _safe_text(row.get("AD CODE"), ""),
+            _safe_text(row.get("Creative Name"), "Untitled"),
+        ]
+        jump_labels[key] = " | ".join(bit for bit in label_bits if bit and bit != "-")
+
+    jump_options = list(jump_labels.keys())
+    if jump_options:
+        selected_from_dropdown = st.selectbox(
+            "Jump to a creative in this view",
+            jump_options,
+            index=jump_options.index(selected_key) if selected_key in jump_options else 0,
+            format_func=lambda key: jump_labels.get(key, key),
+            key="dashboard_creative_jump",
+        )
+        if selected_from_dropdown != selected_key:
+            selected_key = selected_from_dropdown
+            st.session_state["dashboard_selected_row_key"] = selected_key
+
     picked = gallery[gallery["_Row Key"].astype(str) == selected_key].iloc[0]
 
     hero, detail = st.columns([0.9, 1.35])
@@ -949,7 +976,7 @@ with tab_audit:
         ],
         filter_columns=["Source", "Record Type", "Product", "Format", "Marketing Angle", "Content Hook Type", "Static Message Type"],
         default_sort="Live Date",
-        expanded=True,
+        expanded=False,
     )
     st.dataframe(
         _numeric_display(audit),

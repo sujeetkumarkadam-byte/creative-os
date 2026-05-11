@@ -507,6 +507,104 @@ def _performance_summary(data: pd.DataFrame, group_by: str | None = None) -> pd.
     return summary
 
 
+def _render_creative_detail(picked: pd.Series, full_df: pd.DataFrame):
+    hero, detail = st.columns([0.9, 1.35])
+    with hero:
+        st.markdown('<div class="asset-card">', unsafe_allow_html=True)
+        thumb = _thumbnail_url(picked)
+        if thumb:
+            st.image(thumb, use_container_width=True)
+        else:
+            st.info("No preview thumbnail available yet. Add a Preview Asset Link or Drive image link in Master.")
+
+        st.markdown(f"### {_safe_text(picked.get('Creative Name'))}")
+        st.markdown(
+            f"<span class='pill'>{_safe_text(picked.get('Source'))}</span>"
+            f"<span class='pill'>{_safe_text(picked.get('Product'))}</span>"
+            f"<span class='pill'>{_safe_text(picked.get('Format'))}</span>",
+            unsafe_allow_html=True,
+        )
+        st.write(f"**Live date:** {_fmt_date(picked.get('_Date'))}")
+        st.write(f"**AD CODE:** {_safe_text(picked.get('AD CODE'))}")
+        st.write(f"**Perf AD Code:** {_safe_text(picked.get('Perf AD Code'))}")
+        _link("Open Drive / Creative Link", picked.get("Drive Link", ""))
+        _link("Open Source Folder", picked.get("Source Folder Link", ""))
+        _link("Open Transcript", picked.get("Transcript Link", ""))
+        _link("Open Instagram / Live Link", picked.get("Instagram / Live Link", ""))
+        _link("Open Brief / Asana", picked.get("Brief Link", ""))
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with detail:
+        id_tab, tax_tab, perf_tab = st.tabs(["Identity", "Taxonomy", "Performance"])
+        with id_tab:
+            cols = st.columns(2)
+            identity_fields = [
+                "Asset ID", "Record Type", "Status", "Creator", "Creator / Consumer Name",
+                "Agency", "POC", "Followers", "Platform", "Language", "Campaign Name",
+                "Ad Set Name", "Landing Page URL", "Performance Bucket", "Performance Read",
+                "Post-CRAN", "Post-CRAN Parent AD CODE", "Post-CRAN Parent Asset ID",
+                "Post-CRAN Change Summary",
+            ]
+            for idx, field in enumerate(identity_fields):
+                with cols[idx % 2]:
+                    if field in picked.index:
+                        st.write(f"**{field}:** {_safe_text(picked.get(field))}")
+
+        with tax_tab:
+            taxonomy_fields = [
+                "Creative Type", "Video Subtype", "Static Subtype", "Content Bucket",
+                "Marketing Angle", "Belief", "Cohort", "Situational Driver",
+                "Funnel Stage", "Visual Hook Type", "Content Hook Type", "Emotional Arc",
+                "Creator Archetype", "Influence Mode", "Visual Treatment", "Static Message Type",
+                "CTA Format", "CTA Message Type", "AI-Generated", "Taxonomy Confidence",
+                "Claim Codes", "Visual Style", "CTA Style", "Hook Type", "Source Interview ID", "Experiment ID",
+                "Transcript Notes", "Aspect Ratio Links",
+            ]
+            cols = st.columns(2)
+            for idx, field in enumerate(taxonomy_fields):
+                with cols[idx % 2]:
+                    if field in picked.index:
+                        st.write(f"**{field}:** {_safe_text(picked.get(field))}")
+            if _safe_text(picked.get("Needs Attention"), ""):
+                st.warning(picked.get("Needs Attention"))
+
+        with perf_tab:
+            st.caption(f"Metric source: {_safe_text(picked.get('Metric Source'), 'No metric columns populated yet')}")
+            if _is_post_cran_row(picked):
+                parent_row = _find_post_cran_parent(full_df, picked)
+                insight = _post_cran_insight(picked, parent_row)
+                st.info(insight)
+                if parent_row is not None:
+                    st.caption(
+                        f"Parent matched: {_safe_text(parent_row.get('Creative Name'))} "
+                        f"({normalize_ad_code(parent_row.get('AD CODE', ''))})"
+                    )
+                    comparison = _post_cran_comparison_table(picked, parent_row)
+                    if not comparison.empty:
+                        st.dataframe(comparison, use_container_width=True, hide_index=True)
+            for offset in range(0, len(PERFORMANCE_STAT_ORDER), 4):
+                metric_cards = st.columns(4)
+                for idx, (label, field) in enumerate(PERFORMANCE_STAT_ORDER[offset:offset + 4]):
+                    metric_cards[idx].metric(label, _metric_value(picked, field))
+
+            perf_cols = [
+                *PERFORMANCE_COLUMN_ORDER,
+                "Hook Rate", "Hold Rate",
+                "Amount Spent (L30)", "Revenue (L30)", "ROAS (L30)", "CPM (L30)", "CPR (L30)",
+                "CTR (L30)", "CPC (L30)", "ATC Rate (L30)", "CVR (L30)", "AOV (L30)", "Hook Rate (L30)", "Hold Rate (L30)", "CAC (L30)",
+                "Amount Spent (L7)", "Revenue (L7)", "ROAS (L7)", "CPM (L7)", "CPR (L7)",
+                "CTR (L7)", "CPC (L7)", "ATC Rate (L7)", "CVR (L7)", "AOV (L7)", "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
+                "Views", "Likes", "Comments", "Shares", "Saves", "Total Engagement", "Engagement Rate (%)",
+            ]
+            perf_table = pd.DataFrame(
+                [{"Metric": field, "Value": picked.get(field, "")} for field in perf_cols if field in picked.index and _safe_text(picked.get(field), "")]
+            )
+            if perf_table.empty:
+                st.info("No performance metrics are populated for this creative yet.")
+            else:
+                st.dataframe(perf_table, use_container_width=True, hide_index=True)
+
+
 st.title("Dashboard")
 st.caption(
     "One Creative Ops view across Inhouse, Influencer, and Porcellia. "
@@ -750,7 +848,7 @@ with tab_overview:
 
 with tab_assets:
     st.subheader("Creative gallery")
-    st.caption("Use the table controls below to narrow the list. Select a row in the table and it will pin into this detail view.")
+    st.caption("Use the dropdown or click/double-click any row in the filtered table; the deep-dive view above the table will switch to that creative.")
 
     sort_cols = ["_Date", "Source", "Creative Name"]
     gallery = filtered.sort_values([c for c in sort_cols if c in filtered.columns], ascending=[False, True, True]).copy()
@@ -813,104 +911,7 @@ with tab_assets:
             selected_key = selected_from_dropdown
             st.session_state["dashboard_selected_row_key"] = selected_key
 
-    picked = gallery[gallery["_Row Key"].astype(str) == selected_key].iloc[0]
-
-    hero, detail = st.columns([0.9, 1.35])
-    with hero:
-        st.markdown('<div class="asset-card">', unsafe_allow_html=True)
-        thumb = _thumbnail_url(picked)
-        if thumb:
-            st.image(thumb, use_container_width=True)
-        else:
-            st.info("No preview thumbnail available yet. Add a Preview Asset Link or Drive image link in Master.")
-
-        st.markdown(f"### {_safe_text(picked.get('Creative Name'))}")
-        st.markdown(
-            f"<span class='pill'>{_safe_text(picked.get('Source'))}</span>"
-            f"<span class='pill'>{_safe_text(picked.get('Product'))}</span>"
-            f"<span class='pill'>{_safe_text(picked.get('Format'))}</span>",
-            unsafe_allow_html=True,
-        )
-        st.write(f"**Live date:** {_fmt_date(picked.get('_Date'))}")
-        st.write(f"**AD CODE:** {_safe_text(picked.get('AD CODE'))}")
-        st.write(f"**Perf AD Code:** {_safe_text(picked.get('Perf AD Code'))}")
-        _link("Open Drive / Creative Link", picked.get("Drive Link", ""))
-        _link("Open Source Folder", picked.get("Source Folder Link", ""))
-        _link("Open Transcript", picked.get("Transcript Link", ""))
-        _link("Open Instagram / Live Link", picked.get("Instagram / Live Link", ""))
-        _link("Open Brief / Asana", picked.get("Brief Link", ""))
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with detail:
-        id_tab, tax_tab, perf_tab = st.tabs(["Identity", "Taxonomy", "Performance"])
-        with id_tab:
-            cols = st.columns(2)
-            identity_fields = [
-                "Asset ID", "Record Type", "Status", "Creator", "Creator / Consumer Name",
-                "Agency", "POC", "Followers", "Platform", "Language", "Campaign Name",
-                "Ad Set Name", "Landing Page URL", "Performance Bucket", "Performance Read",
-                "Post-CRAN", "Post-CRAN Parent AD CODE", "Post-CRAN Parent Asset ID",
-                "Post-CRAN Change Summary",
-            ]
-            for idx, field in enumerate(identity_fields):
-                with cols[idx % 2]:
-                    if field in picked.index:
-                        st.write(f"**{field}:** {_safe_text(picked.get(field))}")
-
-        with tax_tab:
-            taxonomy_fields = [
-                "Creative Type", "Video Subtype", "Static Subtype", "Content Bucket",
-                "Marketing Angle", "Belief", "Cohort", "Situational Driver",
-                "Funnel Stage", "Visual Hook Type", "Content Hook Type", "Emotional Arc",
-                "Creator Archetype", "Influence Mode", "Visual Treatment", "Static Message Type",
-                "CTA Format", "CTA Message Type", "AI-Generated", "Taxonomy Confidence",
-                "Claim Codes", "Visual Style", "CTA Style", "Hook Type", "Source Interview ID", "Experiment ID",
-                "Transcript Notes", "Aspect Ratio Links",
-            ]
-            cols = st.columns(2)
-            for idx, field in enumerate(taxonomy_fields):
-                with cols[idx % 2]:
-                    if field in picked.index:
-                        st.write(f"**{field}:** {_safe_text(picked.get(field))}")
-            if _safe_text(picked.get("Needs Attention"), ""):
-                st.warning(picked.get("Needs Attention"))
-
-        with perf_tab:
-            st.caption(f"Metric source: {_safe_text(picked.get('Metric Source'), 'No metric columns populated yet')}")
-            if _is_post_cran_row(picked):
-                parent_row = _find_post_cran_parent(df, picked)
-                insight = _post_cran_insight(picked, parent_row)
-                st.info(insight)
-                if parent_row is not None:
-                    st.caption(
-                        f"Parent matched: {_safe_text(parent_row.get('Creative Name'))} "
-                        f"({normalize_ad_code(parent_row.get('AD CODE', ''))})"
-                    )
-                    comparison = _post_cran_comparison_table(picked, parent_row)
-                    if not comparison.empty:
-                        st.dataframe(comparison, use_container_width=True, hide_index=True)
-            for offset in range(0, len(PERFORMANCE_STAT_ORDER), 4):
-                metric_cards = st.columns(4)
-                for idx, (label, field) in enumerate(PERFORMANCE_STAT_ORDER[offset:offset + 4]):
-                    metric_cards[idx].metric(label, _metric_value(picked, field))
-
-            perf_cols = [
-                *PERFORMANCE_COLUMN_ORDER,
-                "Hook Rate", "Hold Rate",
-                "Amount Spent (L30)", "Revenue (L30)", "ROAS (L30)", "CPM (L30)", "CPR (L30)",
-                "CTR (L30)", "CPC (L30)", "ATC Rate (L30)", "CVR (L30)", "AOV (L30)", "Hook Rate (L30)", "Hold Rate (L30)", "CAC (L30)",
-                "Amount Spent (L7)", "Revenue (L7)", "ROAS (L7)", "CPM (L7)", "CPR (L7)",
-                "CTR (L7)", "CPC (L7)", "ATC Rate (L7)", "CVR (L7)", "AOV (L7)", "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
-                "Views", "Likes", "Comments", "Shares", "Saves", "Total Engagement", "Engagement Rate (%)",
-            ]
-            perf_table = pd.DataFrame(
-                [{"Metric": field, "Value": picked.get(field, "")} for field in perf_cols if field in picked.index and _safe_text(picked.get(field), "")]
-            )
-            if perf_table.empty:
-                st.info("No performance metrics are populated for this creative yet.")
-            else:
-                st.dataframe(perf_table, use_container_width=True, hide_index=True)
-
+    detail_slot = st.container()
     st.markdown("---")
     st.markdown("**Filtered creative table**")
     table_display = gallery_table.drop(columns=["_Row Key"], errors="ignore").rename(columns={"_Preview": "Preview"})
@@ -933,9 +934,12 @@ with tab_assets:
     if table_event.selection.rows:
         selected_pos = table_event.selection.rows[0]
         new_key = str(gallery_table.iloc[selected_pos]["_Row Key"])
-        if st.session_state.get("dashboard_selected_row_key") != new_key:
-            st.session_state["dashboard_selected_row_key"] = new_key
-            st.rerun()
+        selected_key = new_key
+        st.session_state["dashboard_selected_row_key"] = selected_key
+
+    picked = gallery[gallery["_Row Key"].astype(str) == selected_key].iloc[0]
+    with detail_slot:
+        _render_creative_detail(picked, df)
 
 with tab_performers:
     st.subheader("Creative analysis buckets")

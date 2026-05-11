@@ -364,6 +364,44 @@ def _post_cran_insight(row: pd.Series, parent: pd.Series | None) -> str:
     return f"Compared with {normalize_ad_code(parent.get('AD CODE', ''))}: " + "; ".join(parts[:3]) + "."
 
 
+def _post_cran_comparison_table(row: pd.Series, parent: pd.Series) -> pd.DataFrame:
+    inverse_good = {"CPM", "CPR", "CPC", "CAC"}
+    context_only = {"Amount Spent"}
+    rows = []
+    for field in PERFORMANCE_COLUMN_ORDER:
+        current_text = _safe_text(row.get(field), "")
+        parent_text = _safe_text(parent.get(field), "")
+        if not current_text and not parent_text:
+            continue
+
+        change_text, quality = _pct_delta(
+            row.get(field),
+            parent.get(field),
+            inverse_good=field in inverse_good,
+        )
+        if field in context_only:
+            read = "Context"
+        elif change_text == "not enough data":
+            read = "Needs more data"
+        elif quality == "good":
+            read = "Better direction"
+        elif quality == "bad":
+            read = "Worse direction"
+        else:
+            read = "Flat"
+
+        rows.append(
+            {
+                "Metric": field,
+                "Parent": parent_text or "-",
+                "Post-CRAN": current_text or "-",
+                "Change": change_text,
+                "Read": read,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def _sort_dataframe(data: pd.DataFrame, sort_by: str, descending: bool) -> pd.DataFrame:
     if data.empty or sort_by not in data.columns:
         return data
@@ -774,6 +812,9 @@ with tab_assets:
                         f"Parent matched: {_safe_text(parent_row.get('Creative Name'))} "
                         f"({normalize_ad_code(parent_row.get('AD CODE', ''))})"
                     )
+                    comparison = _post_cran_comparison_table(picked, parent_row)
+                    if not comparison.empty:
+                        st.dataframe(comparison, use_container_width=True, hide_index=True)
             for offset in range(0, len(PERFORMANCE_STAT_ORDER), 4):
                 metric_cards = st.columns(4)
                 for idx, (label, field) in enumerate(PERFORMANCE_STAT_ORDER[offset:offset + 4]):

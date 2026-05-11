@@ -384,9 +384,10 @@ def _scan_drive_cached(root_url: str, max_depth: int):
     return pd.DataFrame(rows)
 
 
-tab_diag, tab_audit, tab_drive, tab_video = st.tabs([
+tab_diag, tab_audit, tab_approval, tab_drive, tab_video = st.tabs([
     "Sheet Diagnostics",
     "Creative Ops Audit",
+    "Taxonomy Approval",
     "Drive Static Review",
     "Drive Video Review",
 ])
@@ -517,6 +518,236 @@ with tab_audit:
             "Product", "Format", "Asset ID", "Creator", "Needs Attention",
         ]
         st.dataframe(view[[c for c in cols if c in view.columns]].head(1000), use_container_width=True, hide_index=True, height=420)
+
+with tab_approval:
+    st.header("Taxonomy approval queue")
+    st.caption(
+        "Use this for assets already saved in Master_Asset_Registry. "
+        "Review the AI-suggested tags, compare against transcript/preview/brief context, then mark them Human Approved."
+    )
+
+    assets = load_assets()
+    if assets.empty:
+        st.info("Master_Asset_Registry is empty.")
+    else:
+        queue = assets.copy()
+        for column in ["Taxonomy Review Status", "Format", "Product", "Meta Ad ID", "Asset ID", "Creator / Consumer Name"]:
+            if column not in queue.columns:
+                queue[column] = ""
+
+        review_text = queue["Taxonomy Review Status"].astype(str).str.lower()
+        default_mask = review_text.str.contains("ai|needs review|needs changes", na=False)
+
+        q1, q2, q3 = st.columns([1, 0.65, 0.65])
+        approval_search = q1.text_input(
+            "Search approval queue",
+            placeholder="AD CODE, consumer name, product, asset ID...",
+            key="taxonomy_approval_search",
+        )
+        status_scope = q2.selectbox(
+            "Rows to show",
+            ["Needs review only", "All Master rows"],
+            key="taxonomy_approval_scope",
+        )
+        format_scope = q3.selectbox(
+            "Format",
+            ["All", "Video", "Static"],
+            key="taxonomy_approval_format",
+        )
+
+        if status_scope == "Needs review only":
+            queue = queue[default_mask].copy()
+        if format_scope != "All":
+            queue = queue[queue["Format"].astype(str).str.lower().eq(format_scope.lower())].copy()
+
+        if approval_search.strip():
+            term = approval_search.strip().lower()
+            searchable = [
+                "Meta Ad ID", "Asset ID", "Creator / Consumer Name", "Product", "Format",
+                "Marketing Angle", "Belief", "Cohort", "Situational Driver", "Transcript Notes",
+                "Notes", "Campaign Name",
+            ]
+            mask = pd.Series(False, index=queue.index)
+            for column in [c for c in searchable if c in queue.columns]:
+                mask = mask | queue[column].astype(str).str.lower().str.contains(term, na=False)
+            queue = queue[mask].copy()
+
+        st.metric("Rows in approval queue", len(queue))
+        if queue.empty:
+            st.success("No matching assets need taxonomy approval.")
+        else:
+            summary_cols = [
+                "Meta Ad ID", "Asset ID", "Taxonomy Review Status", "Taxonomy Confidence",
+                "Product", "Format", "Creator / Consumer Name", "Marketing Angle", "Belief",
+                "Cohort", "Situational Driver",
+            ]
+            st.dataframe(
+                queue[[c for c in summary_cols if c in queue.columns]].head(300),
+                use_container_width=True,
+                hide_index=True,
+                height=240,
+            )
+
+            labels = []
+            for idx, row in queue.iterrows():
+                bits = [
+                    _safe(row.get("Meta Ad ID"), "No AD CODE"),
+                    _safe(row.get("Asset ID"), "No Asset ID"),
+                    _safe(row.get("Creator / Consumer Name"), "Unknown"),
+                    _safe(row.get("Product"), "Unknown product"),
+                    _safe(row.get("Format"), "Unknown format"),
+                ]
+                labels.append(f"{idx} | " + " | ".join(bits))
+            selected_label = st.selectbox("Review asset", labels, key="taxonomy_approval_selected")
+            selected_idx = int(selected_label.split(" | ", 1)[0])
+            picked = queue.loc[selected_idx]
+
+            left, right = st.columns([0.78, 1.22])
+            with left:
+                if _safe(picked.get("Thumbnail Link")):
+                    st.image(picked.get("Thumbnail Link"), use_container_width=True)
+                st.markdown(f"**AD CODE:** {_safe(picked.get('Meta Ad ID'), '-')}")
+                st.markdown(f"**Asset ID:** {_safe(picked.get('Asset ID'), '-')}")
+                st.markdown(f"**Current status:** {_safe(picked.get('Taxonomy Review Status'), '-')}")
+                if _safe(picked.get("Drive Link")):
+                    st.markdown(f"[Open creative]({picked.get('Drive Link')})")
+                if _safe(picked.get("Source Folder Link")):
+                    st.markdown(f"[Open source folder]({picked.get('Source Folder Link')})")
+                if _safe(picked.get("Transcript Link")):
+                    st.markdown(f"[Open transcript]({picked.get('Transcript Link')})")
+                if _safe(picked.get("Transcript Notes")):
+                    st.text_area("Transcript notes already saved", value=picked.get("Transcript Notes"), height=220, disabled=True)
+                else:
+                    st.warning("No transcript notes are saved on this Master row yet.")
+
+            with right:
+                default_product = product_label(picked.get("Product"))
+                default_format = _safe(picked.get("Format"), "Video")
+                format_options = ["Video", "Static"]
+                if default_format not in format_options:
+                    default_format = "Video" if "video" in _safe(picked.get("Creative Type")).lower() else "Static"
+
+                with st.form("approve_taxonomy_row"):
+                    product = st.selectbox("Product", PRODUCTS, index=_choice_index(PRODUCTS, default_product))
+                    creative_format = st.selectbox("Format", format_options, index=_choice_index(format_options, default_format))
+
+                    if creative_format == "Video":
+                        video_subtype = _tax_select(
+                            st,
+                            "Video subtype",
+                            VIDEO_SUBTYPES,
+                            value=_safe(picked.get("Video Subtype"), picked.get("Creative Type")),
+                            help_text="Video structure / source type.",
+                        )
+                        static_subtype = ""
+                    else:
+                        static_subtype = _tax_select(
+                            st,
+                            "Static subtype",
+                            STATIC_SUBTYPES,
+                            value=_safe(picked.get("Static Subtype"), picked.get("Creative Type")),
+                            help_text="Static/carousel structure.",
+                        )
+                        video_subtype = ""
+
+                    cohorts = get_cohorts(product)
+                    beliefs = get_beliefs(product)
+                    angles = get_angles(product)
+                    drivers = get_drivers(product)
+                    claims = get_claims(product)
+
+                    c1, c2 = st.columns(2)
+                    cohort = _tax_select(c1, "Cohort", cohorts, value=picked.get("Cohort"), help_text="Who this creative is speaking to.")
+                    belief = _tax_select(c1, "Belief", beliefs, value=picked.get("Belief"), help_text="The belief shift this creative is trying to create.")
+                    angle = _tax_select(c2, "Marketing angle", angles, value=picked.get("Marketing Angle"), help_text="The message route from the approved taxonomy.")
+                    driver = _tax_select(c2, "Situational driver", drivers, value=picked.get("Situational Driver"), help_text="The active trigger/moment.")
+
+                    c3, c4 = st.columns(2)
+                    visual_hook = _tax_select(c3, "Visual hook type", VISUAL_HOOK_TYPES, value=picked.get("Visual Hook Type"), help_text="What is shown first.")
+                    content_hook = _tax_select(c3, "Content hook type", CONTENT_HOOK_TYPES, value=picked.get("Content Hook Type"), help_text="What is said/written first.")
+                    funnel = _tax_select(c4, "Funnel stage", FUNNEL_STAGES, value=picked.get("Funnel Stage"), help_text="Buying journey stage.")
+                    influence = _tax_select(c4, "Influence mode", INFLUENCE_MODES, value=picked.get("Influence Mode"), help_text="Psychological job of the creative.")
+
+                    c5, c6 = st.columns(2)
+                    if creative_format == "Video":
+                        emotional_arc = _tax_select(c5, "Emotional arc", EMOTIONAL_ARCS, value=picked.get("Emotional Arc"), help_text="Emotional movement through the video.")
+                        creator_arch = _tax_select(c5, "Creator archetype", ARCHETYPES, value=picked.get("Creator Archetype"), help_text="Why the speaker is trusted.")
+                        visual_treatment = ""
+                        static_message = ""
+                    else:
+                        visual_treatment = _tax_select(c5, "Visual treatment", VISUAL_TREATMENTS, value=picked.get("Visual Treatment"), help_text="Dominant visual treatment.")
+                        static_message = _tax_select(c5, "Static message type", STATIC_MESSAGE_TYPES, value=picked.get("Static Message Type"), help_text="What the static mainly communicates.")
+                        emotional_arc = ""
+                        creator_arch = ""
+                    cta_format = _tax_select(c6, "CTA format", CTA_FORMATS, value=picked.get("CTA Format"), help_text="How the CTA appears.")
+                    cta_message = _tax_select(c6, "CTA message type", CTA_MESSAGE_TYPES, value=picked.get("CTA Message Type"), help_text="What the CTA asks or promises.")
+
+                    current_claims = [value for value in str(picked.get("Claim Codes", "") or "").split(", ") if value in claims]
+                    claim_codes = st.multiselect("Approved claim codes used", claims, default=current_claims)
+                    confidence_default = _safe(picked.get("Taxonomy Confidence"), "High")
+                    if confidence_default == "Needs Review":
+                        confidence_default = "High"
+                    taxonomy_confidence = st.selectbox(
+                        "Human confidence",
+                        TAXONOMY_CONFIDENCE,
+                        index=_choice_index(TAXONOMY_CONFIDENCE, confidence_default),
+                    )
+                    review_decision = st.selectbox(
+                        "Review decision",
+                        ["Human Approved", "Needs Changes", "AI Suggested - Needs Review"],
+                        index=0,
+                    )
+                    transcript_notes = st.text_area(
+                        "Transcript notes / proof lines",
+                        value=_safe(picked.get("Transcript Notes")),
+                        height=100,
+                    )
+                    notes = st.text_area("Review notes", value=_safe(picked.get("Notes")), height=90)
+
+                    submitted = st.form_submit_button("Save review decision to Master", type="primary", use_container_width=True)
+                    if submitted:
+                        ad_code = normalize_ad_code(picked.get("Meta Ad ID"))
+                        if not ad_code:
+                            st.error("This row has no Meta Ad ID / AD CODE, so I cannot safely update it without risking a duplicate.")
+                        else:
+                            row = {
+                                "Asset ID": picked.get("Asset ID"),
+                                "Product": product,
+                                "Creative Type": video_subtype if creative_format == "Video" else static_subtype,
+                                "Format": creative_format,
+                                "Video Subtype": video_subtype,
+                                "Static Subtype": static_subtype,
+                                "Cohort": cohort,
+                                "Belief": belief,
+                                "Marketing Angle": angle,
+                                "Situational Driver": driver,
+                                "Hook Type": content_hook,
+                                "Visual Hook Type": visual_hook,
+                                "Content Hook Type": content_hook,
+                                "Emotional Arc": emotional_arc,
+                                "Funnel Stage": funnel,
+                                "Creator Archetype": creator_arch,
+                                "Influence Mode": influence,
+                                "Visual Style": visual_treatment,
+                                "Visual Treatment": visual_treatment,
+                                "Static Message Type": static_message,
+                                "CTA Style": cta_message,
+                                "CTA Format": cta_format,
+                                "CTA Message Type": cta_message,
+                                "Taxonomy Confidence": taxonomy_confidence,
+                                "Claim Codes": ", ".join(claim_codes),
+                                "Transcript Notes": transcript_notes,
+                                "Notes": notes,
+                                "Meta Ad ID": ad_code,
+                                "Taxonomy Review Status": review_decision,
+                            }
+                            try:
+                                action, saved_asset_id = upsert_asset_by_ad_code(row)
+                                st.success(f"{action.title()} {saved_asset_id}. Review status is now `{review_decision}`.")
+                                refresh_sheet_cache()
+                                st.rerun()
+                            except Exception as exc:
+                                st.error(f"Approval save failed: {exc}")
 
 with tab_drive:
     st.header("Drive static review queue")
@@ -666,8 +897,8 @@ with tab_video:
         "groups 1:1 and 9:16 duplicates, and lets you update Master only after review."
     )
     st.info(
-        "No fake auto-tagging here: the app can save hard facts from Drive/Meta and your approved taxonomy. "
-        "If you paste a transcript or transcript link, it stores that context, but visual hook fields still need human review."
+        "Use this only to scan/import unprocessed Drive videos. "
+        "For videos already transcribed/tagged into Master, use the Taxonomy Approval tab to review and mark Human Approved."
     )
 
     find_col, paste_col = st.columns([0.9, 1.1])

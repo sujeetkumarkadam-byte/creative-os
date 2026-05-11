@@ -90,8 +90,7 @@ def _fmt_date(value) -> str:
 
 
 def _metric_value(row: pd.Series, field: str):
-    value = row.get(field, "")
-    return _safe_text(value)
+    return _display_value(field, row.get(field, ""))
 
 
 def _money(value: float) -> str:
@@ -154,6 +153,12 @@ NUMERIC_SORT_COLUMNS = {
     "Engagement Rate (%)", "Followers", "Creatives", "Filled", "Total", "Coverage",
 }
 
+PERCENT_DISPLAY_COLUMNS = {
+    "Hook Rate", "Hold Rate",
+    "Hook Rate (L30)", "Hold Rate (L30)",
+    "Hook Rate (L7)", "Hold Rate (L7)",
+}
+
 
 def _row_key(row: pd.Series) -> str:
     parts = [
@@ -176,6 +181,31 @@ def _number(value):
     if cleaned in {"", ".", "-", "-."}:
         return pd.NA
     return pd.to_numeric(cleaned, errors="coerce")
+
+
+def _percentage_number(value):
+    parsed = _number(value)
+    if pd.isna(parsed):
+        return pd.NA
+    parsed = float(parsed)
+    raw_text = str(value or "")
+    if "%" not in raw_text and abs(parsed) <= 1:
+        parsed *= 100
+    return parsed
+
+
+def _format_percent(value) -> str:
+    parsed = _percentage_number(value)
+    if pd.isna(parsed):
+        return _safe_text(value)
+    text = f"{float(parsed):.2f}".rstrip("0").rstrip(".")
+    return f"{text}%"
+
+
+def _display_value(field: str, value) -> str:
+    if field in PERCENT_DISPLAY_COLUMNS:
+        return _format_percent(value)
+    return _safe_text(value)
 
 
 def _float(value) -> float | None:
@@ -472,8 +502,19 @@ def _table_controls(
 def _numeric_display(data: pd.DataFrame) -> pd.DataFrame:
     output = data.copy()
     for column in [c for c in output.columns if c in NUMERIC_SORT_COLUMNS]:
-        output[column] = output[column].map(_number).astype("Float64")
+        parser = _percentage_number if column in PERCENT_DISPLAY_COLUMNS else _number
+        output[column] = output[column].map(parser).astype("Float64")
     return output
+
+
+def _percent_column_config(extra: dict | None = None) -> dict:
+    config = {
+        column: st.column_config.NumberColumn(column, format="%.2f%%")
+        for column in PERCENT_DISPLAY_COLUMNS
+    }
+    if extra:
+        config.update(extra)
+    return config
 
 
 def _performance_summary(data: pd.DataFrame, group_by: str | None = None) -> pd.DataFrame:
@@ -597,7 +638,7 @@ def _render_creative_detail(picked: pd.Series, full_df: pd.DataFrame):
                 "Views", "Likes", "Comments", "Shares", "Saves", "Total Engagement", "Engagement Rate (%)",
             ]
             perf_table = pd.DataFrame(
-                [{"Metric": field, "Value": picked.get(field, "")} for field in perf_cols if field in picked.index and _safe_text(picked.get(field), "")]
+                [{"Metric": field, "Value": _display_value(field, picked.get(field, ""))} for field in perf_cols if field in picked.index and _safe_text(picked.get(field), "")]
             )
             if perf_table.empty:
                 st.info("No performance metrics are populated for this creative yet.")
@@ -925,6 +966,7 @@ with tab_assets:
         selection_mode="single-row",
         key="dashboard_deep_dive_table",
         column_config={
+            **_percent_column_config(),
             "Preview": st.column_config.ImageColumn("Preview", width="small"),
             "Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open"),
             "Transcript Link": st.column_config.LinkColumn("Transcript", display_text="Open"),
@@ -989,7 +1031,7 @@ with tab_performers:
                     use_container_width=True,
                     hide_index=True,
                     height=320,
-                    column_config={"Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open")},
+                    column_config=_percent_column_config({"Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open")}),
                 )
 
 with tab_quality:
@@ -1066,7 +1108,7 @@ with tab_quality:
             use_container_width=True,
             hide_index=True,
             height=420,
-            column_config={"Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open")},
+            column_config=_percent_column_config({"Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open")}),
         )
 
 with tab_audit:
@@ -1103,6 +1145,7 @@ with tab_audit:
         hide_index=True,
         height=520,
         column_config={
+            **_percent_column_config(),
             "Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open"),
             "Instagram / Live Link": st.column_config.LinkColumn("Instagram", display_text="Open"),
         },

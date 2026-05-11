@@ -94,6 +94,12 @@ NUMERIC_SORT_COLUMNS = {
     "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
 }
 
+PERCENT_DISPLAY_COLUMNS = {
+    "Hook Rate", "Hold Rate",
+    "Hook Rate (L30)", "Hold Rate (L30)",
+    "Hook Rate (L7)", "Hold Rate (L7)",
+}
+
 
 def _row_key(row: pd.Series) -> str:
     return "|".join(
@@ -111,6 +117,31 @@ def _number(value):
     if cleaned in {"", ".", "-", "-."}:
         return pd.NA
     return pd.to_numeric(cleaned, errors="coerce")
+
+
+def _percentage_number(value):
+    parsed = _number(value)
+    if pd.isna(parsed):
+        return pd.NA
+    parsed = float(parsed)
+    raw_text = str(value or "")
+    if "%" not in raw_text and abs(parsed) <= 1:
+        parsed *= 100
+    return parsed
+
+
+def _format_percent(value) -> str:
+    parsed = _percentage_number(value)
+    if pd.isna(parsed):
+        return _safe(value)
+    text = f"{float(parsed):.2f}".rstrip("0").rstrip(".")
+    return f"{text}%"
+
+
+def _display_value(field: str, value) -> str:
+    if field in PERCENT_DISPLAY_COLUMNS:
+        return _format_percent(value)
+    return _safe(value)
 
 
 def _sort_dataframe(data: pd.DataFrame, sort_by: str, descending: bool) -> pd.DataFrame:
@@ -167,8 +198,19 @@ def _table_controls(data: pd.DataFrame, key: str) -> pd.DataFrame:
 def _numeric_display(data: pd.DataFrame) -> pd.DataFrame:
     output = data.copy()
     for column in [c for c in output.columns if c in NUMERIC_SORT_COLUMNS]:
-        output[column] = output[column].map(_number).astype("Float64")
+        parser = _percentage_number if column in PERCENT_DISPLAY_COLUMNS else _number
+        output[column] = output[column].map(parser).astype("Float64")
     return output
+
+
+def _percent_column_config(extra: dict | None = None) -> dict:
+    config = {
+        column: st.column_config.NumberColumn(column, format="%.2f%%")
+        for column in PERCENT_DISPLAY_COLUMNS
+    }
+    if extra:
+        config.update(extra)
+    return config
 
 
 assets = load_assets()
@@ -282,6 +324,7 @@ with left:
         selection_mode="single-row",
         key="asset_registry_table",
         column_config={
+            **_percent_column_config(),
             "Preview": st.column_config.ImageColumn("Preview", width="small"),
             "Drive Link": st.column_config.LinkColumn("Drive Link", display_text="Open"),
             "Transcript Link": st.column_config.LinkColumn("Transcript", display_text="Open"),
@@ -368,7 +411,7 @@ with right:
             "Revenue (L7)", "CTR (L7)", "Hook Rate (L7)", "Hold Rate (L7)",
         ]
         perf = pd.DataFrame(
-            [{"Metric": col, "Value": row.get(col, "")} for col in perf_cols if col in row.index and _safe(row.get(col), "")]
+            [{"Metric": col, "Value": _display_value(col, row.get(col, ""))} for col in perf_cols if col in row.index and _safe(row.get(col), "")]
         )
         if perf.empty:
             st.info("No performance metrics populated yet.")

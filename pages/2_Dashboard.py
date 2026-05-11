@@ -94,6 +94,18 @@ def _metric_value(row: pd.Series, field: str):
     return _safe_text(value)
 
 
+def _money(value: float) -> str:
+    if pd.isna(value):
+        value = 0
+    return f"₹{float(value):,.0f}"
+
+
+def _ratio(value: float) -> str:
+    if pd.isna(value):
+        return "-"
+    return f"{float(value):.2f}"
+
+
 def _link(label: str, url: str):
     if _safe_text(url, ""):
         st.markdown(f"[{label}]({url})")
@@ -464,6 +476,37 @@ def _numeric_display(data: pd.DataFrame) -> pd.DataFrame:
     return output
 
 
+def _performance_summary(data: pd.DataFrame, group_by: str | None = None) -> pd.DataFrame:
+    if data.empty:
+        return pd.DataFrame()
+    working = data.copy()
+    working["_Spend"] = working["Amount Spent"].map(_number) if "Amount Spent" in working.columns else 0
+    working["_Revenue"] = working["Revenue"].map(_number) if "Revenue" in working.columns else 0
+    working["_Creative Count"] = 1
+    working["_Spend"] = pd.to_numeric(working["_Spend"], errors="coerce").fillna(0)
+    working["_Revenue"] = pd.to_numeric(working["_Revenue"], errors="coerce").fillna(0)
+
+    if group_by and group_by in working.columns:
+        summary = working.groupby(group_by, dropna=False).agg(
+            Creatives=("_Creative Count", "sum"),
+            **{"Amount Spent": ("_Spend", "sum"), "Revenue": ("_Revenue", "sum")},
+        ).reset_index()
+    else:
+        summary = pd.DataFrame(
+            [{
+                "Creatives": len(working),
+                "Amount Spent": working["_Spend"].sum(),
+                "Revenue": working["_Revenue"].sum(),
+            }]
+        )
+
+    summary["Blended ROAS"] = summary.apply(
+        lambda row: row["Revenue"] / row["Amount Spent"] if row["Amount Spent"] else 0,
+        axis=1,
+    )
+    return summary
+
+
 st.title("Dashboard")
 st.caption(
     "One Creative Ops view across Inhouse, Influencer, and Porcellia. "
@@ -634,6 +677,37 @@ color_map = {
 }
 
 with tab_overview:
+    st.subheader("Performance totals for current filters")
+    perf_summary = _performance_summary(filtered)
+    source_perf = _performance_summary(filtered, "Source")
+    if perf_summary.empty:
+        st.info("No performance data is populated for this filtered view yet.")
+    else:
+        totals = perf_summary.iloc[0]
+        inhouse_perf = source_perf[source_perf["Source"].astype(str) == "Inhouse"] if not source_perf.empty and "Source" in source_perf.columns else pd.DataFrame()
+        inhouse = inhouse_perf.iloc[0] if not inhouse_perf.empty else None
+
+        total_cards = st.columns(4)
+        total_cards[0].metric("Filtered ad spend", _money(totals["Amount Spent"]))
+        total_cards[1].metric("Filtered revenue", _money(totals["Revenue"]))
+        total_cards[2].metric("Filtered blended ROAS", _ratio(totals["Blended ROAS"]))
+        total_cards[3].metric("Creatives in view", int(totals["Creatives"]))
+
+        if inhouse is not None:
+            inhouse_cards = st.columns(4)
+            inhouse_cards[0].metric("Inhouse spend", _money(inhouse["Amount Spent"]))
+            inhouse_cards[1].metric("Inhouse revenue", _money(inhouse["Revenue"]))
+            inhouse_cards[2].metric("Inhouse blended ROAS", _ratio(inhouse["Blended ROAS"]))
+            inhouse_cards[3].metric("Inhouse creatives", int(inhouse["Creatives"]))
+
+        if not source_perf.empty and "Source" in source_perf.columns:
+            source_display = source_perf.sort_values("Amount Spent", ascending=False).copy()
+            source_display["Amount Spent"] = source_display["Amount Spent"].map(_money)
+            source_display["Revenue"] = source_display["Revenue"].map(_money)
+            source_display["Blended ROAS"] = source_display["Blended ROAS"].map(_ratio)
+            with st.expander("Spend and revenue by source", expanded=False):
+                st.dataframe(source_display, use_container_width=True, hide_index=True)
+
     left, right = st.columns([1.05, 1])
     with left:
         timeline = filtered.copy()

@@ -84,12 +84,12 @@ def _thumb(row: pd.Series) -> str:
 
 
 NUMERIC_SORT_COLUMNS = {
-    "ROAS", "Amount Spent", "Revenue", "Avg Cost Per Reach", "CTR", "CPC",
+    "ROAS", "Amount Spent", "Revenue", "CPM", "CPR", "Avg Cost Per Reach", "CTR", "CPC",
     "ATC Rate", "CVR", "AOV", "Hook Rate", "Hold Rate", "CAC",
-    "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "Avg Cost Per Reach (L30)",
+    "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "CPM (L30)", "CPR (L30)", "Avg Cost Per Reach (L30)",
     "CTR (L30)", "CPC (L30)", "ATC Rate (L30)", "CVR (L30)", "AOV (L30)",
     "Hook Rate (L30)", "Hold Rate (L30)", "CAC (L30)",
-    "ROAS (L7)", "Amount Spent (L7)", "Revenue (L7)", "Avg Cost Per Reach (L7)",
+    "ROAS (L7)", "Amount Spent (L7)", "Revenue (L7)", "CPM (L7)", "CPR (L7)", "Avg Cost Per Reach (L7)",
     "CTR (L7)", "CPC (L7)", "ATC Rate (L7)", "CVR (L7)", "AOV (L7)",
     "Hook Rate (L7)", "Hold Rate (L7)", "CAC (L7)",
 }
@@ -305,7 +305,7 @@ with left:
     table_cols = [
         "_Preview", "Asset ID", "Meta Ad ID", "Published Date", "Product", "Format", "Creative Type",
         "Creator / Consumer Name", "Marketing Angle", "Cohort", "Content Hook Type", "ROAS", "Amount Spent", "Revenue",
-        "CTR", "Taxonomy Review Status", "Is Post-CRAN", "Post-CRAN Parent AD CODE", "Drive Link", "Transcript Link", "_Row Key",
+        "CPM", "CPR", "CTR", "Taxonomy Review Status", "Is Post-CRAN", "Post-CRAN Parent AD CODE", "Drive Link", "Transcript Link", "_Row Key",
     ]
     table = filtered[[c for c in table_cols if c in filtered.columns]].copy()
     table = _table_controls(table, key="asset_registry")
@@ -404,11 +404,11 @@ with right:
     with tab_perf:
         st.caption(f"Metric source: {_safe(row.get('Metric Source'), 'Master_Asset_Registry metric columns')}. These values are read from sheets, not calculated by the app.")
         perf_cols = [
-            "ROAS", "Amount Spent", "Revenue", "Avg Cost Per Reach", "CTR", "CPC",
+            "ROAS", "Amount Spent", "Revenue", "CPM", "CPR", "Avg Cost Per Reach", "CTR", "CPC",
             "ATC Rate", "CVR", "AOV", "Hook Rate", "Hold Rate", "CAC",
-            "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "CTR (L30)",
+            "ROAS (L30)", "Amount Spent (L30)", "Revenue (L30)", "CPM (L30)", "CPR (L30)", "CTR (L30)",
             "Hook Rate (L30)", "Hold Rate (L30)", "ROAS (L7)", "Amount Spent (L7)",
-            "Revenue (L7)", "CTR (L7)", "Hook Rate (L7)", "Hold Rate (L7)",
+            "Revenue (L7)", "CPM (L7)", "CPR (L7)", "CTR (L7)", "Hook Rate (L7)", "Hold Rate (L7)",
         ]
         perf = pd.DataFrame(
             [{"Metric": col, "Value": _display_value(col, row.get(col, ""))} for col in perf_cols if col in row.index and _safe(row.get(col), "")]

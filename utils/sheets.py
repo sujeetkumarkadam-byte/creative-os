@@ -463,6 +463,13 @@ def _add_metric_fields(target: dict, *rows: pd.Series):
                     metric_source = "Sheet metric columns"
                 break
         target.setdefault(metric, "")
+    for cpm_col, fallback_col in [
+        ("CPM", "Avg Cost Per Reach"),
+        ("CPM (L30)", "Avg Cost Per Reach (L30)"),
+        ("CPM (L7)", "Avg Cost Per Reach (L7)"),
+    ]:
+        if not _truthy(target.get(cpm_col)) and _truthy(target.get(fallback_col)):
+            target[cpm_col] = target.get(fallback_col)
     target["Metric Source"] = metric_source
 
 
@@ -1301,6 +1308,18 @@ def _apply_performance_import(out: pd.DataFrame, performance: pd.DataFrame) -> p
         for metric in PERFORMANCE_COLUMNS:
             if metric in perf_row.index and _truthy(perf_row.get(metric)):
                 updated.at[idx, metric] = perf_row.get(metric)
+                touched = True
+        for cpm_col, fallback_col in [
+            ("CPM", "Avg Cost Per Reach"),
+            ("CPM (L30)", "Avg Cost Per Reach (L30)"),
+            ("CPM (L7)", "Avg Cost Per Reach (L7)"),
+        ]:
+            if (
+                (cpm_col not in updated.columns or not _truthy(updated.at[idx, cpm_col]))
+                and fallback_col in perf_row.index
+                and _truthy(perf_row.get(fallback_col))
+            ):
+                updated.at[idx, cpm_col] = perf_row.get(fallback_col)
                 touched = True
         if touched:
             sheet_name = perf_row.get("Performance Sheet", SHEET_PERFORMANCE)
